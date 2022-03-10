@@ -107,7 +107,7 @@ int main(int argc, char* argv[])
   read_rhs(rydFileName, ryd);
   printf("RHS reading completed ..............................\n");
   // now copy data to GPU and format convert
-  double *d_rx, *d_rs, *d_ry, *d_ryd, *d_ryd_s;
+  double *d_rx, *d_rs, *d_ry, *d_ry_c, *d_ryd, *d_ryd_s;
   double *H_a, *Ds_a, *JC_a;
   int *   H_ja, *H_ia;     // columns and rows of H
   int *   JC_ja, *JC_ia;   // columns and rows of JC
@@ -118,12 +118,14 @@ int main(int argc, char* argv[])
   cudaMalloc((void**)&d_rx, H->n * sizeof(double));
   cudaMalloc((void**)&d_rs, Ds->n * sizeof(double));
   cudaMalloc((void**)&d_ry, JC->n * sizeof(double));
+  cudaMalloc((void**)&d_ry_c, JC->n * sizeof(double));
   cudaMalloc((void**)&d_ryd, JD->n * sizeof(double));
   cudaMalloc((void**)&d_ryd_s, JD->n * sizeof(double));
 
   cudaMemcpy(d_rx, rx, sizeof(double) * H->n, cudaMemcpyHostToDevice);
   cudaMemcpy(d_rs, rs, sizeof(double) * Ds->n, cudaMemcpyHostToDevice);
   cudaMemcpy(d_ry, ry, sizeof(double) * JC->n, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_ry_c, d_ry, sizeof(double) * JC->n, cudaMemcpyDeviceToDevice);
   cudaMemcpy(d_ryd, ryd, sizeof(double) * JD->n, cudaMemcpyHostToDevice);
 
   // allocate space for matrix and copy it to device
@@ -236,7 +238,6 @@ int main(int argc, char* argv[])
   cusparseCreateDnVec(&vec_d_ryd_s, JD->n, d_ryd_s, CUDA_R_64F);
   cusparseDnVecDescr_t vec_d_rx_til = NULL;
   cusparseCreateDnVec(&vec_d_rx_til, H->n, d_rx_til, CUDA_R_64F);
-
   // Start of block: Setting up eq (4) from the paper
   int blockSize = 256;
   int numBlocks;
@@ -253,6 +254,7 @@ int main(int argc, char* argv[])
   cusparseCreateCsr(&matJD, JD->n, JD->m, JD->nnz, JD_ia, JD_ja, JD_a, CUSPARSE_INDEX_32I,
     CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F);
 
+  cusparseSpMatDescr_t matJDt = NULL;
   if(jd_flag)   // if JD is not all zeros (otherwise computation is saved)
   {
     printf("CSR JD\n");
@@ -272,7 +274,6 @@ int main(int argc, char* argv[])
     cusparseCsr2cscEx2(handle, JD->n, JD->m, JD->nnz, JD_a, JD_ia, JD_ja, JDt_a, JDt_ia, JDt_ja,
       CUDA_R_64F, CUSPARSE_ACTION_NUMERIC, CUSPARSE_INDEX_BASE_ZERO, CUSPARSE_CSR2CSC_ALG1,
       buffercsr);
-    cusparseSpMatDescr_t matJDt = NULL;
     cusparseCreateCsr(&matJDt, JD->m, JD->n, JD->nnz, JDt_ia, JDt_ja, JDt_a, CUSPARSE_INDEX_32I,
       CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F);
 
@@ -398,6 +399,31 @@ int main(int argc, char* argv[])
   cusparseSpMatDescr_t matJCt = NULL;
   cusparseCreateCsr(&matJCt, JC->m, JC->n, JC->nnz, JCt_ia, JCt_ja, JCt_a, CUSPARSE_INDEX_32I,
     CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F);
+#if 1 //this block is only activated to check solution (requires more copying)
+  // saves the original JC and JCt  
+  double*               JC_a_c = NULL;
+  int *                 JC_ia_c = NULL, *JC_ja_c = NULL;
+  cudaMalloc((void**)&JC_ia_c, sizeof(int) * ((JC->n) + 1));
+  cudaMalloc((void**)&JC_ja_c, sizeof(int) * (JC->nnz));
+  cudaMalloc((void**)&JC_a_c, sizeof(double) * (JC->nnz));
+  cudaMemcpy(JC_a_c, JC_a, sizeof(double) * (JC->nnz), cudaMemcpyDeviceToDevice);
+  cudaMemcpy(JC_ia_c, JC_ia, sizeof(int) * (JC->n + 1), cudaMemcpyDeviceToDevice);
+  cudaMemcpy(JC_ja_c, JC_ja, sizeof(int) * (JC->nnz), cudaMemcpyDeviceToDevice);
+  cusparseSpMatDescr_t matJC_c = NULL;
+  cusparseCreateCsr(&matJC_c, JC->n, JC->m, JC->nnz, JC_ia_c, JC_ja_c, JC_a_c, CUSPARSE_INDEX_32I,
+    CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F);
+  double*               JCt_a_c = NULL;
+  int *                 JCt_ia_c = NULL, *JCt_ja_c = NULL;
+  cudaMalloc((void**)&JCt_ia_c, sizeof(int) * ((JC->m) + 1));
+  cudaMalloc((void**)&JCt_ja_c, sizeof(int) * (JC->nnz));
+  cudaMalloc((void**)&JCt_a_c, sizeof(double) * (JC->nnz));
+  cudaMemcpy(JCt_a_c, JCt_a, sizeof(double) * (JC->nnz), cudaMemcpyDeviceToDevice);
+  cudaMemcpy(JCt_ia_c, JCt_ia, sizeof(int) * (JC->n + 1), cudaMemcpyDeviceToDevice);
+  cudaMemcpy(JCt_ja_c, JCt_ja, sizeof(int) * (JC->nnz), cudaMemcpyDeviceToDevice);
+  cusparseSpMatDescr_t matJCt_c = NULL;
+  cusparseCreateCsr(&matJCt_c, JC->m, JC->n, JC->nnz, JCt_ia_c, JCt_ja_c, JCt_a_c, CUSPARSE_INDEX_32I,
+    CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F);
+#endif
   // setup vectors for scaling
   // Allocation - happens once
   double *max_d, *scale;
@@ -789,6 +815,12 @@ int main(int argc, char* argv[])
   vec_scale<<<blockSize, numBlocks>>>(H->n, d_x, max_d);
   numBlocks = (JC->n + blockSize - 1) / blockSize;
   vec_scale<<<blockSize, numBlocks>>>(JC->n, d_y, &max_d[H->n]);
+#if 0
+  cudaMemcpy(h_y, d_y, sizeof(double)*(JC->n), cudaMemcpyDeviceToHost);
+  for (int i=(JC->n)-10; i<JC->n; i++){
+     printf("y[%d] = %f\n", i, h_y[i]);
+  }
+#endif
 #if 0 
   cudaMemcpy(h_x, d_x, sizeof(double)*(H->n), cudaMemcpyDeviceToHost);
   for (int i=(H->n)-10; i<H->n; i++){
@@ -806,11 +838,14 @@ int main(int argc, char* argv[])
   }
 #endif
   // now recover delta_s and delta_yd
+  //  Allocation - happens once
+  cusparseDnVecDescr_t vec_d_x = NULL;
+  cusparseCreateDnVec(&vec_d_x, H->n, d_x, CUDA_R_64F);
+  cusparseDnVecDescr_t vec_d_s = NULL;
+  cusparseCreateDnVec(&vec_d_s, Ds->n, d_s, CUDA_R_64F);
+  cudaMemcpy(d_s, d_ryd, sizeof(double) * (Ds->m), cudaMemcpyDeviceToDevice);
   if(jd_flag)
   {
-    //  Allocation - happens once
-    cusparseDnVecDescr_t vec_d_x = NULL;
-    cusparseCreateDnVec(&vec_d_x, H->n, d_x, CUDA_R_64F);
     /* This is zero anyways
     size_t               bufferSize_dx = 0;
     cusparseSpMV_bufferSize(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &one, matJD, vec_d_x,
@@ -821,19 +856,18 @@ int main(int argc, char* argv[])
     */
     //  Matrix-vector product - happens every iteration
     cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &one, matJD, vec_d_x, &minusone,
-      vec_d_ryd, CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+      vec_d_s, CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
   }
   else
   {   //  Math operations - happens every iteration
     numBlocks = (Ds->n + blockSize - 1) / blockSize;
-    mult_const<<<blockSize, numBlocks>>>(Ds->n, minusone, d_ryd);
+    mult_const<<<blockSize, numBlocks>>>(Ds->n, minusone, d_s);
   }
   //  Math operations - happens every iteration
-  cudaMemcpy(d_s, d_ryd, sizeof(double) * (Ds->m), cudaMemcpyDeviceToDevice);
   numBlocks = (Ds->n + blockSize - 1) / blockSize;
-  vec_scale<<<blockSize, numBlocks>>>(Ds->n, d_ryd, Ds_a);
-  add_vecs<<<blockSize, numBlocks>>>(Ds->n, d_ryd, minusone, d_rs);
-  cudaMemcpy(d_yd, d_ryd, sizeof(double) * (Ds->m), cudaMemcpyDeviceToDevice);
+  cudaMemcpy(d_yd, d_s, sizeof(double) * (Ds->m), cudaMemcpyDeviceToDevice);
+  vec_scale<<<blockSize, numBlocks>>>(Ds->n, d_yd, Ds_a);
+  add_vecs<<<blockSize, numBlocks>>>(Ds->n, d_yd, minusone, d_rs);
 #if 0 
   cudaMemcpy(h_yd, d_yd, sizeof(double)*(JD->n), cudaMemcpyDeviceToHost);
   for (int i=(JD->n)-10; i<JD->n; i++){
@@ -844,7 +878,47 @@ int main(int argc, char* argv[])
      printf("s[%d] = %f\n", i, h_s[i]);
   }
 #endif
-  //	cudaFree(d_rhs);
+  //  Start of block, calculate error of Ax-b 
+  //  Calculate error in rx
+  double norm_rx_sq=0, norm_rs_sq=0, norm_ry_sq=0, norm_ryd_sq=0;
+  double norm_resx_sq=0, norm_resy_sq=0; 
+  // This will aggregate the squared norms of the residual and rhs
+  // Note that by construction the residuals of rs and ryd are 0
+  cublasDdot(handle_cublas, H->n, d_rx, 1, d_rx, 1, &norm_rx_sq);
+  cublasDdot(handle_cublas, Ds->n, d_rs, 1, d_rs, 1, &norm_rs_sq);
+  cublasDdot(handle_cublas, JC->n, d_ry_c, 1, d_ry_c, 1, &norm_ry_sq);
+  printf("ry'ry = %lf\n", norm_ry_sq);
+  cublasDdot(handle_cublas, JD->n, d_ryd, 1, d_ryd, 1, &norm_ryd_sq);
+  norm_rx_sq+= norm_rs_sq + norm_ry_sq + norm_ryd_sq;
+  printf("r'r = %lf\n", norm_rx_sq);
+  cusparseDnVecDescr_t vec_d_rx = NULL;
+  cusparseCreateDnVec(&vec_d_rx, H->n, d_rx, CUDA_R_64F);
+  cusparseDnVecDescr_t vec_d_yd = NULL;
+  cusparseCreateDnVec(&vec_d_yd, JD->n, d_yd, CUDA_R_64F);
+  cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &minusone, matH, vec_d_x, &one,
+      vec_d_rx, CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+  cublasDdot(handle_cublas, H->n, d_rx, 1, d_rx, 1, &norm_resx_sq);
+  printf("Residual norm for x is %f\n",sqrt(norm_resx_sq));
+  if (jd_flag){
+    cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &minusone, matJDt, vec_d_yd, &one,
+        vec_d_rx, CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+  }
+  cublasDdot(handle_cublas, H->n, d_rx, 1, d_rx, 1, &norm_resx_sq);
+  printf("Residual norm for x is %f\n",sqrt(norm_resx_sq));
+  cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &minusone, matJCt_c, vec_d_y, &one,
+      vec_d_rx, CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+  cublasDdot(handle_cublas, H->n, d_rx, 1, d_rx, 1, &norm_resx_sq);
+  printf("Norm rx residual = %lf\n", sqrt(norm_resx_sq));
+  //  Calculate error in ry
+  cusparseDnVecDescr_t vec_d_ry_c = NULL;
+  cusparseCreateDnVec(&vec_d_ry_c, JC->n, d_ry_c, CUDA_R_64F);
+  cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &minusone, matJC_c, vec_d_x, &one,
+      vec_d_ry_c, CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+  cublasDdot(handle_cublas, JC->n, d_ry_c, 1, d_ry_c, 1, &norm_resy_sq);
+  printf("Norm ry residual = %lf\n", sqrt(norm_resy_sq));
+  // Calculate final relative norm
+  norm_resx_sq+=norm_resy_sq;
+  printf("||Ax-b||/||b|| = %lf\n", sqrt(norm_resx_sq/norm_rx_sq));
   //  Start of block - free memory
   gettimeofday(&t3, 0);
   free(rx);

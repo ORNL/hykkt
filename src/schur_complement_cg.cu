@@ -1,3 +1,13 @@
+/** Brief: Solves the equation JC H^{-1} JC^T x = b
+  via Chronopoulous Gear conjugate gradient 
+  Input: JC and JCt in csr format, factorized H,
+  initial guss x0, rhs b, max iterations,convergence tolerance, 
+  dimensions and nonzeros of JC, matrix description,
+  handles for cusparse, cusolver, cublas
+  Output: x0 is changed to the solution to JH^{-1}J^Tx=b
+  Transpose Jc as we will need it repeatedly
+*/
+
 void schur_cg(cusparseSpMatDescr_t matJC, cusparseSpMatDescr_t matJCt, csrcholInfo_t dH, double* x0,
   double* b, const int itmax, const double tol, int n, int m, int nnz, cusparseMatDescr_t descrA,
   void* buffer_gpu, cusparseHandle_t handle, cusolverSpHandle_t handle_cusolver,
