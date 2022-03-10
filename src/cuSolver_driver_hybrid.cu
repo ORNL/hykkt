@@ -418,11 +418,30 @@ int main(int argc, char* argv[])
   cudaMalloc((void**)&JCt_ja_c, sizeof(int) * (JC->nnz));
   cudaMalloc((void**)&JCt_a_c, sizeof(double) * (JC->nnz));
   cudaMemcpy(JCt_a_c, JCt_a, sizeof(double) * (JC->nnz), cudaMemcpyDeviceToDevice);
-  cudaMemcpy(JCt_ia_c, JCt_ia, sizeof(int) * (JC->n + 1), cudaMemcpyDeviceToDevice);
+  cudaMemcpy(JCt_ia_c, JCt_ia, sizeof(int) * (JC->m + 1), cudaMemcpyDeviceToDevice);
   cudaMemcpy(JCt_ja_c, JCt_ja, sizeof(int) * (JC->nnz), cudaMemcpyDeviceToDevice);
   cusparseSpMatDescr_t matJCt_c = NULL;
   cusparseCreateCsr(&matJCt_c, JC->m, JC->n, JC->nnz, JCt_ia_c, JCt_ja_c, JCt_a_c, CUSPARSE_INDEX_32I,
     CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F);
+#if 0 
+  double *JCt_a_h;
+  int *JCt_ia_h, *JCt_ja_h;
+  cudaMalloc(&JCt_a_h, (JC->nnz) * sizeof(double));
+  cudaMalloc(&JCt_ja_h, (JC->nnz) * sizeof(int));
+  cudaMalloc(&JCt_ia_h, ((JC->m)+1) * sizeof(int));
+  cudaMemcpy(JCt_a_h, JCt_a_c, sizeof(double)*(JC->nnz), cudaMemcpyDeviceToHost);
+  cudaMemcpy(JCt_ja_h, JCt_ja_c, sizeof(int)*(JC->nnz), cudaMemcpyDeviceToHost);
+  cudaMemcpy(JCt_ia_h, JCt_ia_c, sizeof(int)*((JC->m)+1), cudaMemcpyDeviceToHost);
+  printf("CSR J_c\n");
+  for(int i=(JC->m)-10; i<JC->m; i++)
+  {
+    printf("%d\n",i);
+    for (int j=JCt_ia_h[i]; j<JCt_ia_h[i+1]; j++)
+    {
+      printf("Column %d, value %f\n", JCt_ja_h[j], JCt_a_h[j]);
+    }
+  }
+#endif
 #endif
   // setup vectors for scaling
   // Allocation - happens once
@@ -448,22 +467,6 @@ int main(int argc, char* argv[])
   cudaMemcpy(max_h,max_d, sizeof(double)*nHJ, cudaMemcpyDeviceToHost);
   for (int i=0;i<10;i++)
   printf("D[%d] = %f\n", i, max_h[i]);
-#endif
-  // copy back H,J,rx, and ry values
-#if 0 
-  cudaMemcpy(Htil_vals, HJ_a, sizeof(double)*(nnzHtil), cudaMemcpyDeviceToDevice);
-  cudaMemcpy(JC_a, &HJ_a[nnzHtil], sizeof(double)*(JC->nnz), cudaMemcpyDeviceToDevice);
-  cudaMemcpy(d_rx_til, d_rhs, sizeof(double)*(H->n), cudaMemcpyDeviceToDevice);
-  cudaMemcpy(d_ry, &d_rhs[H->n], sizeof(double)*(JC->n), cudaMemcpyDeviceToDevice);
-  printf("CSR J_c\n");
-  for(int i=0; i<10; i++)
-  {
-    printf("%d\n",i);
-    for (int j=JC->csr_ia[i]; j<JC->csr_ia[i+1]; j++)
-    {
-      printf("Column %d, value %f\n", JC->coo_cols[j], JC->coo_vals[j]);
-    }
-  }
 #endif
   // Start of block, setting up eq (5)
   // Allocation for SPGEMM - happens once
@@ -918,7 +921,7 @@ int main(int argc, char* argv[])
   printf("Norm ry residual = %lf\n", sqrt(norm_resy_sq));
   // Calculate final relative norm
   norm_resx_sq+=norm_resy_sq;
-  printf("||Ax-b||/||b|| = %lf\n", sqrt(norm_resx_sq/norm_rx_sq));
+  printf("||Ax-b||/||b|| = %lf\n", sqrt(norm_resx_sq)/sqrt(norm_rx_sq));
   //  Start of block - free memory
   gettimeofday(&t3, 0);
   free(rx);
