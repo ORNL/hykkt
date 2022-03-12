@@ -27,16 +27,14 @@
 #include "input_functions.cu"
 #include "schur_complement_cg.cu"
 #define tol 1e-12
-
+#define norm_tol 1e-2
 // this version reads NORMAL mtx matrices; dont have to be sorted.
 int main(int argc, char* argv[])
 {
   // Start of block: reading matrices from files and allocating structures for
   // them, to be replaced by HiOp structures
-  printf("start program\n");
-  struct timeval t1, t2, t3, t4;
+  struct timeval t1, t2;
   double         timeIO = 0.0f;
-  gettimeofday(&t3, 0);
   /*** cuda stuff ***/
   cusparseStatus_t status;
   cusparseHandle_t handle            = NULL;
@@ -53,14 +51,12 @@ int main(int argc, char* argv[])
   size_t bufferSize3 = 0, bufferSize4 = 0;
 
   // Get matrix block files
-  printf("reading matrix block files\n");
   char const* const HFileName  = argv[1];
   char const* const DsFileName = argv[2];
   char const* const JCFileName = argv[3];
   char const* const JDFileName = argv[4];
 
   // Get rhs block files
-  printf("reading vector block files\n");
   char const* const rxFileName  = argv[5];
   char const* const rsFileName  = argv[6];
   char const* const ryFileName  = argv[7];
@@ -69,31 +65,25 @@ int main(int argc, char* argv[])
 
   // Matix structure allocations
   // Start block - allocating memory for matrices and vectors
-  printf("allocating matrices\n");
   mmatrix* H  = (mmatrix*)calloc(1, sizeof(mmatrix));
   mmatrix* Ds = (mmatrix*)calloc(1, sizeof(mmatrix));
   mmatrix* JC = (mmatrix*)calloc(1, sizeof(mmatrix));
   mmatrix* JD = (mmatrix*)calloc(1, sizeof(mmatrix));
   // Vector allocations
-  printf("allocating vectors\n");
   double *rx, *rs, *ry, *ryd;
 
   // read matrices
 
   read_mm_file_into_coo(HFileName, H);
-  printf("\n/******* Matrix size: %d x %d nnz: %d *******/\n\n", H->n, H->m, H->nnz);
   sym_coo_to_csr(H);
 
   read_mm_file_into_coo(DsFileName, Ds);
-  printf("\n/******* Matrix size: %d x %d nnz: %d *******/\n\n", Ds->n, Ds->m, Ds->nnz);
   coo_to_csr(Ds);
 
   read_mm_file_into_coo(JCFileName, JC);
-  printf("\n/******* Matrix size: %d x %d nnz: %d *******/\n\n", JC->n, JC->m, JC->nnz);
   coo_to_csr(JC);
 
   read_mm_file_into_coo(JDFileName, JD);
-  printf("\n/******* Matrix size: %d x %d nnz: %d *******/\n\n", JD->n, JD->m, JD->nnz);
   coo_to_csr(JD);
   int jd_flag = (JD->nnz > 0);
   // read right hand side
@@ -105,7 +95,6 @@ int main(int argc, char* argv[])
   read_rhs(ryFileName, ry);
   ryd = (double*)calloc(JD->n, sizeof(double));
   read_rhs(rydFileName, ryd);
-  printf("RHS reading completed ..............................\n");
   // now copy data to GPU and format convert
   double *d_rx, *d_rs, *d_ry, *d_ry_c, *d_ryd, *d_ryd_s;
   double *H_a, *Ds_a, *JC_a;
@@ -129,7 +118,6 @@ int main(int argc, char* argv[])
   cudaMemcpy(d_ryd, ryd, sizeof(double) * JD->n, cudaMemcpyHostToDevice);
 
   // allocate space for matrix and copy it to device
-  printf("nnz = %d, n= %d\n", H->nnz, H->n);
   cudaMalloc((void**)&H_a, (H->nnz) * sizeof(double));
   cudaMalloc((void**)&H_ja, (H->nnz) * sizeof(int));
   cudaMalloc((void**)&H_ia, (H->n + 1) * sizeof(int));
@@ -213,13 +201,11 @@ int main(int argc, char* argv[])
   cudaMalloc((void**)&d_yd, JD->n * sizeof(double));
   cudaMemcpy(d_yd, h_yd, sizeof(double) * (JD->n), cudaMemcpyHostToDevice);
 
-  printf("CSR JC\n");
   cusparseSpMatDescr_t matJC;
   cusparseCreateCsr(&matJC, JC->n, JC->m, JC->nnz, JC_ia, JC_ja, JC_a, CUSPARSE_INDEX_32I,
     CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F);
   // set up vectors to store products
 
-  printf("set up vectors\n");
   double *d_rx_til, *d_rs_til;
 
   cudaMalloc((void**)&d_rx_til, H->n * sizeof(double));
@@ -255,12 +241,11 @@ int main(int argc, char* argv[])
     CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F);
 
   cusparseSpMatDescr_t matJDt = NULL;
+  double* JDt_a;
+  int *   JDt_ja, *JDt_ia;
   if(jd_flag)   // if JD is not all zeros (otherwise computation is saved)
   {
-    printf("CSR JD\n");
     // Creating a CSR matrix and buffer for transposing - done only once
-    double* JDt_a;
-    int *   JDt_ja, *JDt_ia;
     cudaMalloc(&JDt_a, (JD->nnz) * sizeof(double));
     cudaMalloc(&JDt_ja, (JD->nnz) * sizeof(int));
     cudaMalloc(&JDt_ia, ((JD->m) + 1) * sizeof(int));
@@ -296,10 +281,8 @@ int main(int argc, char* argv[])
     // matvec done every iteration
     cusparseSpMV(handle, CUSPARSE_OPERATION_TRANSPOSE, &one, matJD, vec_d_ryd_s, &one, vec_d_rx_til,
       CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
-
     // Compute H_til= H+J_d^T * D_s * J_d
     // Allocating for SPGEMM - done once
-    printf("CSR J_d^T*D_s*J_d\n");
     cusparseSpMatDescr_t matJDtDxJD = NULL;
     cusparseCreateCsr(&matJDtDxJD, JD->m, JD->m, 0, NULL, NULL, NULL, CUSPARSE_INDEX_32I,
       CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F);
@@ -325,8 +308,6 @@ int main(int argc, char* argv[])
     // compute the intermediate product of A * B - happens once
     int64_t JDtDxJD_num_rows1, JDtDxJD_num_cols1, JDtDxJD_nnz1;
     cusparseSpMatGetSize(matJDtDxJD, &JDtDxJD_num_rows1, &JDtDxJD_num_cols1, &JDtDxJD_nnz1);
-    printf("JDtDxJD size is %d rows, %d cols, and %d nnz\n", JDtDxJD_num_rows1, JDtDxJD_num_cols1,
-      JDtDxJD_nnz1);
     int *   JDtDxJD_rows, *JDtDxJD_cols;
     double* JDtDxJD_vals;
     cudaMalloc((void**)&JDtDxJD_rows, (JDtDxJD_num_rows1 + 1) * sizeof(int));
@@ -362,9 +343,6 @@ int main(int argc, char* argv[])
     cudaFree(JDtDxJD_rows);
     cudaFree(JDtDxJD_cols);
     cudaFree(JDtDxJD_vals);
-    cudaFree(JDt_a);
-    cudaFree(JDt_ja);
-    cudaFree(JDt_ia);
     cudaFree(buffercsr);
     cudaFree(buffer_add);
   }   // This closes the if J_d!=0 statement
@@ -418,30 +396,30 @@ int main(int argc, char* argv[])
   cudaMalloc((void**)&JCt_ja_c, sizeof(int) * (JC->nnz));
   cudaMalloc((void**)&JCt_a_c, sizeof(double) * (JC->nnz));
   cudaMemcpy(JCt_a_c, JCt_a, sizeof(double) * (JC->nnz), cudaMemcpyDeviceToDevice);
-  cudaMemcpy(JCt_ia_c, JCt_ia, sizeof(int) * (JC->m + 1), cudaMemcpyDeviceToDevice);
+  cudaMemcpy(JCt_ia_c, JCt_ia, sizeof(int) * ((JC->m) + 1), cudaMemcpyDeviceToDevice);
   cudaMemcpy(JCt_ja_c, JCt_ja, sizeof(int) * (JC->nnz), cudaMemcpyDeviceToDevice);
   cusparseSpMatDescr_t matJCt_c = NULL;
   cusparseCreateCsr(&matJCt_c, JC->m, JC->n, JC->nnz, JCt_ia_c, JCt_ja_c, JCt_a_c, CUSPARSE_INDEX_32I,
     CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F);
+#endif
 #if 0 
-  double *JCt_a_h;
-  int *JCt_ia_h, *JCt_ja_h;
-  cudaMalloc(&JCt_a_h, (JC->nnz) * sizeof(double));
-  cudaMalloc(&JCt_ja_h, (JC->nnz) * sizeof(int));
-  cudaMalloc(&JCt_ia_h, ((JC->m)+1) * sizeof(int));
-  cudaMemcpy(JCt_a_h, JCt_a_c, sizeof(double)*(JC->nnz), cudaMemcpyDeviceToHost);
-  cudaMemcpy(JCt_ja_h, JCt_ja_c, sizeof(int)*(JC->nnz), cudaMemcpyDeviceToHost);
-  cudaMemcpy(JCt_ia_h, JCt_ia_c, sizeof(int)*((JC->m)+1), cudaMemcpyDeviceToHost);
+  double *JC_a_h;
+  int *JC_ia_h, *JC_ja_h;
+  JC_a_h = (double*)calloc(JC->nnz, sizeof(double));
+  JC_ja_h = (int*)calloc(JC->nnz, sizeof(int));
+  JC_ia_h = (int*)calloc((JC->n)+1, sizeof(int));
+  cudaMemcpy(JC_a_h, JC_a_c, sizeof(double)*(JC->nnz), cudaMemcpyDeviceToHost);
+  cudaMemcpy(JC_ja_h, JC_ja_c, sizeof(int)*(JC->nnz), cudaMemcpyDeviceToHost);
+  cudaMemcpy(JC_ia_h, JC_ia_c, sizeof(int)*((JC->n)+1), cudaMemcpyDeviceToHost);
   printf("CSR J_c\n");
-  for(int i=(JC->m)-10; i<JC->m; i++)
+  for(int i=(JC->n)-2; i<(JC->n); i++)
   {
     printf("%d\n",i);
-    for (int j=JCt_ia_h[i]; j<JCt_ia_h[i+1]; j++)
+    for (int j=JC_ia_h[i]; j<JC_ia_h[i+1]; j++)
     {
-      printf("Column %d, value %f\n", JCt_ja_h[j], JCt_a_h[j]);
+      printf("Column %d, value %f\n", JC_ja_h[j], JC_a_h[j]);
     }
   }
-#endif
 #endif
   // setup vectors for scaling
   // Allocation - happens once
@@ -470,22 +448,20 @@ int main(int argc, char* argv[])
 #endif
   // Start of block, setting up eq (5)
   // Allocation for SPGEMM - happens once
-  printf("CSR J_c^T*J_c\n");
   cusparseSpMatDescr_t matJCtJC = NULL;
   cusparseCreateCsr(&matJCtJC, JC->m, JC->m, 0, NULL, NULL, NULL, CUSPARSE_INDEX_32I,
     CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F);
   void*  bufferJC = NULL;
   size_t buffersizeJC;
   double gamma = 10000.0;   // this could potentially be chosen by the user
-  int    success;
   // ask bufferSize1 bytes for external memory
-  success = cusparseSpGEMM_workEstimation(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
+  cusparseSpGEMM_workEstimation(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
     CUSPARSE_OPERATION_NON_TRANSPOSE, &gamma, matJCt, matJC, &zero, matJCtJC, CUDA_R_64F,
     CUSPARSE_SPGEMM_DEFAULT, spgemmDesc, &buffersizeJC, NULL);
   cudaMalloc((void**)&bufferJC, buffersizeJC);
   // inspect the matrices A and B to understand the memory requirement for
   // the next step
-  success          = cusparseSpGEMM_workEstimation(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
+  cusparseSpGEMM_workEstimation(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
     CUSPARSE_OPERATION_NON_TRANSPOSE, &gamma, matJCt, matJC, &zero, matJCtJC, CUDA_R_64F,
     CUSPARSE_SPGEMM_DEFAULT, spgemmDesc, &buffersizeJC, bufferJC);
   void*  bufferJC2 = NULL;
@@ -496,23 +472,21 @@ int main(int argc, char* argv[])
   cudaMalloc((void**)&bufferJC2, buffersizeJC2);
   // compute the intermediate product of A * B
   // Compute SPGEMM - done every iteration
-  success = cusparseSpGEMM_compute(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
+  cusparseSpGEMM_compute(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
     CUSPARSE_OPERATION_NON_TRANSPOSE, &gamma, matJCt, matJC, &zero, matJCtJC, CUDA_R_64F,
     CUSPARSE_SPGEMM_DEFAULT, spgemmDesc, &buffersizeJC2, bufferJC2);
   // Allocation - happens once
   int64_t JCtJC_num_rows1, JCtJC_num_cols1, JCtJC_nnz1;
-  success = cusparseSpMatGetSize(matJCtJC, &JCtJC_num_rows1, &JCtJC_num_cols1, &JCtJC_nnz1);
+  cusparseSpMatGetSize(matJCtJC, &JCtJC_num_rows1, &JCtJC_num_cols1, &JCtJC_nnz1);
   int *   JCtJC_rows, *JCtJC_cols;
   double* JCtJC_vals;
   cudaMalloc((void**)&JCtJC_rows, (JC->m + 1) * sizeof(int));
   cudaMalloc((void**)&JCtJC_cols, JCtJC_nnz1 * sizeof(int));
   cudaMalloc((void**)&JCtJC_vals, JCtJC_nnz1 * sizeof(double));
   // SPGEMM - happens very iterations
-  success = cusparseCsrSetPointers(matJCtJC, JCtJC_rows, JCtJC_cols, JCtJC_vals);
-  success =
-    cusparseSpGEMM_copy(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, CUSPARSE_OPERATION_NON_TRANSPOSE,
+  cusparseCsrSetPointers(matJCtJC, JCtJC_rows, JCtJC_cols, JCtJC_vals);
+  cusparseSpGEMM_copy(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, CUSPARSE_OPERATION_NON_TRANSPOSE,
       &gamma, matJCt, matJC, &zero, matJCtJC, CUDA_R_64F, CUSPARSE_SPGEMM_DEFAULT, spgemmDesc);
-  printf("success is %d\n", success);
 #if 0
   int *JCtJC_i, *JCtJC_j;
   double *JCtJC_v;
@@ -723,7 +697,7 @@ int main(int argc, char* argv[])
     handle_cusolver, H->n, nnzHgam, descrA, Hgamp_val, Hgam_rows, Hgam_cols, info, buffer_gpu);
   cusolverSpDcsrcholZeroPivot(handle_cusolver, info, tol, &singularity);
   gettimeofday(&t2, 0);
-  timeIO += (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
+  timeIO = (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
   printf("time for factorization analysis ev(ms). : %16.16f\n", timeIO);
   if(singularity >= 0)
   {
@@ -818,12 +792,6 @@ int main(int argc, char* argv[])
   vec_scale<<<blockSize, numBlocks>>>(H->n, d_x, max_d);
   numBlocks = (JC->n + blockSize - 1) / blockSize;
   vec_scale<<<blockSize, numBlocks>>>(JC->n, d_y, &max_d[H->n]);
-#if 0
-  cudaMemcpy(h_y, d_y, sizeof(double)*(JC->n), cudaMemcpyDeviceToHost);
-  for (int i=(JC->n)-10; i<JC->n; i++){
-     printf("y[%d] = %f\n", i, h_y[i]);
-  }
-#endif
 #if 0 
   cudaMemcpy(h_x, d_x, sizeof(double)*(H->n), cudaMemcpyDeviceToHost);
   for (int i=(H->n)-10; i<H->n; i++){
@@ -883,6 +851,7 @@ int main(int argc, char* argv[])
 #endif
   //  Start of block, calculate error of Ax-b 
   //  Calculate error in rx
+  gettimeofday(&t1, 0);
   double norm_rx_sq=0, norm_rs_sq=0, norm_ry_sq=0, norm_ryd_sq=0;
   double norm_resx_sq=0, norm_resy_sq=0; 
   // This will aggregate the squared norms of the residual and rhs
@@ -890,10 +859,8 @@ int main(int argc, char* argv[])
   cublasDdot(handle_cublas, H->n, d_rx, 1, d_rx, 1, &norm_rx_sq);
   cublasDdot(handle_cublas, Ds->n, d_rs, 1, d_rs, 1, &norm_rs_sq);
   cublasDdot(handle_cublas, JC->n, d_ry_c, 1, d_ry_c, 1, &norm_ry_sq);
-  printf("ry'ry = %lf\n", norm_ry_sq);
   cublasDdot(handle_cublas, JD->n, d_ryd, 1, d_ryd, 1, &norm_ryd_sq);
   norm_rx_sq+= norm_rs_sq + norm_ry_sq + norm_ryd_sq;
-  printf("r'r = %lf\n", norm_rx_sq);
   cusparseDnVecDescr_t vec_d_rx = NULL;
   cusparseCreateDnVec(&vec_d_rx, H->n, d_rx, CUDA_R_64F);
   cusparseDnVecDescr_t vec_d_yd = NULL;
@@ -901,29 +868,56 @@ int main(int argc, char* argv[])
   cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &minusone, matH, vec_d_x, &one,
       vec_d_rx, CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
   cublasDdot(handle_cublas, H->n, d_rx, 1, d_rx, 1, &norm_resx_sq);
-  printf("Residual norm for x is %f\n",sqrt(norm_resx_sq));
   if (jd_flag){
-    cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &minusone, matJDt, vec_d_yd, &one,
-        vec_d_rx, CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+    cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &minusone, matJDt, 
+        vec_d_yd, &one, vec_d_rx, CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+    cublasDdot(handle_cublas, H->n, d_rx, 1, d_rx, 1, &norm_resx_sq);
   }
-  cublasDdot(handle_cublas, H->n, d_rx, 1, d_rx, 1, &norm_resx_sq);
-  printf("Residual norm for x is %f\n",sqrt(norm_resx_sq));
+#if 0 
+  double *JCt_a_h;
+  int *JCt_ia_h, *JCt_ja_h;
+  JCt_a_h = (double*)calloc(JC->nnz, sizeof(double));
+  JCt_ja_h = (int*)calloc(JC->nnz, sizeof(int));
+  JCt_ia_h = (int*)calloc((JC->m)+1, sizeof(int));
+  cudaMemcpy(JCt_a_h, JCt_a_c, sizeof(double)*(JC->nnz), cudaMemcpyDeviceToHost);
+  cudaMemcpy(JCt_ja_h, JCt_ja_c, sizeof(int)*(JC->nnz), cudaMemcpyDeviceToHost);
+  cudaMemcpy(JCt_ia_h, JCt_ia_c, sizeof(int)*((JC->m)+1), cudaMemcpyDeviceToHost);
+  printf("CSR J_c\n");
+  for(int i=1500; i<1502; i++)
+  {
+    printf("%d\n",i);
+    for (int j=JCt_ia_h[i]; j<JCt_ia_h[i+1]; j++)
+    {
+     printf("Column %d, value %f\n", JCt_ja_h[j], JCt_a_h[j]);
+    }
+  }
+#endif
+#if 0
+  cudaMemcpy(h_y, d_y, sizeof(double)*(JC->n), cudaMemcpyDeviceToHost);
+  for (int i=(JC->n)-10; i<JC->n; i++){
+     printf("y[%d] = %f\n", i, h_y[i]);
+  }
+#endif
   cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &minusone, matJCt_c, vec_d_y, &one,
       vec_d_rx, CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
   cublasDdot(handle_cublas, H->n, d_rx, 1, d_rx, 1, &norm_resx_sq);
-  printf("Norm rx residual = %lf\n", sqrt(norm_resx_sq));
   //  Calculate error in ry
   cusparseDnVecDescr_t vec_d_ry_c = NULL;
   cusparseCreateDnVec(&vec_d_ry_c, JC->n, d_ry_c, CUDA_R_64F);
   cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &minusone, matJC_c, vec_d_x, &one,
       vec_d_ry_c, CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
   cublasDdot(handle_cublas, JC->n, d_ry_c, 1, d_ry_c, 1, &norm_resy_sq);
-  printf("Norm ry residual = %lf\n", sqrt(norm_resy_sq));
   // Calculate final relative norm
   norm_resx_sq+=norm_resy_sq;
-  printf("||Ax-b||/||b|| = %lf\n", sqrt(norm_resx_sq)/sqrt(norm_rx_sq));
+  double norm_res = sqrt(norm_resx_sq)/sqrt(norm_rx_sq);
+  if (norm_res<norm_tol){
+    printf("Residual test passed ");
+  }
+  else{
+    printf("Residual test failed ");
+  }
+  printf("||Ax-b||/||b|| = %16.16f\n", norm_res);
   //  Start of block - free memory
-  gettimeofday(&t3, 0);
   free(rx);
   free(rs);
   free(ry);
@@ -939,6 +933,7 @@ int main(int argc, char* argv[])
   cudaFree(d_schur);
   cudaFree(d_rs);
   cudaFree(d_ry);
+  cudaFree(d_ry_c);
   cudaFree(d_ryd);
   cudaFree(d_ryd_s);
   cudaFree(d_rx_til);
@@ -954,10 +949,19 @@ int main(int argc, char* argv[])
   cudaFree(JCt_a);
   cudaFree(JCt_ja);
   cudaFree(JCt_ia);
+  cudaFree(JC_a_c);
+  cudaFree(JC_ja_c);
+  cudaFree(JC_ia_c);
+  cudaFree(JCt_a_c);
+  cudaFree(JCt_ja_c);
+  cudaFree(JCt_ia_c);
   cudaFree(JD_a);
   cudaFree(JD_as);
   cudaFree(JD_ja);
   cudaFree(JD_ia);
+  cudaFree(JDt_a);
+  cudaFree(JDt_ja);
+  cudaFree(JDt_ia);
   free(h_x);
   free(h_s);
   free(h_y);
@@ -1023,8 +1027,8 @@ int main(int argc, char* argv[])
   free(Jct_rows);
   free(Jct_cols);
   free(Jct_p_rows);
-  gettimeofday(&t4, 0);
-  timeIO = (1000000.0 * (t4.tv_sec - t3.tv_sec) + t4.tv_usec - t3.tv_usec) / 1000.0;
+  gettimeofday(&t2, 0);
+  timeIO = (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
   printf("time for IO+API+error ev(ms). : %16.16f\n", timeIO);
   return 0;
 }
