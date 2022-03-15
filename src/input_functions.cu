@@ -54,16 +54,15 @@ typedef struct
 /*
 Brief: reads a matrix stored in matrixFileName into a structure A of COO format
    */
-void read_mm_file_into_coo(const char* matrixFileName, mmatrix* A)
+void read_mm_file_into_coo(const char* matrixFileName, mmatrix* A, int lines)
 {
   // this reads triangular matrix but expands into full as it goes (important)
+  // lines indicates the number of the first useful line
   FILE* fpm = fopen(matrixFileName, "r");
 
   assert(fpm != NULL);
   char lineBuffer[256];
-  fgets(lineBuffer, sizeof(lineBuffer), fpm);
-  fgets(lineBuffer, sizeof(lineBuffer), fpm);
-  // fgets(lineBuffer, sizeof(lineBuffer), fpm);
+  for(int i=0; i<lines; i++) fgets(lineBuffer, sizeof(lineBuffer), fpm);
   // first line is size and nnz, need this info to allocate memory
   sscanf(lineBuffer, "%ld %ld %ld", &(A->n), &(A->m), &(A->nnz));
   // allocate

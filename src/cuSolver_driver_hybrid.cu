@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <cstdlib>
 #include <assert.h>
 #include <ctype.h>
 #include <string.h>
@@ -62,7 +63,8 @@ int main(int argc, char* argv[])
   char const* const ryFileName  = argv[7];
   char const* const rydFileName = argv[8];
   // char const* const permFileName = argv[9];
-
+  int skip_lines = atoi(argv[9]);
+  double gamma = atof(argv[10]);
   // Matix structure allocations
   // Start block - allocating memory for matrices and vectors
   mmatrix* H  = (mmatrix*)calloc(1, sizeof(mmatrix));
@@ -74,16 +76,16 @@ int main(int argc, char* argv[])
 
   // read matrices
 
-  read_mm_file_into_coo(HFileName, H);
+  read_mm_file_into_coo(HFileName, H, skip_lines);
   sym_coo_to_csr(H);
 
-  read_mm_file_into_coo(DsFileName, Ds);
+  read_mm_file_into_coo(DsFileName, Ds, skip_lines);
   coo_to_csr(Ds);
 
-  read_mm_file_into_coo(JCFileName, JC);
+  read_mm_file_into_coo(JCFileName, JC, skip_lines);
   coo_to_csr(JC);
 
-  read_mm_file_into_coo(JDFileName, JD);
+  read_mm_file_into_coo(JDFileName, JD, skip_lines);
   coo_to_csr(JD);
   int jd_flag = (JD->nnz > 0);
   // read right hand side
@@ -441,6 +443,25 @@ int main(int argc, char* argv[])
     adapt_diag_scale<<<blockSize, numBlocks>>>(H->n, nHJ, Htil_vals, Htil_rows, Htil_cols, JC_a,
       JC_ia, JC_ja, JCt_a, JCt_ia, JCt_ja, scale, d_rx_til, d_ry, max_d);
   }
+#if 0 
+  double *Ht_a_h;
+  int *Ht_ia_h, *Ht_ja_h;
+  Ht_a_h = (double*)calloc(nnzHtil, sizeof(double));
+  Ht_ja_h = (int*)calloc(nnzHtil, sizeof(int));
+  Ht_ia_h = (int*)calloc((H->n)+1, sizeof(int));
+  cudaMemcpy(Ht_a_h, Htil_vals, sizeof(double)*(nnzHtil), cudaMemcpyDeviceToHost);
+  cudaMemcpy(Ht_ja_h, Htil_cols, sizeof(int)*(nnzHtil), cudaMemcpyDeviceToHost);
+  cudaMemcpy(Ht_ia_h, Htil_rows, sizeof(int)*((H->n)+1), cudaMemcpyDeviceToHost);
+  printf("CSR H\n");
+  for(int i=(H->n)-2; i<(H->n); i++)
+  {
+    printf("%d\n",i);
+    for (int j=Ht_ia_h[i]; j<Ht_ia_h[i+1]; j++)
+    {
+      printf("Column %d, value %f\n", Ht_ja_h[j], Ht_a_h[j]);
+    }
+  }
+#endif
 #if 0
   cudaMemcpy(max_h,max_d, sizeof(double)*nHJ, cudaMemcpyDeviceToHost);
   for (int i=0;i<10;i++)
@@ -453,7 +474,6 @@ int main(int argc, char* argv[])
     CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F);
   void*  bufferJC = NULL;
   size_t buffersizeJC;
-  double gamma = 10000.0;   // this could potentially be chosen by the user
   // ask bufferSize1 bytes for external memory
   cusparseSpGEMM_workEstimation(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
     CUSPARSE_OPERATION_NON_TRANSPOSE, &gamma, matJCt, matJC, &zero, matJCtJC, CUDA_R_64F,
@@ -487,7 +507,7 @@ int main(int argc, char* argv[])
   cusparseCsrSetPointers(matJCtJC, JCtJC_rows, JCtJC_cols, JCtJC_vals);
   cusparseSpGEMM_copy(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, CUSPARSE_OPERATION_NON_TRANSPOSE,
       &gamma, matJCt, matJC, &zero, matJCtJC, CUDA_R_64F, CUSPARSE_SPGEMM_DEFAULT, spgemmDesc);
-#if 0
+#if 1
   int *JCtJC_i, *JCtJC_j;
   double *JCtJC_v;
   JCtJC_i=(int*) malloc((H->n + 1)*sizeof(int));
@@ -916,7 +936,7 @@ int main(int argc, char* argv[])
   else{
     printf("Residual test failed ");
   }
-  printf("||Ax-b||/||b|| = %16.16f\n", norm_res);
+  printf("||Ax-b||/||b|| = %32.32g\n", norm_res);
   //  Start of block - free memory
   free(rx);
   free(rs);

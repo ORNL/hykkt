@@ -116,7 +116,6 @@ void schur_cg(cusparseSpMatDescr_t matJC, cusparseSpMatDescr_t matJCt, csrcholIn
     if(sqrt(gam_i1) < tol)
     {
       printf("Convergence occured at iteration %d\n", i);
-      printf("Error is %32.32g \n", sqrt(gam_i1));
       break;
     }
     // product with w=Ar starts here
