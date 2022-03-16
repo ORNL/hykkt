@@ -1,0 +1,46 @@
+#!/bin/sh
+#SBATCH -A exasgd
+#SBATCH -p a100_shared
+#SBATCH -N 1
+#SBATCH -n 1
+#SBATCH -t 00:59:00
+#SBATCH --gres=gpu:1
+module load cmake/3.15.3
+module load gcc/7.5.0
+module load cuda/11.1
+#for i in 0{0..9} {10..38};
+for i in 0{9..9};
+do
+    echo
+      echo "reading matrix: $i";
+        #  echo "reading H"
+          hfile="/people/rege393/Hybrid_dev/mats/a25k/block_H_matrix_ACTIVSg25k_AC_$i.mtx"
+        #  echo "reading Ds"
+          Dsfile="/people/rege393/Hybrid_dev/mats/a25k/block_Dd_matrix_ACTIVSg25k_AC_$i.mtx"
+      #  echo "reading jc"
+          jcfile="/people/rege393/Hybrid_dev/mats/a25k/block_J_matrix_ACTIVSg25k_AC_$i.mtx"
+      #  echo "reading jd"
+          jdfile="/people/rege393/Hybrid_dev/mats/a25k/block_Jd_matrix_ACTIVSg25k_AC_$i.mtx"
+       #   echo "reading rx"
+          rxfile="/people/rege393/Hybrid_dev/mats/a25k/block_rx_ACTIVSg25k_AC_$i.mtx"
+        #  echo "reading rs"
+          rsfile="/people/rege393/Hybrid_dev/mats/a25k/block_rs_ACTIVSg25k_AC_$i.mtx"
+         # echo "reading ry"
+          ryfile="/people/rege393/Hybrid_dev/mats/a25k/block_ry_ACTIVSg25k_AC_$i.mtx"
+        #  echo "reading ryd"
+          rydfile="/people/rege393/Hybrid_dev/mats/a25k/block_ryd_ACTIVSg25k_AC_$i.mtx"
+        #  echo "reading permutation"
+      #    permfile="/people/rege393/Hybrid_dev/perm_test/permutation.mtx"
+       #   echo "reading permuted and scaled matrices"
+#          permJtfile="/people/rege393/Hybrid_dev/perm_test/perm_Jt_ACTIVSg200_AC_09.mtx"
+ #         permJfile="/people/rege393/Hybrid_dev/perm_test/perm_J_ACTIVSg200_AC_09.mtx"
+  #        permHfile="/people/rege393/Hybrid_dev/perm_test/perm_H_ACTIVSg200_AC_09.mtx"
+
+         
+        srun ./hybrid_solver $hfile $Dsfile $jcfile $jdfile $rxfile $rsfile $ryfile $rydfile 3 1000000.0
+        #$permfile $permJfile $permJtfile $permHfile
+      done 
+
+
+
+

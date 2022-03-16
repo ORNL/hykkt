@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
   char const* const rsFileName  = argv[6];
   char const* const ryFileName  = argv[7];
   char const* const rydFileName = argv[8];
-  // char const* const permFileName = argv[9];
+ // char const* const permFileName = argv[11];
   int skip_lines = atoi(argv[9]);
   double gamma = atof(argv[10]);
   // Matix structure allocations
@@ -227,7 +227,7 @@ int main(int argc, char* argv[])
   cusparseDnVecDescr_t vec_d_rx_til = NULL;
   cusparseCreateDnVec(&vec_d_rx_til, H->n, d_rx_til, CUDA_R_64F);
   // Start of block: Setting up eq (4) from the paper
-  int blockSize = 256;
+  int blockSize = 512;
   int numBlocks;
   // start products
   double                one      = 1.0;
@@ -266,11 +266,11 @@ int main(int argc, char* argv[])
 
     numBlocks = (JD->n + 1 + blockSize - 1) / blockSize;
     // math ops for eq (4) done at every iteration
-    row_scale<<<blockSize, numBlocks>>>(JD->n, JD_a, JD_ia, JD_ja, JD_as, d_ryd, d_ryd_s, Ds_a);
+    row_scale<<<numBlocks, blockSize>>>(JD->n, JD_a, JD_ia, JD_ja, JD_as, d_ryd, d_ryd_s, Ds_a);
     cusparseSpMatDescr_t matJDs = NULL;   //(except this part)
     cusparseCreateCsr(&matJDs, JD->n, JD->m, JD->nnz, JD_ia, JD_ja, JD_as, CUSPARSE_INDEX_32I,
       CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F);
-    add_vecs<<<blockSize, numBlocks>>>(JD->n, d_ryd_s, one, d_rs);
+    add_vecs<<<numBlocks, blockSize>>>(JD->n, d_ryd_s, one, d_rs);
     // create buffer for matvec - done once
     /*
       size_t bufferSize_rx = 0;
@@ -324,7 +324,7 @@ int main(int argc, char* argv[])
      Allocation for matrix addition - happens once
     */
     size_t bufferSizeInBytes_add;
-    char*  buffer_add         = NULL;
+    void*  buffer_add         = NULL;
     int*   nnzTotalDevHostPtr = &nnzHtil;
     cudaMalloc((void**)&Htil_rows, sizeof(int) * ((H->n) + 1));
     cusparseSetPointerMode(handle, CUSPARSE_POINTER_MODE_HOST);
@@ -422,6 +422,9 @@ int main(int argc, char* argv[])
       printf("Column %d, value %f\n", JC_ja_h[j], JC_a_h[j]);
     }
   }
+  free(JC_a_h);
+  free(JC_ia_h);
+  free(JC_ja_h);
 #endif
   // setup vectors for scaling
   // Allocation - happens once
@@ -438,9 +441,9 @@ int main(int argc, char* argv[])
   numBlocks = (nHJ + blockSize - 1) / blockSize;
   for(int i = 0; i < ruiz_its; i++)
   {
-    adapt_row_max<<<blockSize, numBlocks>>>(
+    adapt_row_max<<<numBlocks, blockSize>>>(
       H->n, nHJ, Htil_vals, Htil_rows, Htil_cols, JC_a, JC_ia, JC_ja, JCt_a, JCt_ia, JCt_ja, scale);
-    adapt_diag_scale<<<blockSize, numBlocks>>>(H->n, nHJ, Htil_vals, Htil_rows, Htil_cols, JC_a,
+    adapt_diag_scale<<<numBlocks, blockSize>>>(H->n, nHJ, Htil_vals, Htil_rows, Htil_cols, JC_a,
       JC_ia, JC_ja, JCt_a, JCt_ia, JCt_ja, scale, d_rx_til, d_ry, max_d);
   }
 #if 0 
@@ -461,6 +464,9 @@ int main(int argc, char* argv[])
       printf("Column %d, value %f\n", Ht_ja_h[j], Ht_a_h[j]);
     }
   }
+  free(Ht_a_h);
+  free(Ht_ia_h);
+  free(Ht_ja_h);
 #endif
 #if 0
   cudaMemcpy(max_h,max_d, sizeof(double)*nHJ, cudaMemcpyDeviceToHost);
@@ -507,7 +513,7 @@ int main(int argc, char* argv[])
   cusparseCsrSetPointers(matJCtJC, JCtJC_rows, JCtJC_cols, JCtJC_vals);
   cusparseSpGEMM_copy(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, CUSPARSE_OPERATION_NON_TRANSPOSE,
       &gamma, matJCt, matJC, &zero, matJCtJC, CUDA_R_64F, CUSPARSE_SPGEMM_DEFAULT, spgemmDesc);
-#if 1
+#if 0
   int *JCtJC_i, *JCtJC_j;
   double *JCtJC_v;
   JCtJC_i=(int*) malloc((H->n + 1)*sizeof(int));
@@ -518,7 +524,7 @@ int main(int argc, char* argv[])
   cudaMemcpy(JCtJC_i, JCtJC_rows, sizeof(int)*(H->n+1), cudaMemcpyDeviceToHost);  
   cudaMemcpy(JCtJC_j, JCtJC_cols, sizeof(int)*JCtJC_nnz1, cudaMemcpyDeviceToHost);
   printf("gamma*J_c^TJ_c num rows = %d, nnz = %d\n",H->n, JCtJC_nnz1);
-  for(int i=0; i<5; i++)
+  for(int i=3000; i<3001; i++)
   {
     printf("Row %d starts at place %d\n",i,JCtJC_i[i]);
     for (int j=JCtJC_i[i]; j<JCtJC_i[i+1]; j++)
@@ -526,6 +532,9 @@ int main(int argc, char* argv[])
       printf("Column %d value %f\n", JCtJC_j[j], JCtJC_v[j]);
     }
   }
+  free(JCtJC_i);
+  free(JCtJC_j);
+  free(JCtJC_v);
 #endif
   /* It's time for the sum Hgamma= Htilde + gamma(J_c^TJ_c)
    nnzTotalDevHostPtr2 points to host memory
@@ -544,6 +553,7 @@ int main(int argc, char* argv[])
   cusparseXcsrgeam2Nnz(handle, H->n, H->n, descrA, nnzHtil, Htil_rows, Htil_cols, descrA,
     JCtJC_nnz1, JCtJC_rows, JCtJC_cols, descrA, Hgam_rows, nnzTotalDevHostPtr2, buffer_add2);
   nnzHgam = *nnzTotalDevHostPtr2;
+  printf("nnzHgam = %d\n", nnzHgam);
   cudaMalloc((void**)&Hgam_cols, sizeof(int) * (nnzHgam));
   cudaMalloc((void**)&Hgam_vals, sizeof(double) * (nnzHgam));
   // Matrix addition - happens every iteration
@@ -578,7 +588,7 @@ int main(int argc, char* argv[])
     
   cudaMemcpy(Hgam_h_vals, Hgam_vals, sizeof(double)*nnzHgam, cudaMemcpyDeviceToHost);
   printf("Hgam num rows = %d, nnz = %d\n",H->n, nnzHgam);
-  for(int i=1999; i<2000; i++)
+  for(int i=500; i<502; i++)
   {
     printf("Row %d\n",i);
     for (int j=Hgam_h_rows[i]; j<Hgam_h_rows[i+1]; j++)
@@ -586,6 +596,7 @@ int main(int argc, char* argv[])
       printf("Column %d, value %f\n", Hgam_h_cols[j], Hgam_h_vals[j]);
     }
   }
+  free(Hgam_h_vals);
 #endif
   int* perm       = NULL;
   int* rev_perm   = NULL;
@@ -600,6 +611,7 @@ int main(int argc, char* argv[])
   cusolverSpXcsrsymamdHost(handle_cusolver, H->n, nnzHgam, descrA, Hgam_h_rows, Hgam_h_cols,
     perm);   // overwriting perm in next line for test
 #if 0
+  printf("Overwriting permutation \n");
   int *MLperm=(int*)  calloc(H->n, sizeof(int));
   read_1idx_perm(permFileName, MLperm);
   perm=MLperm;
@@ -651,10 +663,10 @@ int main(int argc, char* argv[])
   cudaMalloc(&Jctp_val, (JC->nnz) * sizeof(double));
   // Start of block: permutation application - happens every iteration
   numBlocks = (nnzHgam + blockSize - 1) / blockSize;
-  map_idx<<<blockSize, numBlocks>>>(nnzHgam, d_perm_mapH, Hgam_vals, Hgamp_val);
+  map_idx<<<numBlocks, blockSize>>>(nnzHgam, d_perm_mapH, Hgam_vals, Hgamp_val);
   numBlocks = (JC->nnz + blockSize - 1) / blockSize;
-  map_idx<<<blockSize, numBlocks>>>(JC->nnz, d_perm_mapJ, JC_a, Jcp_val);
-  map_idx<<<blockSize, numBlocks>>>(JC->nnz, d_perm_mapJt, JCt_a, Jctp_val);
+  map_idx<<<numBlocks, blockSize>>>(JC->nnz, d_perm_mapJ, JC_a, Jcp_val);
+  map_idx<<<numBlocks, blockSize>>>(JC->nnz, d_perm_mapJt, JCt_a, Jctp_val);
   cusparseSpMatDescr_t matJCp = NULL;
   cusparseCreateCsr(&matJCp, JC->n, JC->m, JC->nnz, JC_ia, JC_ja, Jcp_val, CUSPARSE_INDEX_32I,
     CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F);
@@ -664,7 +676,7 @@ int main(int argc, char* argv[])
   cudaMemcpy(JC->csr_ia, JC_ia, sizeof(int)*(JC->n+1), cudaMemcpyDeviceToHost);  
   cudaMemcpy(JC->coo_cols, JC_ja, sizeof(int)*(JC->nnz), cudaMemcpyDeviceToHost);
   printf("JC num rows = %d, nnz = %d\n",JC->n, JC->nnz);
-  for(int i=1099; i<1105; i++)
+  for(int i=1099; i<1100; i++)
   {
     printf("Row %d\n",i);
     for (int j=JC->csr_ia[i]; j<JC->csr_ia[i+1]; j++)
@@ -676,26 +688,48 @@ int main(int argc, char* argv[])
 #if 0
   double *Hgamp_h_vals;
   Hgamp_h_vals=(double*) malloc((nnzHgam)*sizeof(double));
-    
   cudaMemcpy(Hgamp_h_vals, Hgamp_val, sizeof(double)*nnzHgam, cudaMemcpyDeviceToHost);
   printf("Hgamp num rows = %d, nnz = %d\n",H->n, nnzHgam);
-  for(int i=1099; i<1105; i++)
+  for(int i=1099; i<1100; i++)
   {
-    printf("Row %d\n",i);
+    printf("Row %d starts at place %d\n",i,Hgam_p_rows[i]);
     for (int j=Hgam_p_rows[i]; j<Hgam_p_rows[i+1]; j++)
     {
       printf("Column %d, value %f\n", Hgam_p_cols[j], Hgamp_h_vals[j]);
     }
   }
+  free(Hgamp_h_vals);
 #endif
   cusparseSpMatDescr_t matJCtp = NULL;
   cusparseCreateCsr(&matJCtp, JC->m, JC->n, JC->nnz, JCt_ia, JCt_ja, Jctp_val, CUSPARSE_INDEX_32I,
     CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F);
+#if 0
+  double *JCth_v;
+  int *JCth_i, *JCth_j;
+  JCth_v=(double*) malloc((JC->nnz)*sizeof(double));
+  JCth_j=(int*) malloc((JC->nnz)*sizeof(int));
+  JCth_i=(int*) malloc((JC->m+1)*sizeof(int));
+  cudaMemcpy(JCth_v, Jctp_val, sizeof(double)*(JC->nnz), cudaMemcpyDeviceToHost);
+  cudaMemcpy(JCth_j, JCt_ja, sizeof(int)*(JC->nnz), cudaMemcpyDeviceToHost);
+  cudaMemcpy(JCth_i, JCt_ia, sizeof(int)*(JC->m +1), cudaMemcpyDeviceToHost);
+  printf("JCt num rows = %d, nnz = %d\n",JC->m, JC->nnz);
+  for(int i=1099; i<1100; i++)
+  {
+    printf("Row %d starts at place %d\n",i,JCth_i[i]);
+    for (int j=JCth_i[i]; j<JCth_i[i+1]; j++)
+    {
+      printf("Column %d, value %f\n", JCth_j[j], JCth_v[j]);
+    }
+  }
+  free(JCth_v);
+  free(JCth_i);
+  free(JCth_j);
+#endif
 
   double* d_rxp;
   cudaMalloc((void**)&d_rxp, H->n * sizeof(double));
   numBlocks = (H->n + blockSize - 1) / blockSize;
-  map_idx<<<blockSize, numBlocks>>>(H->n, d_perm, d_rx_hat, d_rxp);
+  map_idx<<<numBlocks, blockSize>>>(H->n, d_perm, d_rx_hat, d_rxp);
   //  Start of block: Factorization of Hgamma
   //  Symbolic analysis: Happens once
   csrcholInfo_t info = NULL;
@@ -765,6 +799,7 @@ int main(int argc, char* argv[])
   for (int i=15; i<485; i++){
      printf("schur[%d] = %f\n", i, h_schur[i]);
   }
+  free(h_schur);
 #endif
   // Start of block - conjugate gradient on eq (7)
   // Solving eq (7) via CG - happens every iteration
@@ -798,7 +833,7 @@ int main(int argc, char* argv[])
   cudaMalloc((void**)&d_z, H->n * sizeof(double));
   //  Solve - happens every iteration
   cusolverSpDcsrcholSolve(handle_cusolver, H->n, d_rxp, d_z, info, buffer_gpu);
-  map_idx<<<blockSize, numBlocks>>>(H->n, drev_perm, d_z, d_x);
+  map_idx<<<numBlocks, blockSize>>>(H->n, drev_perm, d_z, d_x);
 #if 0
   double *h_rx_hat;
   printf("delta_x\n");
@@ -807,11 +842,12 @@ int main(int argc, char* argv[])
   for (int i=(H->n)-10; i<H->n; i++){
     printf("delta_x[%d] = %f\n", i, h_rx_hat[i]);
   }
+  free(h_rx_hat);
 #endif
   // scale back delta_y and delta_x (every iteration)
-  vec_scale<<<blockSize, numBlocks>>>(H->n, d_x, max_d);
+  vec_scale<<<numBlocks, blockSize>>>(H->n, d_x, max_d);
   numBlocks = (JC->n + blockSize - 1) / blockSize;
-  vec_scale<<<blockSize, numBlocks>>>(JC->n, d_y, &max_d[H->n]);
+  vec_scale<<<numBlocks, blockSize>>>(JC->n, d_y, &max_d[H->n]);
 #if 0 
   cudaMemcpy(h_x, d_x, sizeof(double)*(H->n), cudaMemcpyDeviceToHost);
   for (int i=(H->n)-10; i<H->n; i++){
@@ -852,13 +888,13 @@ int main(int argc, char* argv[])
   else
   {   //  Math operations - happens every iteration
     numBlocks = (Ds->n + blockSize - 1) / blockSize;
-    mult_const<<<blockSize, numBlocks>>>(Ds->n, minusone, d_s);
+    mult_const<<<numBlocks, blockSize>>>(Ds->n, minusone, d_s);
   }
   //  Math operations - happens every iteration
   numBlocks = (Ds->n + blockSize - 1) / blockSize;
   cudaMemcpy(d_yd, d_s, sizeof(double) * (Ds->m), cudaMemcpyDeviceToDevice);
-  vec_scale<<<blockSize, numBlocks>>>(Ds->n, d_yd, Ds_a);
-  add_vecs<<<blockSize, numBlocks>>>(Ds->n, d_yd, minusone, d_rs);
+  vec_scale<<<numBlocks, blockSize>>>(Ds->n, d_yd, Ds_a);
+  add_vecs<<<numBlocks, blockSize>>>(Ds->n, d_yd, minusone, d_rs);
 #if 0 
   cudaMemcpy(h_yd, d_yd, sizeof(double)*(JD->n), cudaMemcpyDeviceToHost);
   for (int i=(JD->n)-10; i<JD->n; i++){
@@ -911,6 +947,9 @@ int main(int argc, char* argv[])
      printf("Column %d, value %f\n", JCt_ja_h[j], JCt_a_h[j]);
     }
   }
+  free(JCt_a_h);
+  free(JCt_ia_h);
+  free(JCt_ja_h);
 #endif
 #if 0
   cudaMemcpy(h_y, d_y, sizeof(double)*(JC->n), cudaMemcpyDeviceToHost);
@@ -1019,7 +1058,7 @@ int main(int argc, char* argv[])
   cudaFree(bufferJC);
   cudaFree(bufferJC2);
   cudaFree(max_d);
-  cudaFree(max_h);
+  free(max_h);
   cudaFree(scale);
   cudaFree(d_perm);
   cudaFree(drev_perm);
