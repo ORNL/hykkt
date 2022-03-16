@@ -14,21 +14,21 @@ do
     echo
       echo "reading matrix: $i";
         #  echo "reading H"
-          hfile="/people/rege393/Hybrid_dev/mats/a25k/block_H_matrix_ACTIVSg25k_AC_$i.mtx"
+          hfile="mats/a25k/block_H_matrix_ACTIVSg25k_AC_$i.mtx"
         #  echo "reading Ds"
-          Dsfile="/people/rege393/Hybrid_dev/mats/a25k/block_Dd_matrix_ACTIVSg25k_AC_$i.mtx"
+          Dsfile="mats/a25k/block_Dd_matrix_ACTIVSg25k_AC_$i.mtx"
       #  echo "reading jc"
-          jcfile="/people/rege393/Hybrid_dev/mats/a25k/block_J_matrix_ACTIVSg25k_AC_$i.mtx"
+          jcfile="mats/a25k/block_J_matrix_ACTIVSg25k_AC_$i.mtx"
       #  echo "reading jd"
-          jdfile="/people/rege393/Hybrid_dev/mats/a25k/block_Jd_matrix_ACTIVSg25k_AC_$i.mtx"
+          jdfile="mats/a25k/block_Jd_matrix_ACTIVSg25k_AC_$i.mtx"
        #   echo "reading rx"
-          rxfile="/people/rege393/Hybrid_dev/mats/a25k/block_rx_ACTIVSg25k_AC_$i.mtx"
+          rxfile="mats/a25k/block_rx_ACTIVSg25k_AC_$i.mtx"
         #  echo "reading rs"
-          rsfile="/people/rege393/Hybrid_dev/mats/a25k/block_rs_ACTIVSg25k_AC_$i.mtx"
+          rsfile="mats/a25k/block_rs_ACTIVSg25k_AC_$i.mtx"
          # echo "reading ry"
-          ryfile="/people/rege393/Hybrid_dev/mats/a25k/block_ry_ACTIVSg25k_AC_$i.mtx"
+          ryfile="mats/a25k/block_ry_ACTIVSg25k_AC_$i.mtx"
         #  echo "reading ryd"
-          rydfile="/people/rege393/Hybrid_dev/mats/a25k/block_ryd_ACTIVSg25k_AC_$i.mtx"
+          rydfile="mats/a25k/block_ryd_ACTIVSg25k_AC_$i.mtx"
         #  echo "reading permutation"
       #    permfile="/people/rege393/Hybrid_dev/perm_test/permutation.mtx"
        #   echo "reading permuted and scaled matrices"
@@ -37,7 +37,7 @@ do
   #        permHfile="/people/rege393/Hybrid_dev/perm_test/perm_H_ACTIVSg200_AC_09.mtx"
 
          
-        srun ./hybrid_solver $hfile $Dsfile $jcfile $jdfile $rxfile $rsfile $ryfile $rydfile 3 1000000.0
+        srun ./hybrid_solver $hfile $Dsfile $jcfile $jdfile $rxfile $rsfile $ryfile $rydfile 2 1000000.0
         #$permfile $permJfile $permJtfile $permHfile
       done 
 

@@ -14,30 +14,30 @@ do
     echo
       echo "reading matrix: $i";
         #  echo "reading H"
-          hfile="/people/rege393/Hybrid_dev/mats/a2000/block_H_matrix_ACTIVSg2000_AC_$i.mtx"
+          #hfile="/people/rege393/Hybrid_dev/mats/a2000/block_H_matrix_ACTIVSg2000_AC_$i.mtx"
+          hfile="mats/a2000/block_H_matrix_ACTIVSg2000_AC_$i.mtx"
         #  echo "reading Ds"
-          Dsfile="/people/rege393/Hybrid_dev/mats/a2000/block_Dd_matrix_ACTIVSg2000_AC_$i.mtx"
+          Dsfile="mats/a2000/block_Dd_matrix_ACTIVSg2000_AC_$i.mtx"
       #  echo "reading jc"
-          jcfile="/people/rege393/Hybrid_dev/mats/a2000/block_J_matrix_ACTIVSg2000_AC_$i.mtx"
+          jcfile="mats/a2000/block_J_matrix_ACTIVSg2000_AC_$i.mtx"
       #  echo "reading jd"
-          jdfile="/people/rege393/Hybrid_dev/mats/a2000/block_Jd_matrix_ACTIVSg2000_AC_$i.mtx"
+          jdfile="mats/a2000/block_Jd_matrix_ACTIVSg2000_AC_$i.mtx"
        #   echo "reading rx"
-          rxfile="/people/rege393/Hybrid_dev/mats/a2000/block_rx_ACTIVSg2000_AC_$i.mtx"
+          rxfile="mats/a2000/block_rx_ACTIVSg2000_AC_$i.mtx"
         #  echo "reading rs"
-          rsfile="/people/rege393/Hybrid_dev/mats/a2000/block_rs_ACTIVSg2000_AC_$i.mtx"
+          rsfile="mats/a2000/block_rs_ACTIVSg2000_AC_$i.mtx"
          # echo "reading ry"
-          ryfile="/people/rege393/Hybrid_dev/mats/a2000/block_ry_ACTIVSg2000_AC_$i.mtx"
+          ryfile="mats/a2000/block_ry_ACTIVSg2000_AC_$i.mtx"
         #  echo "reading ryd"
-          rydfile="/people/rege393/Hybrid_dev/mats/a2000/block_ryd_ACTIVSg2000_AC_$i.mtx"
+          rydfile="mats/a2000/block_ryd_ACTIVSg2000_AC_$i.mtx"
         #  echo "reading permutation"
-          permfile="/people/rege393/Hybrid_dev/perm_test/permutation2000.mtx"
+       #   permfile="/people/rege393/Hybrid_dev/perm_test/permutation2000.mtx"
        #   echo "reading permuted and scaled matrices"
 #          permJtfile="/people/rege393/Hybrid_dev/perm_test/perm_Jt_ACTIVSg200_AC_09.mtx"
  #         permJfile="/people/rege393/Hybrid_dev/perm_test/perm_J_ACTIVSg200_AC_09.mtx"
   #        permHfile="/people/rege393/Hybrid_dev/perm_test/perm_H_ACTIVSg200_AC_09.mtx"
-
          
-        srun cuda-memcheck ./hybrid_solver $hfile $Dsfile $jcfile $jdfile $rxfile $rsfile $ryfile $rydfile 3 10000.0 #$permfile 
+        srun ./hybrid_solver $hfile $Dsfile $jcfile $jdfile $rxfile $rsfile $ryfile $rydfile 3 10000.0 #$permfile 
         #$permJfile $permJtfile $permHfile
       done 
 
