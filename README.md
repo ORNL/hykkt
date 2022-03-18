@@ -23,6 +23,14 @@ where the data starts in the matrix files. The 10th is gamma. Increasing gamma
 improves CG convergence, but makes the problem more ill-conditioned and the 
 original solution recovered may be of worse quality.
 
+To test Ruiz Scaling and Permutation independently you can run
+```
+./Ruiz_compile_run 
+perm_compile_run
+```
+respectively. Ruiz scaling requires a GPU but the part of the permutation
+tested does not (everything except mapping the values). The final part is the
+only part that is on the GPU and happens every iteration, but it is trivial.
 ## Support
 Email Shaked Regev at sregev@stanford.edu or submit an issue
 

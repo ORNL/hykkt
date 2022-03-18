@@ -3,7 +3,7 @@
 #include "permcheck.cu"
 int main(int argc, char* argv[])
 {
-  int n = 4, nnz = 9;
+  int n = 4;
   int A_rows[5]    = {0, 2, 5, 7, 9};
   int A_cols[9]    = {0, 2, 0, 1, 2, 1, 2, 1, 3};
   int Aprc_rows[5] = {0, 2, 4, 6, 9};
@@ -39,6 +39,8 @@ int main(int argc, char* argv[])
   }
   if(flagrc)
     printf("RC permute failed\n");
+  else
+    printf("RC permute passed\n");
   make_vec_map_r(n, A_rows, A_cols, perm, B_rows, B_cols, perm_map);
   printf("Comparing R permutation\n");
   for(int i = 0; i < n; i++)
@@ -59,6 +61,8 @@ int main(int argc, char* argv[])
   }
   if(flagr)
     printf("R permute failed\n");
+  else
+    printf("R permute passed\n");
   make_vec_map_c(n, A_rows, A_cols, rev_perm, B_cols, perm_map);
   printf("Comparing C permutation\n");
   for(int i = 0; i < n; i++)
@@ -79,5 +83,7 @@ int main(int argc, char* argv[])
   }
   if(flagc)
     printf("C permute failed\n");
+  else
+    printf("C permute passed\n");
   return flagrc + flagr + flagc;
 }
