@@ -1,3 +1,30 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <cusolver_common.h>
+#include <cuda_runtime.h>
+#include <cusparse.h>
+#include <cublas_v2.h>
+#include <sys/time.h>
+#include <algorithm>
+#include "cusolverSp.h"
+#include <cusolverSp_LOWLEVEL_PREVIEW.h>
+#include <cusolverRf.h>
+
+/*
+void eq3_to_eq4(int numBlocks, int blockSize, cusparseSpMatDescr_t matJDs,
+    int JDn, int JDm, int JDnnz, double* JD_a, int* JD_ia, int* JD_ja,
+    double* JD_as, double* d_ryd, double* d_ryd_s, double* Ds_a,
+    double one, double zero, double minusone,
+    int nnzHtil, double* Htil_vals, int* Htil_rows, int* Htil_cols){
+numBlocks = (JDn + 1 + blockSize - 1) / blockSize;
+row_scale<<<numBlocks, blockSize>>>(JDn, JD_a, JD_ia, JD_ja, JD_as, d_ryd, d_ryd_s, Ds_a);
+cusparseCreateCsr(&matJDs, JDn, JDm, JDnnz, JD_ia, JD_ja, JD_as, CUSPARSE_INDEX_32I,
+              CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F);
+
+
+}
+*/
+
 /** Brief: Solves the equation JC H^{-1} JC^T x = b
   via Chronopoulous Gear conjugate gradient 
   Input: JC and JCt in csr format, factorized H,
@@ -7,7 +34,6 @@
   Output: x0 is changed to the solution to JH^{-1}J^Tx=b
   Transpose Jc as we will need it repeatedly
 */
-
 void schur_cg(cusparseSpMatDescr_t matJC, cusparseSpMatDescr_t matJCt, csrcholInfo_t dH, double* x0,
   double* b, const int itmax, const double tol, int n, int m, int nnz, cusparseMatDescr_t descrA,
   void* buffer_gpu, cusparseHandle_t handle, cusolverSpHandle_t handle_cusolver,

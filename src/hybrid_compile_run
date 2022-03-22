@@ -9,17 +9,5 @@ if [ $1 = "test2" ]
 then
   runfile="hybrid_batch_2000"
 fi
-if [ $1 = "test3" ]
-then
-  runfile="hybrid_batch_10k"
-fi
-if [ $1 = "test4" ]
-then
-  runfile="hybrid_batch_25k"
-fi
-if [ $1 = "test5" ]
-then
-  runfile="hybrid_batch_70k"
-fi
 nvcc -ccbin=gcc -Xcompiler -g -G -gencode arch=compute_80,code=sm_80 -DCUDA11 -o hybrid_solver -lcusparse -lcusolver -lcublas -lrt -lgfortran cuSolver_driver_hybrid.cu && \
   sbatch $runfile
