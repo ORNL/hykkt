@@ -11,8 +11,8 @@ RM = rm
 .PHONY: clean
 
 hybrid_solver: $(OBJS) $(NVCC) -o hybrid_solver $(NVCC_FLAGS) $(OBJS)
-run_perm: $(OBJS) $(NVCC) -o run_perm $(NVCC_FLAGS) $(OBJS)
-run_Ruiz: $(OBJS) $(NVCC) -o run_Ruiz $(NVCC_FLAGS) $(OBJS)
+run_perm: $(P_OBJS) $(NVCC) -o run_perm $(NVCC_FLAGS) $(P_OBJS)
+run_Ruiz: $(R_OBJS) $(NVCC) -o run_Ruiz $(NVCC_FLAGS) $(R_OBJS)
 
 %.o : %.cu
 		$(NVCC) $(NVCC_FLAGS) -c $< 
