@@ -34,10 +34,10 @@ cusparseCreateCsr(&matJDs, JDn, JDm, JDnnz, JD_ia, JD_ja, JD_as, CUSPARSE_INDEX_
   Output: x0 is changed to the solution to JH^{-1}J^Tx=b
   Transpose Jc as we will need it repeatedly
 */
-void schur_cg(cusparseSpMatDescr_t matJC, cusparseSpMatDescr_t matJCt, csrcholInfo_t dH, double* x0,
-  double* b, const int itmax, const double tol, int n, int m, int nnz, cusparseMatDescr_t descrA,
-  void* buffer_gpu, cusparseHandle_t handle, cusolverSpHandle_t handle_cusolver,
-  cublasHandle_t handle_cublas)
+void schur_cg(cusparseSpMatDescr_t matJC, cusparseSpMatDescr_t matJCt,
+    csrcholInfo_t dH, double* x0, double* b, const int itmax, const double tol,
+    int n, int m, int nnz, void* buffer_gpu, cusparseHandle_t handle, 
+    cusolverSpHandle_t handle_cusolver, cublasHandle_t handle_cublas)
 {
   // Start of block - CG setup
   // create constants for multiplication and allocation - happens once

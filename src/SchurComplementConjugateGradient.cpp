@@ -23,28 +23,24 @@ public:
   int allocate();
   int setup();
   int solve();
-  void set_solver_tolerance(double tol);
-  void set_solver_itmax(double itmax);
+  void set_solver_tolerance(double tol)
+  {
+    tol_ = tol;
+  }
+  void set_solver_itmax(double itmax)
+  {
+    itmax_ = itmax;
+  }
+...
 
 private:
   // member variables
   int itmax_=100, n_, m_, nnz_;
   double tol_=1e-12;
-
-  cusparseSpMatDescr_t matJC_; 
-  cusparseSpMatDescr_t matJCt_; 
-  csrcholInfo_t dH_;
-  double* x0;
-  double* b;
-  void* buffer_gpu_;
-
   cusolverSpHandle_t handle_cusolver_;
   cusolverHandle_t handle;
   cublasHandle_t handle_cublas;
 
-  double               one      = 1.0;
-  double               zero     = 0.0;
-  double               minusone = -1.0;
 };
 
 } // namespace hykkt

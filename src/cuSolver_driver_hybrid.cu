@@ -803,7 +803,7 @@ int main(int argc, char* argv[])
 #endif
   // Start of block - conjugate gradient on eq (7)
   // Solving eq (7) via CG - happens every iteration
-  schur_cg(matJCp, matJCtp, info, d_y, d_schur, itmax, tol, JC->n, JC->m, JC->nnz, descrA,
+  schur_cg(matJCp, matJCtp, info, d_y, d_schur, itmax, tol, JC->n, JC->m, JC->nnz,
     buffer_gpu, handle, handle_cusolver, handle_cublas);
 #if 0
   cudaMemcpy(h_y, d_y, sizeof(double)*(JC->n), cudaMemcpyDeviceToHost);
