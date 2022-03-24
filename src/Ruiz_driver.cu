@@ -17,8 +17,8 @@
 #include <string>
 #include <tgmath.h>
 #include <math.h>
-#include "Ruiz_scaling.cu"
-#include "adapted_Ruiz_scaling.cu"
+#include <ruiz_scaling.hpp>
+
 #define  ruiz_its 2
 #define tol 1e-8
 
