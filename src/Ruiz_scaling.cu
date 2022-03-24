@@ -1,3 +1,4 @@
+#include <ruiz_scaling.hpp>
 #define ruiz_its 2
 /*
 @brief: adds a constant to an array
