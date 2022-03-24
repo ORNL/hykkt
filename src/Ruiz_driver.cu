@@ -276,7 +276,11 @@ for(i=0;i<ruiz_its;i++){
     printf("Incorrect scaling factor max_h[3*n/2-1] = %32.32g\n", max_h[3*n/2-1]);
   }
   if (fails==0) printf("All tests passed\n");
-  else printf("%d tests failed\n",fails);
+  else 
+  {
+    printf("%d tests failed\n",fails);
+    return 1;
+  }
 #if 0 //printing
   printf("printing A\n");
   for(i=0; i<n; i++)
