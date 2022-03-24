@@ -6,12 +6,11 @@ set(PERM_SRC
   permcheck.cu)
 
 set(RUIZ_SRC
-  adapted_Ruiz_scaling.cu
   Ruiz_scaling.cu)
 
-# set_source_files_properties(${HYBRID_SOLVER_SRC} PROPERTIES LANGUAGE CUDA)
-# 
-# set_source_files_properties(${PERM_SRC} PROPERTIES LANGUAGE CUDA)
+set_source_files_properties(${PERM_SRC} PROPERTIES LANGUAGE CUDA)
+add_library(permutation OBJECT ${PERM_SRC})
+set_target_properties(permutation PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 set_source_files_properties(${RUIZ_SRC} PROPERTIES LANGUAGE CUDA)
 add_library(ruiz_scaling OBJECT ${RUIZ_SRC})
@@ -24,6 +23,11 @@ set_target_properties(ruiz_scaling PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 # add_executable(perm_driver perm_driver.cu)
 # target_sources(perm_driver PRIVATE ${HYBRID_SOLVER_SRC} ${PERM_SRC} ${RUIZ_SRC})
 # # target_link_libraries(perm_driver perm_check)
+
+add_executable(perm_driver perm_driver.cu)
+target_link_libraries(perm_driver cuda_libs permutation)
+add_test(NAME permutation
+         COMMAND $<TARGET_FILE:perm_driver>)
 
 add_executable(ruiz_driver Ruiz_driver.cu)
 target_link_libraries(ruiz_driver cuda_libs ruiz_scaling)

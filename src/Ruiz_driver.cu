@@ -19,7 +19,7 @@
 #include <math.h>
 #include <ruiz_scaling.hpp>
 
-#define  ruiz_its 2
+#define ruiz_its 2
 #define tol 1e-8
 
 typedef struct {

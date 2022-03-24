@@ -16,7 +16,7 @@ cd src
 ./hybrid_compile_run test$i //for example
 ./hybrid_compile_run test2
 ```
-Where ```$i = {1,2,3,4,5}``` represents test cases of increasing size.
+Where ```$i = {1,2}``` represents test cases of increasing size.
 This calls the scripts ```hybrid_batch_$x```. The scripts also show how one
 would call the solver on a general problem. The 9th argument is the line number
 where the data starts in the matrix files. The 10th is gamma. Increasing gamma
@@ -26,7 +26,7 @@ original solution recovered may be of worse quality.
 To test Ruiz Scaling and Permutation independently you can run
 ```
 ./Ruiz_compile_run 
-perm_compile_run
+./perm_compile_run
 ```
 respectively. Ruiz scaling requires a GPU but the part of the permutation
 tested does not (everything except mapping the values). The final part is the

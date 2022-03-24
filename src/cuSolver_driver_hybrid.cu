@@ -23,7 +23,6 @@
 #include <memory>
 #include <string>
 #include "Ruiz_scaling.cu"
-#include "adapted_Ruiz_scaling.cu"
 #include "permcheck.cu"
 #include "input_functions.cu"
 #include "schur_complement_cg.cu"
@@ -969,12 +968,6 @@ int main(int argc, char* argv[])
   // Calculate final relative norm
   norm_resx_sq+=norm_resy_sq;
   double norm_res = sqrt(norm_resx_sq)/sqrt(norm_rx_sq);
-  if (norm_res<norm_tol){
-    printf("Residual test passed ");
-  }
-  else{
-    printf("Residual test failed ");
-  }
   printf("||Ax-b||/||b|| = %32.32g\n", norm_res);
   //  Start of block - free memory
   free(rx);
@@ -1089,5 +1082,12 @@ int main(int argc, char* argv[])
   gettimeofday(&t2, 0);
   timeIO = (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
   printf("time for IO+API+error ev(ms). : %16.16f\n", timeIO);
+  if (norm_res<norm_tol){
+    printf("Residual test passed ");
+  }
+  else{
+    printf("Residual test failed ");
+    return 1;
+  }
   return 0;
 }
