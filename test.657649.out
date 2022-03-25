@@ -1,0 +1,114 @@
+-- The C compiler identification is GNU 7.5.0
+-- The CXX compiler identification is GNU 7.5.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /share/apps/gcc/7.5/bin/gcc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /share/apps/gcc/7.5/bin/g++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- The CUDA compiler identification is NVIDIA 11.1.105
+-- Detecting CUDA compiler ABI info
+-- Detecting CUDA compiler ABI info - done
+-- Check for working CUDA compiler: /share/apps/cuda/11.1/bin/nvcc - skipped
+-- Detecting CUDA compile features
+-- Detecting CUDA compile features - done
+-- Looking for pthread.h
+-- Looking for pthread.h - found
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Failed
+-- Looking for pthread_create in pthreads
+-- Looking for pthread_create in pthreads - not found
+-- Looking for pthread_create in pthread
+-- Looking for pthread_create in pthread - found
+-- Found Threads: TRUE  
+-- Found CUDA: /share/apps/cuda/11.1 (found version "11.1") 
+-- Found CUDAToolkit: /share/apps/cuda/11.1/include (found version "11.1.105") 
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /people/rege393/hykkt/build
+Scanning dependencies of target hybrid
+[  6%] Building CUDA object src/CMakeFiles/hybrid.dir/input_functions.cu.o
+[ 13%] Building CUDA object src/CMakeFiles/hybrid.dir/schur_complement_cg.cu.o
+[ 20%] Building CUDA object src/CMakeFiles/hybrid.dir/permcheck.cu.o
+[ 26%] Building CUDA object src/CMakeFiles/hybrid.dir/Ruiz_scaling.cu.o
+[ 26%] Built target hybrid
+Scanning dependencies of target hybrid_driver
+[ 33%] Building CUDA object src/CMakeFiles/hybrid_driver.dir/cuSolver_driver_hybrid.cu.o
+[ 40%] Linking CUDA device code CMakeFiles/hybrid_driver.dir/cmake_device_link.o
+[ 46%] Linking CUDA executable hybrid_driver
+[ 46%] Built target hybrid_driver
+Scanning dependencies of target permutation
+[ 53%] Building CUDA object src/CMakeFiles/permutation.dir/permcheck.cu.o
+[ 53%] Built target permutation
+Scanning dependencies of target perm_driver
+[ 60%] Building CUDA object src/CMakeFiles/perm_driver.dir/perm_driver.cu.o
+[ 66%] Linking CUDA device code CMakeFiles/perm_driver.dir/cmake_device_link.o
+[ 73%] Linking CUDA executable perm_driver
+[ 73%] Built target perm_driver
+Scanning dependencies of target ruiz_scaling
+[ 80%] Building CUDA object src/CMakeFiles/ruiz_scaling.dir/Ruiz_scaling.cu.o
+[ 80%] Built target ruiz_scaling
+Scanning dependencies of target ruiz_driver
+[ 86%] Building CUDA object src/CMakeFiles/ruiz_driver.dir/Ruiz_driver.cu.o
+[ 93%] Linking CUDA device code CMakeFiles/ruiz_driver.dir/cmake_device_link.o
+[100%] Linking CUDA executable ruiz_driver
+[100%] Built target ruiz_driver
+UpdateCTestConfiguration  from :/people/rege393/hykkt/build/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/people/rege393/hykkt/build/DartConfiguration.tcl
+Test project /people/rege393/hykkt/build
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 1
+    Start 1: permutation
+
+1: Test command: /people/rege393/hykkt/build/src/perm_driver
+1: Test timeout computed to be: 10000000
+1: Comparing RC permutation
+1: RC permute passed
+1: Comparing R permutation
+1: R permute passed
+1: Comparing C permutation
+1: C permute passed
+1/4 Test #1: permutation ......................   Passed    0.01 sec
+test 2
+    Start 2: ruiz_scaling_test
+
+2: Test command: /people/rege393/hykkt/build/src/ruiz_driver
+2: Test timeout computed to be: 10000000
+2: Transpose A 
+2: Buffer allocation status 0
+2: Buffer size is 9231
+2: A dimensions are 1024 by 1024 with 2047 nnz
+2: tanspose status 0
+2: All tests passed
+2/4 Test #2: ruiz_scaling_test ................   Passed    1.72 sec
+test 3
+    Start 3: hybrid1
+
+3: Test command: /people/rege393/hykkt/build/src/hybrid_driver "mats/a200/block_H_matrix_ACTIVSg200_AC_09.mtx" "mats/a200/block_Dd_matrix_ACTIVSg200_AC_09.mtx" "mats/a200/block_J_matrix_ACTIVSg200_AC_09.mtx" "mats/a200/block_Jd_matrix_ACTIVSg200_AC_09.mtx" "mats/a200/block_rx_ACTIVSg200_AC_09.mtx" "mats/a200/block_rs_ACTIVSg200_AC_09.mtx" "mats/a200/block_ry_ACTIVSg200_AC_09.mtx" "mats/a200/block_ryd_ACTIVSg200_AC_09.mtx" "2" "10000.0"
+3: Test timeout computed to be: 10000000
+3: hybrid_driver: /people/rege393/hykkt/src/input_functions.cu:43: void read_mm_file_into_coo(const char*, mmatrix*, int): Assertion `fpm != __null' failed.
+3/4 Test #3: hybrid1 ..........................Subprocess aborted***Exception:   6.66 sec
+test 4
+    Start 4: hybrid2
+
+4: Test command: /people/rege393/hykkt/build/src/hybrid_driver "mats/a2000/block_H_matrix_ACTIVSg2000_AC_09.mtx" "mats/a2000/block_Dd_matrix_ACTIVSg2000_AC_09.mtx" "mats/a2000/block_J_matrix_ACTIVSg2000_AC_09.mtx" "mats/a2000/block_Jd_matrix_ACTIVSg2000_AC_09.mtx" "mats/a2000/block_rx_ACTIVSg2000_AC_09.mtx" "mats/a2000/block_rs_ACTIVSg2000_AC_09.mtx" "mats/a2000/block_ry_ACTIVSg2000_AC_09.mtx" "mats/a2000/block_ryd_ACTIVSg2000_AC_09.mtx" "3" "10000.0"
+4: Test timeout computed to be: 10000000
+4: hybrid_driver: /people/rege393/hykkt/src/input_functions.cu:43: void read_mm_file_into_coo(const char*, mmatrix*, int): Assertion `fpm != __null' failed.
+4/4 Test #4: hybrid2 ..........................Subprocess aborted***Exception:   1.71 sec
+
+50% tests passed, 2 tests failed out of 4
+
+Total Test time (real) =  10.13 sec
+
+The following tests FAILED:
+	  3 - hybrid1 (Subprocess aborted)
+	  4 - hybrid2 (Subprocess aborted)

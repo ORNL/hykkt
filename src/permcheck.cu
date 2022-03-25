@@ -1,10 +1,7 @@
-/* written by SR based on a code by KS
-         How to compile:
-         nvcc -lcusparse -lcusolver -lcublas cuSolver_driver_chol.cu
- */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "permcheck.hpp"
 /*
 @brief: maps the values in old_val to new_val based on perm
 

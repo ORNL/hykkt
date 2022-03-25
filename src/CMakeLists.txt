@@ -1,4 +1,4 @@
-set(HYBRID_SOLVER_SRC
+set(HYBRID_SRC
   input_functions.cu
   schur_complement_cg.cu)
 
@@ -7,6 +7,32 @@ set(PERM_SRC
 
 set(RUIZ_SRC
   Ruiz_scaling.cu)
+
+set(test1_args
+  mats/a200/block_H_matrix_ACTIVSg200_AC_09.mtx
+  mats/a200/block_Dd_matrix_ACTIVSg200_AC_09.mtx
+  mats/a200/block_J_matrix_ACTIVSg200_AC_09.mtx
+  mats/a200/block_Jd_matrix_ACTIVSg200_AC_09.mtx
+  mats/a200/block_rx_ACTIVSg200_AC_09.mtx
+  mats/a200/block_rs_ACTIVSg200_AC_09.mtx
+  mats/a200/block_ry_ACTIVSg200_AC_09.mtx
+  mats/a200/block_ryd_ACTIVSg200_AC_09.mtx
+  2 10000.0)
+
+set(test2_args
+  mats/a2000/block_H_matrix_ACTIVSg2000_AC_09.mtx
+  mats/a2000/block_Dd_matrix_ACTIVSg2000_AC_09.mtx
+  mats/a2000/block_J_matrix_ACTIVSg2000_AC_09.mtx
+  mats/a2000/block_Jd_matrix_ACTIVSg2000_AC_09.mtx
+  mats/a2000/block_rx_ACTIVSg2000_AC_09.mtx
+  mats/a2000/block_rs_ACTIVSg2000_AC_09.mtx
+  mats/a2000/block_ry_ACTIVSg2000_AC_09.mtx
+  mats/a2000/block_ryd_ACTIVSg2000_AC_09.mtx
+  3 10000.0)
+
+set_source_files_properties(${HYBRID_SRC} ${PERM_SRC} ${RUIZ_SRC} PROPERTIES LANGUAGE CUDA)
+add_library(hybrid OBJECT ${HYBRID_SRC} ${PERM_SRC} ${RUIZ_SRC})
+set_target_properties(hybrid PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 set_source_files_properties(${PERM_SRC} PROPERTIES LANGUAGE CUDA)
 add_library(permutation OBJECT ${PERM_SRC})
@@ -34,3 +60,7 @@ target_link_libraries(ruiz_driver cuda_libs ruiz_scaling)
 add_test(NAME ruiz_scaling_test
          COMMAND $<TARGET_FILE:ruiz_driver>)
 
+add_executable(hybrid_driver cuSolver_driver_hybrid.cu)
+target_link_libraries(hybrid_driver cuda_libs hybrid)
+add_test(NAME hybrid1 COMMAND $<TARGET_FILE:hybrid_driver> ${test1_args})
+add_test(NAME hybrid2 COMMAND $<TARGET_FILE:hybrid_driver> ${test2_args})

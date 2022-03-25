@@ -22,12 +22,13 @@
 #include <iostream>
 #include <memory>
 #include <string>
-#include "Ruiz_scaling.cu"
-#include "permcheck.cu"
-#include "input_functions.cu"
-#include "schur_complement_cg.cu"
+#include "ruiz_scaling.hpp"
+#include "permcheck.hpp"
+#include "input_functions.hpp"
+#include "schur_complement_cg.hpp"
 #define tol 1e-12
 #define norm_tol 1e-2
+#define ruiz_its 2
 // this version reads NORMAL mtx matrices; dont have to be sorted.
 int main(int argc, char* argv[])
 {

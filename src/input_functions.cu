@@ -21,13 +21,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
-// KS: the sole purpose of this is to make sorting somewhat easier because I am too lazy to write a
-// custom q sort
-struct indexPlusValue
-{
-  double value;
-  int    idx;
-};
+#include <input_functions.hpp>
 
 static int indexPlusValue_comp(const void* a, const void* b)
 {
@@ -36,21 +30,7 @@ static int indexPlusValue_comp(const void* a, const void* b)
 
   return da->idx < db->idx ? -1 : da->idx > db->idx;
 }
-typedef struct
-{
-  int*    coo_rows;
-  int*    coo_cols;
-  double* coo_vals;
 
-  int*    csr_ia;
-  int*    csr_ja;
-  double* csr_vals;
-
-  int n;
-  int m;
-  int nnz;
-  int nnz_unpacked;
-} mmatrix;
 /*
 Brief: reads a matrix stored in matrixFileName into a structure A of COO format
    */

@@ -20,7 +20,8 @@ __global__ void vec_scale(int, double*, double*);
 __global__ void concatenate(int, int, int, int, double*, int*, int*,
   double*, int*, int*, double*, int*, int*);
 
-__global__ void row_scale(int*, double*, double*, double*, int);
+__global__ void row_scale(int, double*, int*, int*, double*, double*,
+    double*, double*);
 
 __global__ void diag_scale(int, int, double*, int*, int*, double*, int*,
   int*, double*, double*, double*, int);

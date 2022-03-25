@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "permcheck.cu"
+#include "permcheck.hpp"
 int main(int argc, char* argv[])
 {
   int n = 4;

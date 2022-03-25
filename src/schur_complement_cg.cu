@@ -9,7 +9,7 @@
 #include "cusolverSp.h"
 #include <cusolverSp_LOWLEVEL_PREVIEW.h>
 #include <cusolverRf.h>
-
+#include <schur_complement_cg.hpp>
 /*
 void eq3_to_eq4(int numBlocks, int blockSize, cusparseSpMatDescr_t matJDs,
     int JDn, int JDm, int JDnnz, double* JD_a, int* JD_ia, int* JD_ja,
