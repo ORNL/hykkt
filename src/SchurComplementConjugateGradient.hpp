@@ -45,6 +45,22 @@ private:
   double               one      = 1.0;
   double               zero     = 0.0;
   double               minusone = -1.0;
+
+  cusparseDnVecDescr_t vecx     = NULL;
+  cusparseDnVecDescr_t vecb = NULL;
+  cusparseDnVecDescr_t vecy = NULL;
+  cusparseDnVecDescr_t vecz = NULL;
+  cusparseDnVecDescr_t vecr = NULL;
+  cusparseDnVecDescr_t vecw = NULL;
+  cusparseDnVecDescr_t vecp = NULL;
+  cusparseDnVecDescr_t vecs = NULL;
+ 
+  double gam_i, beta = 0, delta, alpha, minalpha, gam_i1;
+  double* ycp, *y, *z, *r, *p, *s, *w;
+  
+  double timeIO = 0.0;
+  struct timeval t1, t2;
+
 };
 
 } // namespace hykkt

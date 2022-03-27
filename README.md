@@ -10,6 +10,14 @@ schur complement.
 ## Installation
 No installation is required
 
+## make
+From the root directory run
+```
+source buildsystem/deception-env.sh // or alternatively load these modules
+./buildsystem/build.sh // to make
+sbatch deception_test.sbatch // to run, or use as template for batch script
+```
+
 ## Usage
 ```
 cd src

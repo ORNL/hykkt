@@ -1,3 +1,9 @@
+set(a200DIR 
+  mats/a200/)
+
+set(a2000DIR 
+  mats/a2000/)
+
 set(HYBRID_SRC
   input_functions.cu
   schur_complement_cg.cu)
@@ -9,26 +15,28 @@ set(RUIZ_SRC
   Ruiz_scaling.cu)
 
 set(test1_args
-  mats/a200/block_H_matrix_ACTIVSg200_AC_09.mtx
-  mats/a200/block_Dd_matrix_ACTIVSg200_AC_09.mtx
-  mats/a200/block_J_matrix_ACTIVSg200_AC_09.mtx
-  mats/a200/block_Jd_matrix_ACTIVSg200_AC_09.mtx
-  mats/a200/block_rx_ACTIVSg200_AC_09.mtx
-  mats/a200/block_rs_ACTIVSg200_AC_09.mtx
-  mats/a200/block_ry_ACTIVSg200_AC_09.mtx
-  mats/a200/block_ryd_ACTIVSg200_AC_09.mtx
-  2 10000.0)
+  ${a200DIR}/block_H_matrix_ACTIVSg200_AC_09.mtx
+  ${a200DIR}/block_Dd_matrix_ACTIVSg200_AC_09.mtx
+  ${a200DIR}/block_J_matrix_ACTIVSg200_AC_09.mtx
+  ${a200DIR}/block_Jd_matrix_ACTIVSg200_AC_09.mtx
+  ${a200DIR}/block_rx_ACTIVSg200_AC_09.mtx
+  ${a200DIR}/block_rs_ACTIVSg200_AC_09.mtx
+  ${a200DIR}/block_ry_ACTIVSg200_AC_09.mtx
+  ${a200DIR}/block_ryd_ACTIVSg200_AC_09.mtx
+  2
+  10000.0)
 
 set(test2_args
-  mats/a2000/block_H_matrix_ACTIVSg2000_AC_09.mtx
-  mats/a2000/block_Dd_matrix_ACTIVSg2000_AC_09.mtx
-  mats/a2000/block_J_matrix_ACTIVSg2000_AC_09.mtx
-  mats/a2000/block_Jd_matrix_ACTIVSg2000_AC_09.mtx
-  mats/a2000/block_rx_ACTIVSg2000_AC_09.mtx
-  mats/a2000/block_rs_ACTIVSg2000_AC_09.mtx
-  mats/a2000/block_ry_ACTIVSg2000_AC_09.mtx
-  mats/a2000/block_ryd_ACTIVSg2000_AC_09.mtx
-  3 10000.0)
+  ${a2000DIR}/block_H_matrix_ACTIVSg2000_AC_09.mtx
+  ${a2000DIR}/block_Dd_matrix_ACTIVSg2000_AC_09.mtx
+  ${a2000DIR}/block_J_matrix_ACTIVSg2000_AC_09.mtx
+  ${a2000DIR}/block_Jd_matrix_ACTIVSg2000_AC_09.mtx
+  ${a2000DIR}/block_rx_ACTIVSg2000_AC_09.mtx
+  ${a2000DIR}/block_rs_ACTIVSg2000_AC_09.mtx
+  ${a2000DIR}/block_ry_ACTIVSg2000_AC_09.mtx
+  ${a2000DIR}/block_ryd_ACTIVSg2000_AC_09.mtx
+  3 
+  10000.0)
 
 set_source_files_properties(${HYBRID_SRC} ${PERM_SRC} ${RUIZ_SRC} PROPERTIES LANGUAGE CUDA)
 add_library(hybrid OBJECT ${HYBRID_SRC} ${PERM_SRC} ${RUIZ_SRC})
