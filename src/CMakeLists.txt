@@ -40,15 +40,15 @@ set(test2_args
 
 set_source_files_properties(${HYBRID_SRC} ${PERM_SRC} ${RUIZ_SRC} PROPERTIES LANGUAGE CUDA)
 add_library(hybrid OBJECT ${HYBRID_SRC} ${PERM_SRC} ${RUIZ_SRC})
-set_target_properties(hybrid PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+#set_target_properties(hybrid PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 set_source_files_properties(${PERM_SRC} PROPERTIES LANGUAGE CUDA)
 add_library(permutation OBJECT ${PERM_SRC})
-set_target_properties(permutation PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+#set_target_properties(permutation PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 set_source_files_properties(${RUIZ_SRC} PROPERTIES LANGUAGE CUDA)
 add_library(ruiz_scaling OBJECT ${RUIZ_SRC})
-set_target_properties(ruiz_scaling PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+#set_target_properties(ruiz_scaling PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 # add_executable(cuSolver_driver cuSolver_driver_hybrid.cu)
 # target_sources(cuSolver_driver PRIVATE ${HYBRID_SOLVER_SRC} ${PERM_SRC} ${RUIZ_SRC})
@@ -57,6 +57,11 @@ set_target_properties(ruiz_scaling PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 # add_executable(perm_driver perm_driver.cu)
 # target_sources(perm_driver PRIVATE ${HYBRID_SOLVER_SRC} ${PERM_SRC} ${RUIZ_SRC})
 # # target_link_libraries(perm_driver perm_check)
+if(HYKKT_TEST_WITH_BSUB)
+  set(RUNCMD "jsrun" "-n" "1" "-g" "1")
+else()
+  set(RUNCMD "") # No special command is needed to run this program  
+endif()
 
 add_executable(perm_driver perm_driver.cu)
 target_link_libraries(perm_driver cuda_libs permutation)
