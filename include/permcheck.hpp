@@ -1,6 +1,8 @@
 #ifndef SCALE__H__
 #define SCALE__H__
 
+void fun_map_idx(int, int*, double*, double*);
+
 __global__ void map_idx(int, int*, double*, double*);
 
 void selection_sort2(int, int, int);

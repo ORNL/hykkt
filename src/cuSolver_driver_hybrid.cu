@@ -22,10 +22,11 @@
 #include <iostream>
 #include <memory>
 #include <string>
-#include "ruiz_scaling.hpp"
+#include "matrix_vector_ops.hpp"
 #include "permcheck.hpp"
 #include "input_functions.hpp"
 #include "schur_complement_cg.hpp"
+#include "SchurComplementConjugateGradient.hpp"
 #define tol 1e-12
 #define norm_tol 1e-2
 #define ruiz_its 2
@@ -35,7 +36,7 @@ int main(int argc, char* argv[])
   // Start of block: reading matrices from files and allocating structures for
   // them, to be replaced by HiOp structures
   struct timeval t1, t2;
-  double         timeIO = 0.0f;
+  double         timeIO = 0.0f, timeM = 0.0f;
   /*** cuda stuff ***/
   cusparseStatus_t status;
   cusparseHandle_t handle            = NULL;
@@ -213,10 +214,11 @@ int main(int argc, char* argv[])
   cudaMalloc((void**)&d_rx_til, H->n * sizeof(double));
   cudaMalloc((void**)&d_rs_til, Ds->n * sizeof(double));
   cudaMalloc((void**)&d_ryd_s, JD->n * sizeof(double));
-
+  gettimeofday(&t1, 0);
   cudaMemcpy(d_rx_til, d_rx, sizeof(double) * H->n, cudaMemcpyDeviceToDevice);
   cudaMemcpy(d_rs_til, d_rs, sizeof(double) * Ds->n, cudaMemcpyDeviceToDevice);
-
+  gettimeofday(&t2, 0);
+  timeM += (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
   cusparseDnVecDescr_t vec_d_ryd = NULL;
   cusparseCreateDnVec(&vec_d_ryd, JD->n, d_ryd, CUDA_R_64F);
   cusparseDnVecDescr_t vec_d_rs_til = NULL;
@@ -227,8 +229,6 @@ int main(int argc, char* argv[])
   cusparseDnVecDescr_t vec_d_rx_til = NULL;
   cusparseCreateDnVec(&vec_d_rx_til, H->n, d_rx_til, CUDA_R_64F);
   // Start of block: Setting up eq (4) from the paper
-  int blockSize = 512;
-  int numBlocks;
   // start products
   double                one      = 1.0;
   double                zero     = 0.0;
@@ -258,19 +258,25 @@ int main(int argc, char* argv[])
       &buffersize);
     cudaMalloc(&buffercsr, sizeof(char) * buffersize);
     // Applying the transpose to the matrix - done every iteration
+    gettimeofday(&t1, 0);
     cusparseCsr2cscEx2(handle, JD->n, JD->m, JD->nnz, JD_a, JD_ia, JD_ja, JDt_a, JDt_ia, JDt_ja,
       CUDA_R_64F, CUSPARSE_ACTION_NUMERIC, CUSPARSE_INDEX_BASE_ZERO, CUSPARSE_CSR2CSC_ALG1,
       buffercsr);
+    gettimeofday(&t2, 0);
+    timeM += (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
     cusparseCreateCsr(&matJDt, JD->m, JD->n, JD->nnz, JDt_ia, JDt_ja, JDt_a, CUSPARSE_INDEX_32I,
       CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F);
 
-    numBlocks = (JD->n + 1 + blockSize - 1) / blockSize;
     // math ops for eq (4) done at every iteration
-    row_scale<<<numBlocks, blockSize>>>(JD->n, JD_a, JD_ia, JD_ja, JD_as, d_ryd, d_ryd_s, Ds_a);
+    gettimeofday(&t1, 0);
+    fun_row_scale(JD->n, JD_a, JD_ia, JD_ja, JD_as, d_ryd, d_ryd_s, Ds_a);
+    gettimeofday(&t2, 0);
+    timeM += (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
     cusparseSpMatDescr_t matJDs = NULL;   //(except this part)
     cusparseCreateCsr(&matJDs, JD->n, JD->m, JD->nnz, JD_ia, JD_ja, JD_as, CUSPARSE_INDEX_32I,
       CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F);
-    add_vecs<<<numBlocks, blockSize>>>(JD->n, d_ryd_s, one, d_rs);
+    gettimeofday(&t1, 0);
+    fun_add_vecs(JD->n, d_ryd_s, one, d_rs);
     // create buffer for matvec - done once
     /*
       size_t bufferSize_rx = 0;
@@ -283,6 +289,8 @@ int main(int argc, char* argv[])
     // matvec done every iteration
     cusparseSpMV(handle, CUSPARSE_OPERATION_TRANSPOSE, &one, matJD, vec_d_ryd_s, &one, vec_d_rx_til,
       CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+    gettimeofday(&t2, 0);
+    timeM += (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
     // Compute H_til= H+J_d^T * D_s * J_d
     // Allocating for SPGEMM - done once
     cusparseSpMatDescr_t matJDtDxJD = NULL;
@@ -303,9 +311,12 @@ int main(int argc, char* argv[])
       CUSPARSE_SPGEMM_DEFAULT, spgemmDesc, &bufferSize4, NULL);
     cudaMalloc((void**)&dBuffer4, bufferSize4);
     // SPGEMM - done every iteration
+    gettimeofday(&t1, 0);
     cusparseSpGEMM_compute(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
       CUSPARSE_OPERATION_NON_TRANSPOSE, &one, matJDt, matJDs, &zero, matJDtDxJD, CUDA_R_64F,
       CUSPARSE_SPGEMM_DEFAULT, spgemmDesc, &bufferSize4, dBuffer4);
+    gettimeofday(&t2, 0);
+    timeM += (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
 
     // compute the intermediate product of A * B - happens once
     int64_t JDtDxJD_num_rows1, JDtDxJD_num_cols1, JDtDxJD_nnz1;
@@ -317,8 +328,11 @@ int main(int argc, char* argv[])
     cudaMalloc((void**)&JDtDxJD_vals, JDtDxJD_nnz1 * sizeof(double));
     // SPGEMM - happens every iteration
     cusparseCsrSetPointers(matJDtDxJD, JDtDxJD_rows, JDtDxJD_cols, JDtDxJD_vals);
+  gettimeofday(&t1, 0);
     cusparseSpGEMM_copy(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, CUSPARSE_OPERATION_NON_TRANSPOSE,
       &one, matJDt, matJDs, &zero, matJDtDxJD, CUDA_R_64F, CUSPARSE_SPGEMM_DEFAULT, spgemmDesc);
+  gettimeofday(&t2, 0);
+  timeM += (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
     /* It's time for the sum Htilde= H + (J_d^TD_xJ_d)
      nnzTotalDevHostPtr points to host memory
      Allocation for matrix addition - happens once
@@ -338,9 +352,12 @@ int main(int argc, char* argv[])
     cudaMalloc((void**)&Htil_cols, sizeof(int) * (nnzHtil));
     cudaMalloc((void**)&Htil_vals, sizeof(double) * (nnzHtil));
     // Matrix addition, happens every iteration
+    gettimeofday(&t1, 0);
     cusparseDcsrgeam2(handle, H->n, H->n, &one, descrA, H->nnz, H_a, H_ia, H_ja, &one, descrA,
       JDtDxJD_nnz1, JDtDxJD_vals, JDtDxJD_rows, JDtDxJD_cols, descrA, Htil_vals, Htil_rows,
       Htil_cols, buffer_add);
+    gettimeofday(&t2, 0);
+    timeM += (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
     // Free only happens at last iteration
     cudaFree(JDtDxJD_rows);
     cudaFree(JDtDxJD_cols);
@@ -353,7 +370,10 @@ int main(int argc, char* argv[])
     cudaMalloc((void**)&Htil_rows, sizeof(int) * ((H->n) + 1));
     cudaMalloc((void**)&Htil_cols, sizeof(int) * (H->nnz));
     cudaMalloc((void**)&Htil_vals, sizeof(double) * (H->nnz));
+    gettimeofday(&t1, 0);
     cudaMemcpy(Htil_vals, H_a, sizeof(double) * (H->nnz), cudaMemcpyDeviceToDevice);
+    gettimeofday(&t2, 0);
+    timeM += (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
     cudaMemcpy(Htil_rows, H_ia, sizeof(int) * (H->n + 1), cudaMemcpyDeviceToDevice);
     cudaMemcpy(Htil_cols, H_ja, sizeof(int) * (H->nnz), cudaMemcpyDeviceToDevice);
     nnzHtil = H->nnz;
@@ -373,9 +393,12 @@ int main(int argc, char* argv[])
     &buffersize3);
   cudaMalloc(&buffercsr3, sizeof(char) * buffersize3);
   // Transpose JC - happens every iteration
+    gettimeofday(&t1, 0);
   cusparseCsr2cscEx2(handle, JC->n, JC->m, JC->nnz, JC_a, JC_ia, JC_ja, JCt_a, JCt_ia, JCt_ja,
     CUDA_R_64F, CUSPARSE_ACTION_NUMERIC, CUSPARSE_INDEX_BASE_ZERO, CUSPARSE_CSR2CSC_ALG1,
     buffercsr3);
+    gettimeofday(&t2, 0);
+    timeM += (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
   cusparseSpMatDescr_t matJCt = NULL;
   cusparseCreateCsr(&matJCt, JC->m, JC->n, JC->nnz, JCt_ia, JCt_ja, JCt_a, CUSPARSE_INDEX_32I,
     CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F);
@@ -437,15 +460,17 @@ int main(int argc, char* argv[])
   {
     max_h[i] = 1;
   }
+  gettimeofday(&t1, 0);
   cudaMemcpy(max_d, max_h, sizeof(double) * nHJ, cudaMemcpyHostToDevice);
-  numBlocks = (nHJ + blockSize - 1) / blockSize;
   for(int i = 0; i < ruiz_its; i++)
   {
-    adapt_row_max<<<numBlocks, blockSize>>>(
-      H->n, nHJ, Htil_vals, Htil_rows, Htil_cols, JC_a, JC_ia, JC_ja, JCt_a, JCt_ia, JCt_ja, scale);
-    adapt_diag_scale<<<numBlocks, blockSize>>>(H->n, nHJ, Htil_vals, Htil_rows, Htil_cols, JC_a,
+    fun_adapt_row_max(H->n, nHJ, Htil_vals, Htil_rows, Htil_cols, JC_a, JC_ia,
+        JC_ja, JCt_a, JCt_ia, JCt_ja, scale);
+    fun_adapt_diag_scale(H->n, nHJ, Htil_vals, Htil_rows, Htil_cols, JC_a,
       JC_ia, JC_ja, JCt_a, JCt_ia, JCt_ja, scale, d_rx_til, d_ry, max_d);
   }
+  gettimeofday(&t2, 0);
+  timeM += (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
 #if 0 
   double *Ht_a_h;
   int *Ht_ia_h, *Ht_ja_h;
@@ -498,9 +523,12 @@ int main(int argc, char* argv[])
   cudaMalloc((void**)&bufferJC2, buffersizeJC2);
   // compute the intermediate product of A * B
   // Compute SPGEMM - done every iteration
+  gettimeofday(&t1, 0);
   cusparseSpGEMM_compute(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
     CUSPARSE_OPERATION_NON_TRANSPOSE, &gamma, matJCt, matJC, &zero, matJCtJC, CUDA_R_64F,
     CUSPARSE_SPGEMM_DEFAULT, spgemmDesc, &buffersizeJC2, bufferJC2);
+  gettimeofday(&t2, 0);
+  timeM += (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
   // Allocation - happens once
   int64_t JCtJC_num_rows1, JCtJC_num_cols1, JCtJC_nnz1;
   cusparseSpMatGetSize(matJCtJC, &JCtJC_num_rows1, &JCtJC_num_cols1, &JCtJC_nnz1);
@@ -511,8 +539,11 @@ int main(int argc, char* argv[])
   cudaMalloc((void**)&JCtJC_vals, JCtJC_nnz1 * sizeof(double));
   // SPGEMM - happens very iterations
   cusparseCsrSetPointers(matJCtJC, JCtJC_rows, JCtJC_cols, JCtJC_vals);
+  gettimeofday(&t1, 0);
   cusparseSpGEMM_copy(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, CUSPARSE_OPERATION_NON_TRANSPOSE,
       &gamma, matJCt, matJC, &zero, matJCtJC, CUDA_R_64F, CUSPARSE_SPGEMM_DEFAULT, spgemmDesc);
+  gettimeofday(&t2, 0);
+  timeM += (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
 #if 0
   int *JCtJC_i, *JCtJC_j;
   double *JCtJC_v;
@@ -557,12 +588,18 @@ int main(int argc, char* argv[])
   cudaMalloc((void**)&Hgam_cols, sizeof(int) * (nnzHgam));
   cudaMalloc((void**)&Hgam_vals, sizeof(double) * (nnzHgam));
   // Matrix addition - happens every iteration
+  gettimeofday(&t1, 0);
   cusparseDcsrgeam2(handle, H->n, H->n, &one, descrA, nnzHtil, Htil_vals, Htil_rows, Htil_cols,
     &one, descrA, JCtJC_nnz1, JCtJC_vals, JCtJC_rows, JCtJC_cols, descrA, Hgam_vals, Hgam_rows,
     Hgam_cols, buffer_add2);
+  gettimeofday(&t2, 0);
+  timeM += (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
   double* d_rx_hat;
   cudaMalloc((void**)&d_rx_hat, H->n * sizeof(double));
+  gettimeofday(&t1, 0);
   cudaMemcpy(d_rx_hat, d_rx_til, sizeof(double) * H->n, cudaMemcpyDeviceToDevice);
+  gettimeofday(&t2, 0);
+  timeM += (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
   cusparseDnVecDescr_t vec_d_rx_hat = NULL;
   cusparseCreateDnVec(&vec_d_rx_hat, H->n, d_rx_hat, CUDA_R_64F);
   cusparseDnVecDescr_t vec_d_ry = NULL;
@@ -574,8 +611,11 @@ int main(int argc, char* argv[])
   void* buffer_rx_hat = NULL;
   cudaMalloc(&buffer_rx_hat, bufferSize_rx_hat);
   */
+  gettimeofday(&t1, 0);
   cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &gamma, matJCt, vec_d_ry, &one,
     vec_d_rx_hat, CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+  gettimeofday(&t2, 0);
+  timeM += (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
   // Start of block: permutation calculation (happens once)
   int *Hgam_h_rows, *Hgam_h_cols;
   Hgam_h_rows = (int*)malloc((H->n + 1) * sizeof(int));
@@ -662,15 +702,23 @@ int main(int argc, char* argv[])
   cudaMalloc(&Jcp_val, (JC->nnz) * sizeof(double));
   cudaMalloc(&Jctp_val, (JC->nnz) * sizeof(double));
   // Start of block: permutation application - happens every iteration
-  numBlocks = (nnzHgam + blockSize - 1) / blockSize;
-  map_idx<<<numBlocks, blockSize>>>(nnzHgam, d_perm_mapH, Hgam_vals, Hgamp_val);
-  numBlocks = (JC->nnz + blockSize - 1) / blockSize;
-  map_idx<<<numBlocks, blockSize>>>(JC->nnz, d_perm_mapJ, JC_a, Jcp_val);
-  map_idx<<<numBlocks, blockSize>>>(JC->nnz, d_perm_mapJt, JCt_a, Jctp_val);
+  gettimeofday(&t1, 0);
+  fun_map_idx(nnzHgam, d_perm_mapH, Hgam_vals, Hgamp_val);
+  fun_map_idx(JC->nnz, d_perm_mapJ, JC_a, Jcp_val);
+  fun_map_idx(JC->nnz, d_perm_mapJt, JCt_a, Jctp_val);
+  gettimeofday(&t2, 0);
+  timeM += (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
+  printf("time for forming Hgamma ev(ms). : %16.16f\n", timeM);
   cusparseSpMatDescr_t matJCp = NULL;
   cusparseCreateCsr(&matJCp, JC->n, JC->m, JC->nnz, JC_ia, JC_ja, Jcp_val, CUSPARSE_INDEX_32I,
     CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F);
-
+#if 1
+  gettimeofday(&t1, 0);
+  fun_add_diag(H->n, zero, Hgam_rows, Hgam_cols, Hgamp_val);
+  gettimeofday(&t2, 0);
+  timeIO = (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
+  printf("time for forming Hdelta ev(ms). : %16.16f\n", timeIO);
+#endif
 #if 0
   cudaMemcpy(JC->coo_vals, Jcp_val, sizeof(double)*(JC->nnz), cudaMemcpyDeviceToHost);
   cudaMemcpy(JC->csr_ia, JC_ia, sizeof(int)*(JC->n+1), cudaMemcpyDeviceToHost);  
@@ -728,8 +776,7 @@ int main(int argc, char* argv[])
 
   double* d_rxp;
   cudaMalloc((void**)&d_rxp, H->n * sizeof(double));
-  numBlocks = (H->n + blockSize - 1) / blockSize;
-  map_idx<<<numBlocks, blockSize>>>(H->n, d_perm, d_rx_hat, d_rxp);
+  fun_map_idx(H->n, d_perm, d_rx_hat, d_rxp);
   //  Start of block: Factorization of Hgamma
   //  Symbolic analysis: Happens once
   csrcholInfo_t info = NULL;
@@ -739,19 +786,19 @@ int main(int argc, char* argv[])
   size_t internalDataInBytes, workspaceInBytes;
   cusolverSpDcsrcholBufferInfo(handle_cusolver, H->n, nnzHgam, descrA, Hgamp_val, Hgam_rows,
     Hgam_cols, info, &internalDataInBytes, &workspaceInBytes);
-  void* buffer_gpu = NULL;
-  cudaMalloc(&buffer_gpu, sizeof(char) * workspaceInBytes);
   gettimeofday(&t2, 0);
   timeIO = (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
+  void* buffer_gpu = NULL;
+  cudaMalloc(&buffer_gpu, sizeof(char) * workspaceInBytes);
   printf("time for symbolic analysis ev(ms). : %16.16f\n", timeIO);
   int singularity = 0;
   gettimeofday(&t1, 0);
   // Numerical factorization - happens every iteration
   cusolverSpDcsrcholFactor(
     handle_cusolver, H->n, nnzHgam, descrA, Hgamp_val, Hgam_rows, Hgam_cols, info, buffer_gpu);
-  cusolverSpDcsrcholZeroPivot(handle_cusolver, info, tol, &singularity);
   gettimeofday(&t2, 0);
   timeIO = (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
+  cusolverSpDcsrcholZeroPivot(handle_cusolver, info, tol, &singularity);
   printf("time for factorization analysis ev(ms). : %16.16f\n", timeIO);
   if(singularity >= 0)
   {
@@ -791,7 +838,6 @@ int main(int argc, char* argv[])
   //  Matrix vector multiply - happens every iteration
   cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &one, matJCp, vec_d_Hrxp, &minusone,
     vec_d_schur, CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
-  int itmax = (JC->n) / 10;
 #if 0 
   double *h_schur;
   h_schur=(double*) malloc((JC->n)*sizeof(double));
@@ -803,8 +849,20 @@ int main(int argc, char* argv[])
 #endif
   // Start of block - conjugate gradient on eq (7)
   // Solving eq (7) via CG - happens every iteration
+  //function implementation
+#if 0
+  int itmax = (JC->n) / 10;
   schur_cg(matJCp, matJCtp, info, d_y, d_schur, itmax, tol, JC->n, JC->m, JC->nnz,
     buffer_gpu, handle, handle_cusolver, handle_cublas);
+#endif
+  // class implementation
+#if 1
+  SchurComplementConjugateGradient sccg(
+      matJCp, matJCtp, info, d_y, d_schur, JC->n, JC->m, JC->nnz,buffer_gpu);
+  sccg.allocate();
+  sccg.setup();
+  sccg.solve();
+#endif
 #if 0
   cudaMemcpy(h_y, d_y, sizeof(double)*(JC->n), cudaMemcpyDeviceToHost);
   for (int i=(JC->n)-10; i<JC->n; i++){
@@ -826,6 +884,7 @@ int main(int argc, char* argv[])
   cudaMalloc(&buffer_d_z, bufferSize_d_z);
   */
   // Matrix-vector product - happens every iteration
+  gettimeofday(&t1, 0);
   cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &minusone, matJCtp, vec_d_y, &one,
     vec_d_rxp, CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
   //  Allocation - happens once
@@ -833,7 +892,7 @@ int main(int argc, char* argv[])
   cudaMalloc((void**)&d_z, H->n * sizeof(double));
   //  Solve - happens every iteration
   cusolverSpDcsrcholSolve(handle_cusolver, H->n, d_rxp, d_z, info, buffer_gpu);
-  map_idx<<<numBlocks, blockSize>>>(H->n, drev_perm, d_z, d_x);
+  fun_map_idx(H->n, drev_perm, d_z, d_x);
 #if 0
   double *h_rx_hat;
   printf("delta_x\n");
@@ -845,9 +904,8 @@ int main(int argc, char* argv[])
   free(h_rx_hat);
 #endif
   // scale back delta_y and delta_x (every iteration)
-  vec_scale<<<numBlocks, blockSize>>>(H->n, d_x, max_d);
-  numBlocks = (JC->n + blockSize - 1) / blockSize;
-  vec_scale<<<numBlocks, blockSize>>>(JC->n, d_y, &max_d[H->n]);
+  fun_vec_scale(H->n, d_x, max_d);
+  fun_vec_scale(JC->n, d_y, &max_d[H->n]);
 #if 0 
   cudaMemcpy(h_x, d_x, sizeof(double)*(H->n), cudaMemcpyDeviceToHost);
   for (int i=(H->n)-10; i<H->n; i++){
@@ -887,14 +945,15 @@ int main(int argc, char* argv[])
   }
   else
   {   //  Math operations - happens every iteration
-    numBlocks = (Ds->n + blockSize - 1) / blockSize;
-    mult_const<<<numBlocks, blockSize>>>(Ds->n, minusone, d_s);
+    fun_mult_const(Ds->n, minusone, d_s);
   }
   //  Math operations - happens every iteration
-  numBlocks = (Ds->n + blockSize - 1) / blockSize;
   cudaMemcpy(d_yd, d_s, sizeof(double) * (Ds->m), cudaMemcpyDeviceToDevice);
-  vec_scale<<<numBlocks, blockSize>>>(Ds->n, d_yd, Ds_a);
-  add_vecs<<<numBlocks, blockSize>>>(Ds->n, d_yd, minusone, d_rs);
+  fun_vec_scale(Ds->n, d_yd, Ds_a);
+  fun_add_vecs(Ds->n, d_yd, minusone, d_rs);
+  gettimeofday(&t2, 0);
+  timeIO = (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
+  printf("time for recovering solution ev(ms). : %16.16f\n", timeIO);
 #if 0 
   cudaMemcpy(h_yd, d_yd, sizeof(double)*(JD->n), cudaMemcpyDeviceToHost);
   for (int i=(JD->n)-10; i<JD->n; i++){

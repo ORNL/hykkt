@@ -11,6 +11,12 @@ and old_val - the array to be permuted
 @outputs: new_val contains the permuted old_val
  */
 
+void fun_map_idx(int n, int* perm, double* old_val, double* new_val)
+{
+  int numBlocks, blockSize=512;
+  numBlocks = (n + blockSize - 1) / blockSize;
+  map_idx<<<numBlocks, blockSize>>>(n, perm, old_val, new_val);
+}
 __global__ void map_idx(int n, int* perm, double* old_val, double* new_val)
 {
   int i = blockIdx.x * blockDim.x + threadIdx.x;

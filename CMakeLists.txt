@@ -20,8 +20,10 @@ if(NOT DEFINED CMAKE_CUDA_STANDARD)
   set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 endif()
 
-if(NOT CMAKE_CUDA_ARCHITECTURES)
-  set(CMAKE_CUDA_ARCHITECTURES 60 CACHE STRING "Select CUDA architectures.")
+if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+  #set(CMAKE_CUDA_ARCHITECTURES 70) #for summit, ascent
+  set(CMAKE_CUDA_ARCHITECTURES 80) #for deception
+  #set(CMAKE_CUDA_ARCHITECTURES 80 CACHE "Selects CUDA architectures") #this doesn't work
 endif()
 
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-extended-lambda")
