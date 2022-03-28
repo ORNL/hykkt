@@ -14,7 +14,9 @@ public:
 
   // parametrized constructor
   SchurComplementConjugateGradient(cusparseSpMatDescr_t matJC, cusparseSpMatDescr_t matJCt, 
-      csrcholInfo_t dH, double* x0, double* b, int n, int m, int nnz, void* buffer_gpu);
+      csrcholInfo_t dH, double* x0, double* b, int n, int m, int nnz, void* buffer_gpu):
+      matJC_(matJC), matJCt_(matJCt), dH_(dH), x0_(x0), b_(b), n_(n), m_(m),
+      nnz_(nnz), buffer_gpu_(buffer_gpu){}
 
   // destructor
   ~SchurComplementConjugateGradient();
@@ -31,16 +33,6 @@ public:
   {
     itmax_ = itmax;
   }
-...
-
-private:
-  // member variables
-  int itmax_=100, n_, m_, nnz_;
-  double tol_=1e-12;
-  cusolverSpHandle_t handle_cusolver_;
-  cusolverHandle_t handle;
-  cublasHandle_t handle_cublas;
-
 };
 
 } // namespace hykkt

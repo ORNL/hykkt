@@ -1,0 +1,136 @@
+-- The C compiler identification is GNU 7.5.0
+-- The CXX compiler identification is GNU 7.5.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /share/apps/gcc/7.5/bin/gcc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /share/apps/gcc/7.5/bin/g++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- The CUDA compiler identification is NVIDIA 11.1.105
+-- Detecting CUDA compiler ABI info
+-- Detecting CUDA compiler ABI info - done
+-- Check for working CUDA compiler: /share/apps/cuda/11.1/bin/nvcc - skipped
+-- Detecting CUDA compile features
+-- Detecting CUDA compile features - done
+-- Looking for pthread.h
+-- Looking for pthread.h - found
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Failed
+-- Looking for pthread_create in pthreads
+-- Looking for pthread_create in pthreads - not found
+-- Looking for pthread_create in pthread
+-- Looking for pthread_create in pthread - found
+-- Found Threads: TRUE  
+-- Found CUDA: /share/apps/cuda/11.1 (found version "11.1") 
+-- Found CUDAToolkit: /share/apps/cuda/11.1/include (found version "11.1.105") 
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /people/rege393/hykkt/build
+Scanning dependencies of target hybrid
+[  6%] Building CUDA object src/CMakeFiles/hybrid.dir/input_functions.cu.o
+[ 13%] Building CUDA object src/CMakeFiles/hybrid.dir/schur_complement_cg.cu.o
+[ 20%] Building CUDA object src/CMakeFiles/hybrid.dir/permcheck.cu.o
+[ 26%] Building CUDA object src/CMakeFiles/hybrid.dir/Ruiz_scaling.cu.o
+[ 26%] Built target hybrid
+Scanning dependencies of target hybrid_driver
+[ 33%] Building CUDA object src/CMakeFiles/hybrid_driver.dir/cuSolver_driver_hybrid.cu.o
+[ 40%] Linking CUDA device code CMakeFiles/hybrid_driver.dir/cmake_device_link.o
+[ 46%] Linking CUDA executable hybrid_driver
+[ 46%] Built target hybrid_driver
+Scanning dependencies of target permutation
+[ 53%] Building CUDA object src/CMakeFiles/permutation.dir/permcheck.cu.o
+[ 53%] Built target permutation
+Scanning dependencies of target perm_driver
+[ 60%] Building CUDA object src/CMakeFiles/perm_driver.dir/perm_driver.cu.o
+[ 66%] Linking CUDA device code CMakeFiles/perm_driver.dir/cmake_device_link.o
+[ 73%] Linking CUDA executable perm_driver
+[ 73%] Built target perm_driver
+Scanning dependencies of target ruiz_scaling
+[ 80%] Building CUDA object src/CMakeFiles/ruiz_scaling.dir/Ruiz_scaling.cu.o
+[ 80%] Built target ruiz_scaling
+Scanning dependencies of target ruiz_driver
+[ 86%] Building CUDA object src/CMakeFiles/ruiz_driver.dir/Ruiz_driver.cu.o
+[ 93%] Linking CUDA device code CMakeFiles/ruiz_driver.dir/cmake_device_link.o
+[100%] Linking CUDA executable ruiz_driver
+[100%] Built target ruiz_driver
+UpdateCTestConfiguration  from :/people/rege393/hykkt/build/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/people/rege393/hykkt/build/DartConfiguration.tcl
+Test project /people/rege393/hykkt/build
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 1
+    Start 1: permutation
+
+1: Test command: /people/rege393/hykkt/build/src/perm_driver
+1: Test timeout computed to be: 10000000
+1: Comparing RC permutation
+1: RC permute passed
+1: Comparing R permutation
+1: R permute passed
+1: Comparing C permutation
+1: C permute passed
+1/4 Test #1: permutation ......................   Passed    1.44 sec
+test 2
+    Start 2: ruiz_scaling_test
+
+2: Test command: /people/rege393/hykkt/build/src/ruiz_driver
+2: Test timeout computed to be: 10000000
+2: Transpose A 
+2: Buffer allocation status 0
+2: Buffer size is 9231
+2: A dimensions are 1024 by 1024 with 2047 nnz
+2: tanspose status 0
+2: All tests passed
+2/4 Test #2: ruiz_scaling_test ................   Passed   10.68 sec
+test 3
+    Start 3: hybrid1
+
+3: Test command: /people/rege393/hykkt/build/src/hybrid_driver "/people/rege393/hykkt/src/mats/a200//block_H_matrix_ACTIVSg200_AC_09.mtx" "/people/rege393/hykkt/src/mats/a200//block_Dd_matrix_ACTIVSg200_AC_09.mtx" "/people/rege393/hykkt/src/mats/a200//block_J_matrix_ACTIVSg200_AC_09.mtx" "/people/rege393/hykkt/src/mats/a200//block_Jd_matrix_ACTIVSg200_AC_09.mtx" "/people/rege393/hykkt/src/mats/a200//block_rx_ACTIVSg200_AC_09.mtx" "/people/rege393/hykkt/src/mats/a200//block_rs_ACTIVSg200_AC_09.mtx" "/people/rege393/hykkt/src/mats/a200//block_ry_ACTIVSg200_AC_09.mtx" "/people/rege393/hykkt/src/mats/a200//block_ryd_ACTIVSg200_AC_09.mtx" "2" "10000.0"
+3: Test timeout computed to be: 10000000
+3: allocating COO structures 2278 2278 3452
+3: allocating COO structures 490 490 490
+3: allocating COO structures 1386 2278 6784
+3: allocating COO structures 490 2278 980
+3: nnzHgam = 21318
+3: time for symbolic analysis ev(ms). : 4.4450000000000003
+3: time for factorization analysis ev(ms). : 1.7450000000000001
+3: matrix nonsingular, proceed
+3: Convergence occured at iteration 9
+3: time for CG ev(ms). : 12.7789999999999999
+3: Error is 2.8483306435146094688599060226602e-14 
+3: ||Ax-b||/||b|| = 1.6513090841485153382475543609173e-11
+3: time for IO+API+error ev(ms). : 1.8540000000000001
+3: Residual test passed 
+3/4 Test #3: hybrid1 ..........................   Passed    1.69 sec
+test 4
+    Start 4: hybrid2
+
+4: Test command: /people/rege393/hykkt/build/src/hybrid_driver "/people/rege393/hykkt/src/mats/a2000//block_H_matrix_ACTIVSg2000_AC_09.mtx" "/people/rege393/hykkt/src/mats/a2000//block_Dd_matrix_ACTIVSg2000_AC_09.mtx" "/people/rege393/hykkt/src/mats/a2000//block_J_matrix_ACTIVSg2000_AC_09.mtx" "/people/rege393/hykkt/src/mats/a2000//block_Jd_matrix_ACTIVSg2000_AC_09.mtx" "/people/rege393/hykkt/src/mats/a2000//block_rx_ACTIVSg2000_AC_09.mtx" "/people/rege393/hykkt/src/mats/a2000//block_rs_ACTIVSg2000_AC_09.mtx" "/people/rege393/hykkt/src/mats/a2000//block_ry_ACTIVSg2000_AC_09.mtx" "/people/rege393/hykkt/src/mats/a2000//block_ryd_ACTIVSg2000_AC_09.mtx" "3" "10000.0"
+4: Test timeout computed to be: 10000000
+4: allocating COO structures 25910 25910 38469
+4: allocating COO structures 6412 6412 6412
+4: allocating COO structures 16933 25910 86139
+4: allocating COO structures 6412 25910 12824
+4: nnzHgam = 282614
+4: time for symbolic analysis ev(ms). : 28.4200000000000017
+4: time for factorization analysis ev(ms). : 12.2210000000000001
+4: matrix nonsingular, proceed
+4: Convergence occured at iteration 21
+4: time for CG ev(ms). : 217.6380000000000052
+4: Error is 3.7730808663023194656991123445196e-13 
+4: ||Ax-b||/||b|| = 7.3477089949349263976320124049443e-11
+4: time for IO+API+error ev(ms). : 11.4580000000000002
+4: Residual test passed 
+4/4 Test #4: hybrid2 ..........................   Passed    2.59 sec
+
+100% tests passed, 0 tests failed out of 4
+
+Total Test time (real) =  16.43 sec

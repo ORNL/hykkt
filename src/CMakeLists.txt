@@ -1,8 +1,8 @@
 set(a200DIR 
-  mats/a200/)
+  ${CMAKE_CURRENT_SOURCE_DIR}/mats/a200/)
 
 set(a2000DIR 
-  mats/a2000/)
+  ${CMAKE_CURRENT_SOURCE_DIR}/mats/a2000/)
 
 set(HYBRID_SRC
   input_functions.cu
