@@ -4,6 +4,8 @@ project(HyKKT VERSION "0.0.1")
 
 set(CMAKE_CXX_STANDARD 11)
 
+option(HYKKT_TEST_WITH_BSUB "Use `jsrun` instead of `mpirun` commands when running tests" OFF)
+
 # Configure CUDA
 include(CheckLanguage)
 enable_language(CUDA)
