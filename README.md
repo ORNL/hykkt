@@ -19,26 +19,21 @@ sbatch deception_test.sbatch // to run, or use as template for batch script
 ```
 
 ## Usage
+The executable ```hybrid_solver``` is built in build/src by make
+This executable can be run with an appropriate batch script with 10 arguments
 ```
-cd src
-./hybrid_compile_run test$i //for example
-./hybrid_compile_run test2
+Hfile #represents the $H+D_x$ matrix block
+Dsfile #represents the $D_s$ matrix block
+Jfile #represents the $J$ matrix block
+Jdfile #represents the $J_d$ matrix block
+rxfile #represents the $r_x$ vector block
+rsfile #represents the $r_s$ vector block
+ryfile #represents the $r_y$ vector block
+rydfile #represents the $r_{yd}$ vector block
+skip #number of lines to ignore in the .mtx matrix files
+gamma #constant to make system more PD in eq(6)
 ```
-Where ```$i = {1,2}``` represents test cases of increasing size.
-This calls the scripts ```hybrid_batch_$x```. The scripts also show how one
-would call the solver on a general problem. The 9th argument is the line number
-where the data starts in the matrix files. The 10th is gamma. Increasing gamma
-improves CG convergence, but makes the problem more ill-conditioned and the 
-original solution recovered may be of worse quality.
-
-To test Ruiz Scaling and Permutation independently you can run
-```
-./Ruiz_compile_run 
-./perm_compile_run
-```
-respectively. Ruiz scaling requires a GPU but the part of the permutation
-tested does not (everything except mapping the values). The final part is the
-only part that is on the GPU and happens every iteration, but it is trivial.
+Examples of this script can be found in ```src/old_scripts```
 ## Support
 Email Shaked Regev at sregev@stanford.edu or submit an issue
 
