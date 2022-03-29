@@ -66,14 +66,16 @@ endif()
 add_executable(perm_driver perm_driver.cu)
 target_link_libraries(perm_driver cuda_libs permutation)
 add_test(NAME permutation
-         COMMAND $<TARGET_FILE:perm_driver>)
+  COMMAND ${RUNCMD} $<TARGET_FILE:perm_driver>)
 
 add_executable(ruiz_driver Ruiz_driver.cu)
 target_link_libraries(ruiz_driver cuda_libs ruiz_scaling)
 add_test(NAME ruiz_scaling_test
-         COMMAND $<TARGET_FILE:ruiz_driver>)
+  COMMAND ${RUNCMD} $<TARGET_FILE:ruiz_driver>)
 
 add_executable(hybrid_driver cuSolver_driver_hybrid.cu)
 target_link_libraries(hybrid_driver cuda_libs hybrid)
-add_test(NAME hybrid1 COMMAND $<TARGET_FILE:hybrid_driver> ${test1_args})
-add_test(NAME hybrid2 COMMAND $<TARGET_FILE:hybrid_driver> ${test2_args})
+add_test(NAME hybrid1 
+  COMMAND ${RUNCMD} $<TARGET_FILE:hybrid_driver> ${test1_args})
+add_test(NAME hybrid2
+  COMMAND ${RUNCMD} $<TARGET_FILE:hybrid_driver> ${test2_args})
