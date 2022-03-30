@@ -5,21 +5,23 @@ project(HyKKT VERSION "0.0.1")
 set(CMAKE_CXX_STANDARD 11)
 
 option(HYKKT_TEST_WITH_BSUB "Use `jsrun` instead of `mpirun` commands when running tests" OFF)
+set(HYKKT_CTEST_OUTPUT_DIR ${PROJECT_BINARY_DIR} CACHE PATH "Directory where CTest outputs are saved")
+
 
 # Configure CUDA
 include(CheckLanguage)
 enable_language(CUDA)
 check_language(CUDA)
 
-find_package(CUDA REQUIRED)
+#find_package(CUDA REQUIRED)
 
 if(NOT DEFINED CMAKE_CUDA_STANDARD)
   set(CMAKE_CUDA_STANDARD 11)
   set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 endif()
 
-if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-  set(CMAKE_CUDA_ARCHITECTURES 80)
+if(NOT CMAKE_CUDA_ARCHITECTURES)
+  set(CMAKE_CUDA_ARCHITECTURES 60 CACHE STRING "Select CUDA architectures.")
 endif()
 
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-extended-lambda")
