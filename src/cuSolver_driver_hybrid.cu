@@ -287,8 +287,7 @@ int main(int argc, char* argv[])
       printf("bufferSize_rx is %d", bufferSize_rx); //this is 0
       */
     // matvec done every iteration
-    cusparseSpMV(handle, CUSPARSE_OPERATION_TRANSPOSE, &one, matJD, vec_d_ryd_s, &one, vec_d_rx_til,
-      CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+    fun_SpMV(one, matJDt, vec_d_ryd_s, one, vec_d_rx_til);
     gettimeofday(&t2, 0);
     timeM += (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
     // Compute H_til= H+J_d^T * D_s * J_d
@@ -612,8 +611,7 @@ int main(int argc, char* argv[])
   cudaMalloc(&buffer_rx_hat, bufferSize_rx_hat);
   */
   gettimeofday(&t1, 0);
-  cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &gamma, matJCt, vec_d_ry, &one,
-    vec_d_rx_hat, CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+  fun_SpMV(gamma, matJCt, vec_d_ry, one, vec_d_rx_hat);
   gettimeofday(&t2, 0);
   timeM += (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
   // Start of block: permutation calculation (happens once)
@@ -836,8 +834,7 @@ int main(int argc, char* argv[])
   cudaMalloc(&buffer_schur, bufferSize_schur);
   */
   //  Matrix vector multiply - happens every iteration
-  cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &one, matJCp, vec_d_Hrxp, &minusone,
-    vec_d_schur, CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+  fun_SpMV(one, matJCp, vec_d_Hrxp, minusone, vec_d_schur);
 #if 0 
   double *h_schur;
   h_schur=(double*) malloc((JC->n)*sizeof(double));
@@ -885,8 +882,7 @@ int main(int argc, char* argv[])
   */
   // Matrix-vector product - happens every iteration
   gettimeofday(&t1, 0);
-  cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &minusone, matJCtp, vec_d_y, &one,
-    vec_d_rxp, CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+  fun_SpMV(minusone, matJCtp, vec_d_y, one, vec_d_rxp);
   //  Allocation - happens once
   double* d_z;
   cudaMalloc((void**)&d_z, H->n * sizeof(double));
@@ -940,8 +936,7 @@ int main(int argc, char* argv[])
     cudaFree(buffer_dx);
     */
     //  Matrix-vector product - happens every iteration
-    cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &one, matJD, vec_d_x, &minusone,
-      vec_d_s, CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+    fun_SpMV(one, matJD, vec_d_x, minusone, vec_d_s);
   }
   else
   {   //  Math operations - happens every iteration
@@ -980,12 +975,10 @@ int main(int argc, char* argv[])
   cusparseCreateDnVec(&vec_d_rx, H->n, d_rx, CUDA_R_64F);
   cusparseDnVecDescr_t vec_d_yd = NULL;
   cusparseCreateDnVec(&vec_d_yd, JD->n, d_yd, CUDA_R_64F);
-  cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &minusone, matH, vec_d_x, &one,
-      vec_d_rx, CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+  fun_SpMV(minusone, matH, vec_d_x, one, vec_d_rx);
   cublasDdot(handle_cublas, H->n, d_rx, 1, d_rx, 1, &norm_resx_sq);
   if (jd_flag){
-    cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &minusone, matJDt, 
-        vec_d_yd, &one, vec_d_rx, CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+    fun_SpMV(minusone, matJDt, vec_d_yd, one, vec_d_rx);
     cublasDdot(handle_cublas, H->n, d_rx, 1, d_rx, 1, &norm_resx_sq);
   }
 #if 0 
@@ -1016,14 +1009,12 @@ int main(int argc, char* argv[])
      printf("y[%d] = %f\n", i, h_y[i]);
   }
 #endif
-  cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &minusone, matJCt_c, vec_d_y, &one,
-      vec_d_rx, CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+  fun_SpMV(minusone, matJCt_c, vec_d_y, one, vec_d_rx);
   cublasDdot(handle_cublas, H->n, d_rx, 1, d_rx, 1, &norm_resx_sq);
   //  Calculate error in ry
   cusparseDnVecDescr_t vec_d_ry_c = NULL;
   cusparseCreateDnVec(&vec_d_ry_c, JC->n, d_ry_c, CUDA_R_64F);
-  cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &minusone, matJC_c, vec_d_x, &one,
-      vec_d_ry_c, CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+  fun_SpMV(minusone, matJC_c, vec_d_x, one, vec_d_ry_c);
   cublasDdot(handle_cublas, JC->n, d_ry_c, 1, d_ry_c, 1, &norm_resy_sq);
   // Calculate final relative norm
   norm_resx_sq+=norm_resy_sq;

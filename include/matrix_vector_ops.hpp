@@ -1,6 +1,21 @@
 #ifndef MVO__H__
 #define MVO__H__
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <cusolver_common.h>
+#include <cuda_runtime.h>
+#include <cusparse.h>
+#include <cublas_v2.h>
+#include <sys/time.h>
+#include <algorithm>
+#include "cusolverSp.h"
+#include <cusolverSp_LOWLEVEL_PREVIEW.h>
+#include <cusolverRf.h>
+
+void fun_SpMV(double, cusparseSpMatDescr_t, cusparseDnVecDescr_t,
+    double, cusparseDnVecDescr_t);
+
 void fun_adapt_diag_scale(int, int, double*, int*, int*, double*, int*,
    int*, double*, int*, int*, double*, double*, double*, double*);
 

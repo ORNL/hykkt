@@ -68,18 +68,14 @@
   }
   int SchurComplementConjugateGradient::solve(){
   gettimeofday(&t1, 0);
-  cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &one, matJCt_, vecx, &zero, vecy,
-    CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+  fun_SpMV(one, matJCt_, vecx, zero, vecy);
   cusolverSpDcsrcholSolve(handle_cusolver, m_, y, z, dH_, buffer_gpu_);
-  cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &minusone, matJC_, vecz, &one, vecr,
-    CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+  fun_SpMV(minusone, matJC_, vecz, one, vecr);
   double gam_i;
   cublasDdot(handle_cublas, n_, r, 1, r, 1, &gam_i);
-  cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &one, matJCt_, vecr, &zero, vecy,
-    CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+  fun_SpMV(one, matJCt_, vecr, zero, vecy);
   cusolverSpDcsrcholSolve(handle_cusolver, m_, y, z, dH_, buffer_gpu_);
-  cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &one, matJC_, vecz, &zero, vecw, CUDA_R_64F,
-    CUSPARSE_MV_ALG_DEFAULT, &zero);
+  fun_SpMV(one, matJC_, vecz, zero, vecw);
   double beta = 0, delta, alpha, gam_i1;
   cublasDdot(handle_cublas, n_, w, 1, r, 1, &delta);
   alpha           = gam_i / delta;
@@ -107,11 +103,9 @@
       break;
     }
     // product with w=Ar starts here
-    cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &one, matJCt_, vecr, &zero, vecy,
-      CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+    fun_SpMV(one, matJCt_, vecr, zero, vecy);
     cusolverSpDcsrcholSolve(handle_cusolver, m_, y, z, dH_, buffer_gpu_);
-    cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &one, matJC_, vecz, &zero, vecw,
-      CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+    fun_SpMV(one, matJC_, vecz, zero, vecw);
 
     cublasDdot(handle_cublas, n_, w, 1, r, 1, &delta);
     beta  = gam_i1 / gam_i;

@@ -1,6 +1,21 @@
 #include <matrix_vector_ops.hpp>
 
 /*
+@brief: wrapper for CUDA matrix-vector product
+
+@inputs: matrix A, vectors b and c, scalars alpha and beta
+
+@outputs: c = alpha*Ab+beta*c
+ */
+void fun_SpMV(double alpha, cusparseSpMatDescr_t A, cusparseDnVecDescr_t b,
+    double beta, cusparseDnVecDescr_t c){
+  double zero=0.0;
+  cusparseHandle_t handle            = NULL;
+  cusparseCreate(&handle);
+  cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, A, b,
+     &beta, c, CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+}
+/*
 @brief: diagonally scales a matrix from the left and right, and
 diagonally scales rhs (from the left)
 

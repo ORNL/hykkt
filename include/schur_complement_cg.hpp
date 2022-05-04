@@ -13,6 +13,8 @@
 #include <cusolverSp_LOWLEVEL_PREVIEW.h>
 #include <cusolverRf.h>
 
+#include "matrix_vector_ops.hpp"
+
 void schur_cg(cusparseSpMatDescr_t, cusparseSpMatDescr_t, csrcholInfo_t,
     double*, double*, const int, const double, int, int, int, void*,
     cusparseHandle_t, cusolverSpHandle_t, cublasHandle_t);

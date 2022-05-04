@@ -12,7 +12,7 @@
 #include "cusolverSp.h"
 #include <cusolverSp_LOWLEVEL_PREVIEW.h>
 #include <cusolverRf.h>
-
+#include "matrix_vector_ops.hpp"
 class SchurComplementConjugateGradient
 {
 public:

@@ -10,20 +10,6 @@
 #include <cusolverSp_LOWLEVEL_PREVIEW.h>
 #include <cusolverRf.h>
 #include <schur_complement_cg.hpp>
-/*
-void eq3_to_eq4(int numBlocks, int blockSize, cusparseSpMatDescr_t matJDs,
-    int JDn, int JDm, int JDnnz, double* JD_a, int* JD_ia, int* JD_ja,
-    double* JD_as, double* d_ryd, double* d_ryd_s, double* Ds_a,
-    double one, double zero, double minusone,
-    int nnzHtil, double* Htil_vals, int* Htil_rows, int* Htil_cols){
-numBlocks = (JDn + 1 + blockSize - 1) / blockSize;
-row_scale<<<numBlocks, blockSize>>>(JDn, JD_a, JD_ia, JD_ja, JD_as, d_ryd, d_ryd_s, Ds_a);
-cusparseCreateCsr(&matJDs, JDn, JDm, JDnnz, JD_ia, JD_ja, JD_as, CUSPARSE_INDEX_32I,
-              CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F);
-
-
-}
-*/
 
 /** Brief: Solves the equation JC H^{-1} JC^T x = b
   via Chronopoulous Gear conjugate gradient 
@@ -93,8 +79,7 @@ void schur_cg(cusparseSpMatDescr_t matJC, cusparseSpMatDescr_t matJCt,
   cudaMalloc(&buffert, bufferSizet);
   */
   // Start of block - 0 iteration opertaions for Chronopoulos Gear CG (every iteration)
-  cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &one, matJCt, vecx, &zero, vecy,
-    CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+  fun_SpMV(one, matJCt, vecx, zero, vecy);
   cusolverSpDcsrcholSolve(handle_cusolver, m, y, z, dH, buffer_gpu);
   /* This is zero anyways
   cusparseSpMV_bufferSize(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &minusone, matJC, vecz, &one,
@@ -102,8 +87,7 @@ void schur_cg(cusparseSpMatDescr_t matJC, cusparseSpMatDescr_t matJCt,
   void* buffer = NULL;
   cudaMalloc(&buffer, bufferSize);
   */
-  cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &minusone, matJC, vecz, &one, vecr,
-    CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+  fun_SpMV(minusone, matJC, vecz, one, vecr);
   double gam_i;
 #if 0
 	double *h_r =(double*)  calloc(n, sizeof(double));
@@ -115,11 +99,9 @@ void schur_cg(cusparseSpMatDescr_t matJC, cusparseSpMatDescr_t matJCt,
   cublasDdot(handle_cublas, n, r, 1, r, 1, &gam_i);
   // printf("Iteration 0 gamma = %f\n", gam_i);
   // product with w=Ar starts here
-  cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &one, matJCt, vecr, &zero, vecy,
-    CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+  fun_SpMV(one, matJCt, vecr, zero, vecy);
   cusolverSpDcsrcholSolve(handle_cusolver, m, y, z, dH, buffer_gpu);
-  cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &one, matJC, vecz, &zero, vecw, CUDA_R_64F,
-    CUSPARSE_MV_ALG_DEFAULT, &zero);
+  fun_SpMV(one, matJC, vecz, zero, vecw);
   double beta = 0, delta, alpha, gam_i1;
   cublasDdot(handle_cublas, n, w, 1, r, 1, &delta);
   alpha           = gam_i / delta;
@@ -145,11 +127,9 @@ void schur_cg(cusparseSpMatDescr_t matJC, cusparseSpMatDescr_t matJCt,
       break;
     }
     // product with w=Ar starts here
-    cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &one, matJCt, vecr, &zero, vecy,
-      CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+    fun_SpMV(one, matJCt, vecr, zero, vecy);
     cusolverSpDcsrcholSolve(handle_cusolver, m, y, z, dH, buffer_gpu);
-    cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &one, matJC, vecz, &zero, vecw,
-      CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &zero);
+    fun_SpMV(one, matJC, vecz, zero, vecw);
 
     cublasDdot(handle_cublas, n, w, 1, r, 1, &delta);
     beta  = gam_i1 / gam_i;
