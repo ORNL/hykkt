@@ -1,12 +1,19 @@
-// @file SchurComplementConjugateGradient.hpp
+#ifndef CGCL__H__
+#define CGCL__H__
 
-// forward declaration of cusolverSpHandle_t
+#include <stdio.h>
+#include <stdlib.h>
+#include <cusolver_common.h>
+#include <cuda_runtime.h>
+#include <cusparse.h>
+#include <cublas_v2.h>
+#include <sys/time.h>
+#include <algorithm>
+#include "cusolverSp.h"
+#include <cusolverSp_LOWLEVEL_PREVIEW.h>
+#include <cusolverRf.h>
 
-// struct cusolverSpHandle_t; //not sure what this is for
-
-namespace hykkt {
-
-class SchurComplementConjugateGradient()
+class SchurComplementConjugateGradient
 {
 public:
   // default constructor
@@ -20,11 +27,11 @@ public:
   ~SchurComplementConjugateGradient();
 
   // solver API
-  int allocate();
-  int setup();
+  void allocate();
+  void setup();
   int solve();
   void set_solver_tolerance(double tol);
-  void set_solver_itmax(double itmax);
+  void set_solver_itmax(int itmax);
 
 private:
   // member variables
@@ -34,13 +41,13 @@ private:
   cusparseSpMatDescr_t matJC_; 
   cusparseSpMatDescr_t matJCt_; 
   csrcholInfo_t dH_;
-  double* x0;
-  double* b;
+  double* x0_;
+  double* b_;
   void* buffer_gpu_;
 
-  cusolverSpHandle_t handle_cusolver_;
-  cusolverHandle_t handle;
-  cublasHandle_t handle_cublas;
+  cusolverSpHandle_t handle_cusolver = NULL;
+  cusparseHandle_t handle = NULL;
+  cublasHandle_t handle_cublas = NULL;
 
   double               one      = 1.0;
   double               zero     = 0.0;
@@ -63,5 +70,4 @@ private:
 
 };
 
-} // namespace hykkt
-
+#endif

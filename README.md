@@ -11,13 +11,21 @@ schur complement.
 No installation is required
 
 ## make
-From the root directory run
+To run on deception, from the root directory run
 ```
 source buildsystem/deception-env.sh // or alternatively load these modules
 ./buildsystem/build.sh // to make
 sbatch deception_test.sbatch // to run, or use as template for batch script
 ```
 
+To run on summit, first set CMAKE\_CUDA\_ARCHITECTURES to 60
+(you can also do this by going to CMakeLists.txt in the root directory, and uncommenting/ commenting the relevant lines
+Then, from the root directory run
+```
+source buildsystem/summit-env.sh // or alternatively load these modules
+./buildsystem/build.sh // to make
+bsub summit_test.bsub // to run, or use as template for batch script
+```
 ## Usage
 The executable ```hybrid_solver``` is built in build/src by make
 This executable can be run with an appropriate batch script with 10 arguments

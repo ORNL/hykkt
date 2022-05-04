@@ -17,7 +17,7 @@
 #include <string>
 #include <tgmath.h>
 #include <math.h>
-#include <ruiz_scaling.hpp>
+#include <matrix_vector_ops.hpp>
 
 #define ruiz_its 2
 #define tol 1e-8
@@ -78,7 +78,7 @@ int main(int argc, char *argv[]){
       A->coo_cols[i*2-1]=i-1;
       A->csr_ia[i]=i*2-1;
     }
-    A->coo_vals[i*2]=1;
+    A->coo_vals[i*2]=0;
     A->coo_cols[i*2]=i;
   }
   A->csr_ia[i]=A->nnz;
@@ -107,6 +107,9 @@ int main(int argc, char *argv[]){
   cudaMemcpy(H_v, H->coo_vals, sizeof(double)*H->nnz, cudaMemcpyHostToDevice);
   cudaMemcpy(H_j, H->coo_cols, sizeof(int)*H->nnz, cudaMemcpyHostToDevice);
   cudaMemcpy(H_i, H->csr_ia, sizeof(int)*((H->n)+1), cudaMemcpyHostToDevice);
+
+// Test adding to diagonal
+  fun_add_diag(A->n, 1.0, A_i, A_j, A_v);
 
 //Transpose A to have its upper triangular part
   double* At_v;
@@ -174,8 +177,6 @@ int main(int argc, char *argv[]){
     }
   }
 #endif
-int blockSize = 512;
-int numBlocks = (totn + blockSize - 1) / blockSize;
 double *max_d,*scale;
 cudaMalloc(&max_d, totn*sizeof(double));
 cudaMalloc(&scale, totn*sizeof(double));
@@ -188,11 +189,10 @@ cudaMemcpy(max_d, max_h, sizeof(double)*totn, cudaMemcpyHostToDevice);
      This is where the Ruiz magic happens
      */
 for(i=0;i<ruiz_its;i++){
-  adapt_row_max<<<numBlocks,blockSize>>>(n, totn, H_v, H_i, H_j, A_v, A_i, A_j,
-      At_v,At_i, At_j, scale);
+  fun_adapt_row_max(n, totn, H_v, H_i, H_j, A_v, A_i, A_j,At_v,At_i, At_j, scale);
   //if(i==ruiz_its-1) flag=0;
-  adapt_diag_scale<<<numBlocks, blockSize>>>(n, totn, H_v, H_i, H_j, A_v, A_i,
-      A_j, At_v, At_i, At_j, scale, D_rhs, &D_rhs[n], max_d);
+  fun_adapt_diag_scale(n, totn, H_v, H_i, H_j, A_v, A_i, A_j, At_v, At_i, At_j,
+      scale, D_rhs, &D_rhs[n], max_d);
 }
   cudaMemcpy(A->coo_vals, A_v, sizeof(double)*A->nnz, cudaMemcpyDeviceToHost);
   cudaMemcpy(A->coo_cols, A_j, sizeof(int)*A->nnz, cudaMemcpyDeviceToHost);

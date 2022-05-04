@@ -1,4 +1,4 @@
-#include <ruiz_scaling.hpp>
+#include <matrix_vector_ops.hpp>
 
 /*
 @brief: diagonally scales a matrix from the left and right, and
@@ -14,6 +14,15 @@ a flag to determine whether to scale the second matrix (not necessary in last it
 D_rhs the rhs vector. max_d is updated to include the aggregate scaling
  */
 
+void fun_adapt_diag_scale(int n, int m, double* A_v, int* A_i, int* A_j,
+    double* B_v, int* B_i, int* B_j, double* Bt_v, int* Bt_i, int* Bt_j, 
+    double* scale, double* D_rhs1, double* D_rhs2, double* max_d)
+{
+  int numBlocks, blockSize=512;
+  numBlocks = (m + blockSize - 1) / blockSize;
+  adapt_diag_scale<<<numBlocks, blockSize>>>(n,m, A_v, A_i, A_j, B_v, B_i, B_j,
+      Bt_v, Bt_i, Bt_j, scale, D_rhs1, D_rhs2, max_d);    
+}
 __global__ void adapt_diag_scale(int n, int m, double* A_v, int* A_i, int* A_j, double* B_v,
   int* B_i, int* B_j, double* Bt_v, int* Bt_i, int* Bt_j, double* scale, double* D_rhs1,
   double* D_rhs2, double* max_d)
@@ -56,8 +65,18 @@ are correct), an empty scaling vector representing a diagonal matrix,
 @outputs: The scaling vector scale which is updated entry-wise with
 1/sqrt(the maximum of each row) of matrix (1)
  */
-__global__ void adapt_row_max(int n, int m, double* A_v, int* A_i, int* A_j, double* B_v, int* B_i,
-  int* B_j, double* Bt_v, int* Bt_i, int* Bt_j, double* scale)
+void fun_adapt_row_max(int n, int m, double* A_v, int* A_i, int* A_j, 
+    double* B_v, int* B_i, int* B_j, double* Bt_v, int* Bt_i, int* Bt_j, 
+    double* scale)
+{
+  int numBlocks, blockSize=512;
+  numBlocks = (m + blockSize - 1) / blockSize;
+  adapt_row_max<<<numBlocks, blockSize>>>(n,m, A_v, A_i, A_j, B_v, B_i, B_j,
+      Bt_v, Bt_i, Bt_j, scale);    
+}
+__global__ void adapt_row_max(int n, int m, double* A_v, int* A_i, int* A_j,
+    double* B_v, int* B_i, int* B_j, double* Bt_v, int* Bt_i, int* Bt_j, 
+    double* scale)
 {
   double max_l = 0, max_u = 0;
   int    i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -113,6 +132,12 @@ arr - a pointer to the array the constant is added to
 
 @outputs: arr with entries increased by val
  */
+void fun_add_const(int n, int val, int* arr)
+{
+  int numBlocks, blockSize=512;
+  numBlocks = (n + blockSize - 1) / blockSize;
+  add_const<<<numBlocks, blockSize>>>(n,val,arr);
+}
 __global__ void add_const(int n, int val, int* arr)
 {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -129,6 +154,12 @@ alp - scaling constant
 
 @outputs: arr1 += alp*arr2
  */
+void fun_add_vecs(int n, double* arr1, double alp, double* arr2)
+{
+  int numBlocks, blockSize=512;
+  numBlocks = (n + blockSize - 1) / blockSize;
+  add_vecs<<<numBlocks, blockSize>>>(n, arr1, alp, arr2);
+}
 __global__ void add_vecs(int n, double* arr1, double alp, double* arr2)
 {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -145,12 +176,47 @@ arr - a pointer to the array the constant is added to
 
 @outputs: Each entry in arr is scaled by val
  */
+void fun_mult_const(int n, double val, double* arr)
+{
+  int numBlocks, blockSize=512;
+  numBlocks = (n + blockSize - 1) / blockSize;
+  mult_const<<<numBlocks, blockSize>>>(n,val,arr);
+}
 __global__ void mult_const(int n, double val, double* arr)
 {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if(i < n)
   {
     arr[i] *= val;
+  }
+}
+/*
+@brief: adds a multiple of I to a CSR matrix A
+
+@inputs: Length of array n, val - the value to add,
+and A_i, A_j, A_v - pointers for rows, columns and values
+
+@outputs: A[i][i]+=val for all i
+ */
+void fun_add_diag(int n, double val, int* A_i, int* A_j, double* A_v)
+{
+  int numBlocks, blockSize=512;
+  numBlocks = (n + blockSize - 1) / blockSize;
+  add_diag<<<numBlocks, blockSize>>>(n,val,A_i, A_j, A_v);
+}
+__global__ void add_diag(int n, double val, int* A_i, int* A_j, double* A_v)
+{
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if(i < n)
+  {
+    for(int j = A_i[i]; j < A_i[i + 1]; j++)
+    {
+      if(i == A_j[j])
+      {
+        A_v[j]+=val;
+        break;
+      }
+    }
   }
 }
 /*
@@ -161,6 +227,13 @@ D_rhs a (dense) vector, Ds a dense vector represting a diagonal matrix
 
 @outputs: D_rhs=D_rhs./Ds (elementwise)
  */
+void fun_inv_vec_scale(int n, double* D_rhs, double* Ds)
+{
+  int numBlocks, blockSize=512;
+  numBlocks = (n + blockSize - 1) / blockSize;
+  inv_vec_scale<<<numBlocks, blockSize>>>(n, D_rhs, Ds);
+}
+
 __global__ void inv_vec_scale(int n, double* D_rhs, double* Ds)
 {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -177,6 +250,13 @@ D_rhs a (dense) vector, Ds a dense vector represting a diagonal matrix
 
 @outputs: D_rhs=Ds*D_rhs (elementwise)
  */
+void fun_vec_scale(int n, double* D_rhs, double* Ds)
+{
+  int numBlocks, blockSize=512;
+  numBlocks = (n + blockSize - 1) / blockSize;
+  vec_scale<<<numBlocks, blockSize>>>(n, D_rhs, Ds);
+}
+
 __global__ void vec_scale(int n, double* D_rhs, double* Ds)
 {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -194,6 +274,14 @@ matrices A and B in CSR format, an empty matrix C to be overwritten
 
 @outputs: Matrix C in CSR format [A' B']'
  */
+void fun_concatenate(int n, int m, int nnzA, int nnzB, double* A_v, int* A_i, 
+    int* A_j, double* B_v, int* B_i, int* B_j, double* C_v, int* C_i, int* C_j)
+{
+  int numBlocks, blockSize=512;
+  numBlocks = (n + m + blockSize - 1) / blockSize;
+  concatenate<<<numBlocks, blockSize>>>(n, m, nnzA, nnzB, A_v, A_i, A_j, B_v,
+      B_i, B_j, C_v, C_i, C_j);
+}
 __global__ void concatenate(int n, int m, int nnzA, int nnzB, double* A_v, int* A_i, int* A_j,
   double* B_v, int* B_i, int* B_j, double* C_v, int* C_i, int* C_j)
 {
@@ -230,6 +318,13 @@ D_rhs a (dense) vector, Ds a dense vector represting a diagonal matrix
 
 @outputs: The value array of the matrix (A_v) is scaled along with D_rhs.
  */
+void fun_row_scale(
+  int n, double* A_v, int* A_i, int* A_j, double* A_vs, double* D_rhs, double* D_rhs_s, double* Ds)
+{
+  int numBlocks, blockSize=512;
+  numBlocks = (n + 1 + blockSize - 1) / blockSize;
+  row_scale<<<numBlocks, blockSize>>>(n, A_v, A_i, A_j, A_vs, D_rhs, D_rhs_s, Ds);
+}
 __global__ void row_scale(
   int n, double* A_v, int* A_i, int* A_j, double* A_vs, double* D_rhs, double* D_rhs_s, double* Ds)
 {
@@ -257,6 +352,14 @@ a flag to determine whether to scale the second matrix (not necessary in last it
 @outputs: The value arrays of the matrices (A_v, At_v) are scaled along with
 D_rhs the rhs vector. max_d is updated to include the aggregate scaling
  */
+void fun_diag_scale(int n, int m, double* A_v, int* A_i, int* A_j, double* At_v,
+  int* At_i,int* At_j, double* scale, double* D_rhs, double* max_d, int flag)
+{
+  int numBlocks, blockSize=512;
+  numBlocks = (n + m + blockSize - 1) / blockSize;
+  diag_scale<<<numBlocks, blockSize>>>(n, m, A_v, A_i, A_j, At_v, At_i, At_j, 
+      scale, D_rhs, max_d, flag);
+}
 __global__ void diag_scale(int n, int m, double* A_v, int* A_i, int* A_j, double* At_v, int* At_i,
   int* At_j, double* scale, double* D_rhs, double* max_d, int flag)
 {
@@ -292,6 +395,13 @@ a scaling vector representing a diagonal matrix,
 @outputs: The scaling vector scale which is updated entry-wise with
 1/sqrt(the maximum of each row)
  */
+void fun_row_max(int n, int m, double* A_v, int* A_i, int* A_j, double* At_v, 
+  int* At_i, int* At_j, double* scale)
+{
+  int numBlocks, blockSize=512;
+  numBlocks = (n + m + blockSize - 1) / blockSize;
+  row_max<<<numBlocks, blockSize>>>(n, m, A_v, A_i, A_j, At_v, At_i, At_j, scale);
+}
 __global__ void row_max(
   int n, int m, double* A_v, int* A_i, int* A_j, double* At_v, int* At_i, int* At_j, double* scale)
 {
