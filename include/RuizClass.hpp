@@ -13,7 +13,7 @@
 #include <cusolverSp_LOWLEVEL_PREVIEW.h>
 #include <cusolverRf.h>
 #include "matrix_vector_ops.hpp"
-class SchurComplementConjugateGradient
+class RuizClass
 {
 public:
   // default constructor
@@ -28,7 +28,9 @@ public:
   ~RuizClass();
 
   // Ruiz functions
-  void setup();
+  void setup(); // only needs to be called first time Ruiz scaling is used
+  void init_max_d(); // called once for each scaling
+  // called once for each iteration
   void row_max();
   void diag_scale();
 
@@ -45,7 +47,7 @@ private:
   double *Jt_v_;
   int *Jt_i_, *Jt_j_;
   double *rhs_1_, *rhs_2_;
-  double *scale, *max_d;
+  double *scale, *max_d, *max_h;
 };
 
 #endif

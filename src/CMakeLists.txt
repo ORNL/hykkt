@@ -7,13 +7,15 @@ set(a2000DIR
 set(HYBRID_SRC
   input_functions.cu
   schur_complement_cg.cu
-  SchurComplementConjugateGradient.cu)
+  SchurComplementConjugateGradient.cu
+  RuizClass.cu)
 
 set(PERM_SRC
   permcheck.cu)
 
 set(RUIZ_SRC
-  matrix_vector_ops.cu)
+  matrix_vector_ops.cu
+  RuizClass.cu)
 
 set(test1_args
   ${a200DIR}/block_H_matrix_ACTIVSg200_AC_09.mtx
