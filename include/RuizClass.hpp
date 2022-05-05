@@ -28,6 +28,7 @@ public:
   ~RuizClass();
 
   // Ruiz functions
+  void setup();
   void row_max();
   void diag_scale();
 
@@ -43,6 +44,7 @@ private:
   int *J_i_, *J_j_;
   double *Jt_v_;
   int *Jt_i_, *Jt_j_;
+  double *rhs_1_, *rhs_2_;
   double *scale, *max_d;
 };
 
