@@ -18,6 +18,7 @@
 #include <tgmath.h>
 #include <math.h>
 #include <matrix_vector_ops.hpp>
+#include <RuizClass.hpp>
 
 #define ruiz_its 2
 #define tol 1e-8
@@ -177,6 +178,18 @@ int main(int argc, char *argv[]){
     }
   }
 #endif
+#if 1
+RuizClass hjr(n, totn, H_v, H_i, H_j, A_v, A_i, A_j,At_v,At_i, At_j, D_rhs, &D_rhs[n]);
+hjr.setup();
+hjr.init_max_d();
+for(i=0;i<ruiz_its;i++){
+  hjr.row_max();
+  hjr.diag_scale();
+}
+double* max_d;
+max_d = hjr.get_max_d();
+#endif
+#if 0
 double *max_d,*scale;
 cudaMalloc(&max_d, totn*sizeof(double));
 cudaMalloc(&scale, totn*sizeof(double));
@@ -194,6 +207,7 @@ for(i=0;i<ruiz_its;i++){
   fun_adapt_diag_scale(n, totn, H_v, H_i, H_j, A_v, A_i, A_j, At_v, At_i, At_j,
       scale, D_rhs, &D_rhs[n], max_d);
 }
+#endif
   cudaMemcpy(A->coo_vals, A_v, sizeof(double)*A->nnz, cudaMemcpyDeviceToHost);
   cudaMemcpy(A->coo_cols, A_j, sizeof(int)*A->nnz, cudaMemcpyDeviceToHost);
   cudaMemcpy(A->csr_ia, A_i, sizeof(int)*((A->n)+1), cudaMemcpyDeviceToHost);
@@ -203,7 +217,6 @@ for(i=0;i<ruiz_its;i++){
   cudaMemcpy(Ah_v, At_v, sizeof(double)*A->nnz, cudaMemcpyDeviceToHost);
   cudaMemcpy(Ah_j, At_j, sizeof(int)*A->nnz, cudaMemcpyDeviceToHost);
   cudaMemcpy(Ah_i, At_i, sizeof(int)*((A->m)+1), cudaMemcpyDeviceToHost);
-  cudaMemcpy(max_h, max_d, sizeof(double)*totn, cudaMemcpyDeviceToHost);
   cudaMemcpy(H_rhs, D_rhs, sizeof(double)*totn, cudaMemcpyDeviceToHost);
 #if 0
   printf("max_d\n");
@@ -263,17 +276,9 @@ for(i=0;i<ruiz_its;i++){
     fails++;
     printf("rhs not scaled correctly H_rhs[n/2-1]= %32.32g\n", H_rhs[n/2-1]);
   }
-  if (fabs(max_h[n/2-1]-0.044151078568835)>tol){
-    fails++;
-    printf("Incorrect scaling factor max_h[n/2-1] = %32.32g\n", max_h[n/2-1]);
-  }
   if (fabs(H_rhs[3*n/2-1]-0.044194173824159)>tol){
     fails++;
     printf("rhs not scaled correctly H_rhs[3*n/2-1]= %32.32g\n", H_rhs[3*n/2-1]);
-  }
-  if (fabs(max_h[3*n/2-1]-0.044194173824159)>tol){
-    fails++;
-    printf("Incorrect scaling factor max_h[3*n/2-1] = %32.32g\n", max_h[3*n/2-1]);
   }
   if (fails==0) printf("All tests passed\n");
   else 
