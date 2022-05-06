@@ -8,6 +8,7 @@ set(HYBRID_SRC
   input_functions.cu
   schur_complement_cg.cu
   SchurComplementConjugateGradient.cu
+  matrix_vector_ops.cu
   RuizClass.cu)
 
 set(PERM_SRC

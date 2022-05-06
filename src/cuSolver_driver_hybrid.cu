@@ -27,6 +27,7 @@
 #include "input_functions.hpp"
 #include "schur_complement_cg.hpp"
 #include "SchurComplementConjugateGradient.hpp"
+#include <RuizClass.hpp>
 #define tol 1e-12
 #define norm_tol 1e-2
 #define ruiz_its 2
@@ -449,6 +450,19 @@ int main(int argc, char* argv[])
   free(JC_ja_h);
 #endif
   // setup vectors for scaling
+#if 0 //class implementation
+RuizClass hjr(H->n, nHJ, Htil_vals, Htil_rows, Htil_cols, JC_a,
+    JC_ia, JC_ja, JCt_a, JCt_ia, JCt_ja, d_rx_til, d_ry);
+hjr.setup();
+hjr.init_max_d();
+for(int i=0;i<ruiz_its;i++){
+  hjr.row_max();
+  hjr.diag_scale();
+}
+double* max_d;
+max_d = hjr.get_max_d();
+#endif
+#if 1 //function implemention
   // Allocation - happens once
   double *max_d, *scale;
   cudaMalloc(&max_d, nHJ * sizeof(double));
@@ -470,6 +484,7 @@ int main(int argc, char* argv[])
   }
   gettimeofday(&t2, 0);
   timeM += (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
+#endif
 #if 0 
   double *Ht_a_h;
   int *Ht_ia_h, *Ht_ja_h;
@@ -1102,8 +1117,10 @@ int main(int argc, char* argv[])
   cudaFree(bufferJC);
   cudaFree(bufferJC2);
   cudaFree(max_d);
+#if 0
   free(max_h);
   cudaFree(scale);
+#endif
   cudaFree(d_perm);
   cudaFree(drev_perm);
   cudaFree(d_perm_mapH);
