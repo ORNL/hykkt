@@ -10,7 +10,5 @@
 #BSUB -env "all"
 #BSUB -step_cgroup n
 
-source ./buildsystem/summit-env.sh
-./buildsystem/build.sh
 cd build
 ctest -VV

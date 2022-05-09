@@ -1,264 +1,215 @@
-/* written by SR based on a code by KS
-         How to compile:
-         nvcc -lcusparse -lcusolver -lcublas cuSolver_driver_chol.cu
- */
-
-#include <unistd.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <assert.h>
-#include <ctype.h>
-#include <string.h>
-#include <cusolver_common.h>
-#include <cuda_runtime.h>
-#include <cusparse.h>
-#include <cublas_v2.h>
-#include <sys/time.h>
-#include <algorithm>
-#include "cusolverSp.h"
-#include <cusolverSp_LOWLEVEL_PREVIEW.h>
-#include <cusolverRf.h>
-#include <iostream>
-#include <memory>
-#include <string>
-#include <input_functions.hpp>
+
+#include "input_functions.hpp"
+#include "MMatrix.hpp"
 
 static int indexPlusValue_comp(const void* a, const void* b)
 {
-  const struct indexPlusValue* da = (indexPlusValue*)a;
-  const struct indexPlusValue* db = (indexPlusValue*)b;
+  const struct indexPlusValue* da = (indexPlusValue*) a;
+  const struct indexPlusValue* db = (indexPlusValue*) b;
 
   return da->idx < db->idx ? -1 : da->idx > db->idx;
 }
 
-/*
-Brief: reads a matrix stored in matrixFileName into a structure A of COO format
-   */
-void read_mm_file_into_coo(const char* matrixFileName, mmatrix* A, int lines)
+void read_mm_file_into_coo(const char* matrix_file_name, 
+                           MMatrix* mat_a, 
+                           int lines)
 {
   // this reads triangular matrix but expands into full as it goes (important)
   // lines indicates the number of the first useful line
-  FILE* fpm = fopen(matrixFileName, "r");
+  FILE* fpm = fopen(matrix_file_name, "r");
 
   assert(fpm != NULL);
-  char lineBuffer[256];
-  for(int i=0; i<lines; i++) fgets(lineBuffer, sizeof(lineBuffer), fpm);
+  char line_buffer[256];
+  for(int i = 0; i < lines; i++){
+    fgets(line_buffer, sizeof(line_buffer), fpm);
+  }
+  
   // first line is size and nnz, need this info to allocate memory
-  sscanf(lineBuffer, "%ld %ld %ld", &(A->n), &(A->m), &(A->nnz));
+  sscanf(line_buffer, "%ld %ld %ld", &(mat_a->n_), &(mat_a->m_), &(mat_a->nnz_));
   // allocate
-  printf("allocating COO structures %d %d %d\n", A->n, A->m, A->nnz);
+  printf("allocating COO structures %d %d %d\n", mat_a->n_, mat_a->m_, mat_a->nnz_);
 
-  A->coo_vals = (double*)calloc(A->nnz, sizeof(double));
-  A->coo_rows = (int*)calloc(A->nnz, sizeof(int));
-  A->coo_cols = (int*)calloc(A->nnz, sizeof(int));
+  mat_a->coo_vals = new double[mat_a->nnz_];
+  mat_a->coo_rows = new int[mat_a->nnz_];
+  mat_a->coo_cols = new int[mat_a->nnz_]; 
 
   // read
-  int    r, c;
+  int r;
+  int c;
   double val;
   int    i = 0;
-  while(fgets(lineBuffer, sizeof(lineBuffer), fpm) != NULL)
-  {
-
-    sscanf(lineBuffer, "%d %d %lf", &r, &c, &val);
-    A->coo_rows[i] = r - 1;
-    A->coo_cols[i] = c - 1;
-    A->coo_vals[i] = val;
+  while(fgets(line_buffer, sizeof(line_buffer), fpm) != NULL) {
+    sscanf(line_buffer, "%d %d %lf", &r, &c, &val);
+    mat_a->coo_rows[i] = r - 1;
+    mat_a->coo_cols[i] = c - 1;
+    mat_a->coo_vals[i] = val;
     i++;
   }
   fclose(fpm);
 }
-/*
-Brief: Takes a matrix stored in implicit symmetric format COO in A
-and fills out the entries and converts it to csr format within the structure
-   */
-void sym_coo_to_csr(mmatrix* A)
+
+void sym_coo_to_csr(MMatrix* mat_a)
 {
   // this is diffucult
   // first, decide how many nnz we have in each row
-  int* nnz_counts;
-  nnz_counts       = (int*)calloc(A->n, sizeof(int));
+  int* nnz_counts = new int[mat_a->n_]{0};
   int nnz_unpacked = 0;
-  for(int i = 0; i < A->nnz; ++i)
-  {
-    nnz_counts[A->coo_rows[i]]++;
+  for(int i = 0; i < mat_a->nnz_; ++i) {
+    nnz_counts[mat_a->coo_rows[i]]++;
     nnz_unpacked++;
-    if(A->coo_rows[i] != A->coo_cols[i])
-    {
-      nnz_counts[A->coo_cols[i]]++;
+    if(mat_a->coo_rows[i] != mat_a->coo_cols[i]) {
+      nnz_counts[mat_a->coo_cols[i]]++;
       nnz_unpacked++;
     }
   }
   // allocate full CSR structure
-  A->nnz_unpacked     = nnz_unpacked;
-  A->csr_vals         = (double*)calloc(A->nnz_unpacked, sizeof(double));
-  A->csr_ja           = (int*)calloc(A->nnz_unpacked, sizeof(int));
-  A->csr_ia           = (int*)calloc((A->n) + 1, sizeof(int));
-  indexPlusValue* tmp = (indexPlusValue*)calloc(A->nnz_unpacked, sizeof(indexPlusValue));
+  mat_a->nnz_unpacked_    = nnz_unpacked;
+  mat_a->csr_vals         = new double[mat_a->nnz_unpacked_];
+  mat_a->csr_cols         = new int[mat_a->nnz_unpacked_];
+  mat_a->csr_rows         = new int[(mat_a->n_) + 1];
+  indexPlusValue* tmp = new indexPlusValue [mat_a->nnz_unpacked_];
   // create IA (row starts)
-  A->csr_ia[0] = 0;
-  for(int i = 1; i < A->n + 1; ++i)
+  mat_a->csr_rows[0] = 0;
+  for(int i = 1; i < mat_a->n_ + 1; ++i)
   {
-    A->csr_ia[i] = A->csr_ia[i - 1] + nnz_counts[i - 1];
+    mat_a->csr_rows[i] = mat_a->csr_rows[i - 1] + nnz_counts[i - 1];
   }
 
-  int* nnz_shifts = (int*)calloc(A->n, sizeof(int));
-  int  r, start;
+  int* nzz_shifts = new int[mat_a->n_]{0};
+  int  r;
+  int  start;
 
-  for(int i = 0; i < A->nnz; ++i)
-  {
+  for(int i = 0; i < mat_a->nnz_; ++i) {
     // which row
-    r     = A->coo_rows[i];
-    start = A->csr_ia[r];
-    if((start + nnz_shifts[r]) > A->nnz_unpacked)
-      printf("index out of boubds\n");
-    tmp[start + nnz_shifts[r]].idx   = A->coo_cols[i];
-    tmp[start + nnz_shifts[r]].value = A->coo_vals[i];
-
-    nnz_shifts[r]++;
-
-    if(A->coo_rows[i] != A->coo_cols[i])
-    {
-
-      r     = A->coo_cols[i];
-      start = A->csr_ia[r];
-
-      if((start + nnz_shifts[r]) > A->nnz_unpacked)
-        printf("index out of boubds 2\n");
-      tmp[start + nnz_shifts[r]].idx   = A->coo_rows[i];
-      tmp[start + nnz_shifts[r]].value = A->coo_vals[i];
-      nnz_shifts[r]++;
+    r     = mat_a->coo_rows[i];
+    start = mat_a->csr_rows[r];
+    if((start + nzz_shifts[r]) > mat_a->nnz_unpacked_) {
+      printf("index out of bounds\n");
+    }
+    tmp[start + nzz_shifts[r]].idx   = mat_a->coo_cols[i];
+    tmp[start + nzz_shifts[r]].value = mat_a->coo_vals[i];
+    nzz_shifts[r]++;
+    if(mat_a->coo_rows[i] != mat_a->coo_cols[i]) {
+      r     = mat_a->coo_cols[i];
+      start = mat_a->csr_rows[r];
+      if((start + nzz_shifts[r]) > mat_a->nnz_unpacked_) {
+        printf("index out of bounds 2\n");
+      }
+      tmp[start + nzz_shifts[r]].idx   = mat_a->coo_rows[i];
+      tmp[start + nzz_shifts[r]].value = mat_a->coo_vals[i];
+      nzz_shifts[r]++;
     }
   }
-  for(int i = 0; i < A->n; ++i)
-  {
-    int colStart = A->csr_ia[i];
-    int colEnd   = A->csr_ia[i + 1];
-    int length   = colEnd - colStart;
+  
+  for(int i = 0; i < mat_a->n_; ++i) {
+    int col_start = mat_a->csr_rows[i];
+    int col_end   = mat_a->csr_rows[i + 1];
+    int length   = col_end - col_start;
+    qsort(&tmp[col_start], length, sizeof(indexPlusValue), indexPlusValue_comp);
+  }
 
-    qsort(&tmp[colStart], length, sizeof(indexPlusValue), indexPlusValue_comp);
+  for(int i = 0; i < mat_a->nnz_unpacked_; ++i) {
+    mat_a->csr_cols[i]   = tmp[i].idx;
+    mat_a->csr_vals[i] = tmp[i].value;
   }
-  for(int i = 0; i < A->nnz_unpacked; ++i)
-  {
-    A->csr_ja[i]   = tmp[i].idx;
-    A->csr_vals[i] = tmp[i].value;
-  }
-  A->nnz = A->nnz_unpacked;
+  mat_a->nnz_ = mat_a->nnz_unpacked_;
+  delete [] nnz_counts;
 }
 
-/*
-Brief: Takes a matrix stored in COO format in A
-and fills out the entries and converts it to csr format within the structure
-   */
-void coo_to_csr(mmatrix* A)
+void coo_to_csr(MMatrix* mat_a)
 {
   // this is diffucult
   // first, decide how many nnz we have in each row
-  int* nnz_counts;
-  nnz_counts = (int*)calloc(A->n, sizeof(int));
-  for(int i = 0; i < A->nnz; ++i)
-  {
-    nnz_counts[A->coo_rows[i]]++;
+  int* nnz_counts = new int[mat_a->n_]{0};
+  for(int i = 0; i < mat_a->nnz_; ++i) {
+    nnz_counts[mat_a->coo_rows[i]]++;
   }
   // allocate full CSR structure
-  // A->csr_vals =(double*)  calloc(A->nnz, sizeof(double));
-  // A->csr_ja =(int*)  calloc(A->nnz, sizeof(int));
-  A->csr_ia           = (int*)calloc((A->n) + 1, sizeof(int));
-  indexPlusValue* tmp = (indexPlusValue*)calloc(A->nnz, sizeof(indexPlusValue));
+  mat_a->csr_rows     = new int[(mat_a->n_) + 1];
+  indexPlusValue* tmp = new indexPlusValue [mat_a->nnz_];
   // create IA (row starts)
-  A->csr_ia[0] = 0;
-  for(int i = 1; i < A->n + 1; ++i)
-  {
-    A->csr_ia[i] = A->csr_ia[i - 1] + nnz_counts[i - 1];
+  mat_a->csr_rows[0] = 0;
+  for(int i = 1; i < mat_a->n_ + 1; ++i) {
+    mat_a->csr_rows[i] = mat_a->csr_rows[i - 1] + nnz_counts[i - 1];
   }
 
-  int* nnz_shifts = (int*)calloc(A->n, sizeof(int));
-  int  r, start;
+  int* nzz_shifts = new int[mat_a->n_]{0};
+  int  r;
+  int  start;
 
-  for(int i = 0; i < A->nnz; ++i)
-  {
+  for(int i = 0; i < mat_a->nnz_; ++i) {
     // which row
-    r     = A->coo_rows[i];
-    start = A->csr_ia[r];
-    if((start + nnz_shifts[r]) > A->nnz)
+    r     = mat_a->coo_rows[i];
+    start = mat_a->csr_rows[r];
+    if((start + nzz_shifts[r]) > mat_a->nnz_)
       printf("index out of boubds\n");
-    tmp[start + nnz_shifts[r]].idx   = A->coo_cols[i];
-    tmp[start + nnz_shifts[r]].value = A->coo_vals[i];
+    tmp[start + nzz_shifts[r]].idx   = mat_a->coo_cols[i];
+    tmp[start + nzz_shifts[r]].value = mat_a->coo_vals[i];
 
-    nnz_shifts[r]++;
+    nzz_shifts[r]++;
   }
   // now sort whatever is inside rows
 
-  for(int i = 0; i < A->n; ++i)
-  {
-
+  for(int i = 0; i < mat_a->n_; ++i) {
     // now sorting (and adding 1)
-    int colStart = A->csr_ia[i];
-    int colEnd   = A->csr_ia[i + 1];
-    int length   = colEnd - colStart;
-
-    qsort(&tmp[colStart], length, sizeof(indexPlusValue), indexPlusValue_comp);
+    int col_start = mat_a->csr_rows[i];
+    int col_end   = mat_a->csr_rows[i + 1];
+    int length    = col_end - col_start;
+    qsort(&tmp[col_start], length, sizeof(indexPlusValue), indexPlusValue_comp);
   }
 
   // and copy
-  for(int i = 0; i < A->nnz; ++i)
-  {
-    A->coo_cols[i] = tmp[i].idx;
-    A->coo_vals[i] = tmp[i].value;
+  for(int i = 0; i < mat_a->nnz_; ++i) {
+    mat_a->coo_cols[i] = tmp[i].idx;
+    mat_a->coo_vals[i] = tmp[i].value;
   }
+  delete [] nnz_counts;
 }
 
-/*
-Brief: reads a 1-index based permutation array stored in rhsFileName
-into an array rhs that is 0-index based
-   */
-void read_1idx_perm(const char* rhsFileName, int* rhs)
+void read_1idx_perm(const char* rhs_file_name, int* rhs)
 {
-  FILE* fpr = fopen(rhsFileName, "r");
-  char  lineBuffer[256];
-  fgets(lineBuffer, sizeof(lineBuffer), fpr);
-  fgets(lineBuffer, sizeof(lineBuffer), fpr);
-  int N, m;
-  sscanf(lineBuffer, "%ld %ld", &N, &m);
-  printf("N = %d, m=%d\n", N, m);
+  FILE* fpr = fopen(rhs_file_name, "r");
+  char  line_buffer[256];
+  fgets(line_buffer, sizeof(line_buffer), fpr);
+  fgets(line_buffer, sizeof(line_buffer), fpr);
+  int n;
+  int m;
+  sscanf(line_buffer, "%ld %ld", &n, &m);
+  printf("N = %d, m=%d\n", n, m);
   int i = 0;
   int val;
 
-  while(fgets(lineBuffer, sizeof(lineBuffer), fpr) != NULL)
-  {
-    sscanf(lineBuffer, "%ld", &val);
+  while(fgets(line_buffer, sizeof(line_buffer), fpr) != NULL) {
+    sscanf(line_buffer, "%ld", &val);
     rhs[i] = val - 1;
     i++;
   }
   fclose(fpr);
 }
-/*
-Brief: reads vector stored in rhsFileName into an array rhs
-   */
-void read_rhs(const char* rhsFileName, double* rhs)
-{
-  FILE* fpr = fopen(rhsFileName, "r");
-  char  lineBuffer[256];
 
-  fgets(lineBuffer, sizeof(lineBuffer), fpr);
-  fgets(lineBuffer, sizeof(lineBuffer), fpr);
-  int N, m;
-  sscanf(lineBuffer, "%ld %ld", &N, &m);
+void read_rhs(const char* rhs_file_name, double* rhs)
+{
+  FILE* fpr = fopen(rhs_file_name, "r");
+  char  line_buffer[256];
+
+  fgets(line_buffer, sizeof(line_buffer), fpr);
+  fgets(line_buffer, sizeof(line_buffer), fpr);
+  int n, m;
+  sscanf(line_buffer, "%ld %ld", &n, &m);
   int    i = 0;
   double val;
   // allocate
 
-  while(fgets(lineBuffer, sizeof(lineBuffer), fpr) != NULL)
-  {
-    sscanf(lineBuffer, "%lf", &val);
+  while(fgets(line_buffer, sizeof(line_buffer), fpr) != NULL) {
+    sscanf(line_buffer, "%lf", &val);
     rhs[i] = val;
-    // printf("%16.16f \n", val);
     i++;
   }
   fclose(fpr);
 }
-/*
-Brief: Checks used and available GPU memory
-   */
+
 void checkGpuMem()
 {
   size_t avail;

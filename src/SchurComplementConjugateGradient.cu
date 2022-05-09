@@ -1,133 +1,143 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <cusolver_common.h>
-#include <cuda_runtime.h>
-#include <cusparse.h>
-#include <cublas_v2.h>
 #include <sys/time.h>
-#include <algorithm>
-#include "cusolverSp.h"
-#include <cusolverSp_LOWLEVEL_PREVIEW.h>
-#include <cusolverRf.h>
-
 #include "SchurComplementConjugateGradient.hpp"
+#include "matrix_vector_ops_cuda.hpp"
+#include "vector_vector_ops.hpp"
+#include "cuda_memory_utils.hpp"
+#include "constants.hpp"
+
   // parametrized constructor
   SchurComplementConjugateGradient::SchurComplementConjugateGradient(
-      cusparseSpMatDescr_t matJC, cusparseSpMatDescr_t matJCt, csrcholInfo_t dH,
-      double* x0, double* b, int n, int m, int nnz, void* buffer_gpu) :
-      matJC_(matJC), matJCt_(matJCt), dH_(dH), x0_(x0), b_(b), n_(n), m_(m),
-      nnz_(nnz), buffer_gpu_(buffer_gpu){}
+      cusparseSpMatDescr_t jc_desc, 
+      cusparseSpMatDescr_t jct_desc,
+      double* x0, 
+      double* b, 
+      int n, 
+      int m, 
+      CholeskyClass* cc, 
+      cusparseHandle_t handle, 
+      cublasHandle_t handle_cublas) 
+    :jc_desc_(jc_desc), 
+     jct_desc_(jct_desc), 
+     x0_(x0), 
+     b_(b), 
+     n_(n), 
+     m_(m),
+     cc_(cc), 
+     handle_(handle), 
+     handle_cublas_(handle_cublas)
+  {
+  }
 
   // destructor
-  SchurComplementConjugateGradient::~SchurComplementConjugateGradient(){
-  free(ycp);
-  cudaFree(y);
-  cudaFree(z);
-  cudaFree(r);
-  cudaFree(w);
-  cudaFree(p);
-  cudaFree(s);
+  SchurComplementConjugateGradient::~SchurComplementConjugateGradient()
+  {
+    deleteOnDevice(y_);
+    deleteOnDevice(z_);
+    deleteOnDevice(r_);
+    deleteOnDevice(w_);
+    deleteOnDevice(p_);
+    deleteOnDevice(s_);
+    delete [] ycp_;
   };
 
   // solver API
-  void SchurComplementConjugateGradient::allocate(){
-  cusparseCreate(&handle);  
-  cusolverSpCreate(&handle_cusolver);
-  cublasCreate(&handle_cublas);
-  ycp = (double*)calloc(m_, sizeof(double));
-  for(int i = 0; i < m_; i++)
+  void SchurComplementConjugateGradient::allocate()
   {
-    ycp[i] = 0;
-  }
-  cudaMalloc((void**)&y, m_ * sizeof(double));
-  cudaMalloc((void**)&z, m_ * sizeof(double));
-  cudaMalloc((void**)&r, n_ * sizeof(double));
-  cudaMalloc((void**)&w, n_ * sizeof(double));
-  cudaMalloc((void**)&p, n_ * sizeof(double));
-  cudaMalloc((void**)&s, n_ * sizeof(double));
+    ycp_ = new double[m_] {0.0};
 
-  //  Allocation - happens once
-  cusparseCreateDnVec(&vecx, n_, x0_, CUDA_R_64F);
-  cusparseCreateDnVec(&vecb, n_, b_, CUDA_R_64F);
-  cusparseCreateDnVec(&vecy, m_, y, CUDA_R_64F);
-  cusparseCreateDnVec(&vecz, m_, z, CUDA_R_64F);
-  cusparseCreateDnVec(&vecr, n_, r, CUDA_R_64F);
-  cusparseCreateDnVec(&vecw, n_, w, CUDA_R_64F);
-  cusparseCreateDnVec(&vecp, n_, p, CUDA_R_64F);
-  cusparseCreateDnVec(&vecs, n_, s, CUDA_R_64F);
+    allocateVectorOnDevice(m_, &y_);
+    allocateVectorOnDevice(m_, &z_);
+    allocateVectorOnDevice(n_, &r_);
+    allocateVectorOnDevice(n_, &w_);
+    allocateVectorOnDevice(n_, &p_);
+    allocateVectorOnDevice(n_, &s_);
 
+    //  Allocation - happens once
+    createDnVec(&vecx_, n_, x0_);
+    createDnVec(&vecb_, n_, b_);
+    createDnVec(&vecy_, m_, y_);
+    createDnVec(&vecz_, m_, z_);
+    createDnVec(&vecr_, n_, r_);
+    createDnVec(&vecw_, n_, w_);
+    createDnVec(&vecp_, n_, p_);
+    createDnVec(&vecs_, n_, s_);
   }
-  void SchurComplementConjugateGradient::setup(){
-  cudaMemcpy(y, ycp, sizeof(double) * (m_), cudaMemcpyHostToDevice);
-  cudaMemcpy(z, y, sizeof(double) * (m_), cudaMemcpyDeviceToDevice);
-  cudaMemcpy(r, b_, sizeof(double) * (n_), cudaMemcpyDeviceToDevice);
-  cudaMemcpy(w, b_, sizeof(double) * (n_), cudaMemcpyDeviceToDevice);
-  cudaMemcpy(p, r, sizeof(double) * (n_), cudaMemcpyDeviceToDevice);
-  cudaMemcpy(s, w, sizeof(double) * (n_), cudaMemcpyDeviceToDevice);
+
+  void SchurComplementConjugateGradient::setup()
+  {
+    copyVectorToDevice(m_, ycp_, y_);
   
+    copyDeviceVector(m_, y_, z_);
+    copyDeviceVector(n_, b_, r_);
+    copyDeviceVector(n_, b_, w_);
+    copyDeviceVector(n_, r_, p_);
+    copyDeviceVector(n_, w_, s_);
   }
-  int SchurComplementConjugateGradient::solve(){
-  gettimeofday(&t1, 0);
-  fun_SpMV(one, matJCt_, vecx, zero, vecy);
-  cusolverSpDcsrcholSolve(handle_cusolver, m_, y, z, dH_, buffer_gpu_);
-  fun_SpMV(minusone, matJC_, vecz, one, vecr);
-  double gam_i;
-  cublasDdot(handle_cublas, n_, r, 1, r, 1, &gam_i);
-  fun_SpMV(one, matJCt_, vecr, zero, vecy);
-  cusolverSpDcsrcholSolve(handle_cusolver, m_, y, z, dH_, buffer_gpu_);
-  fun_SpMV(one, matJC_, vecz, zero, vecw);
-  double beta = 0, delta, alpha, gam_i1;
-  cublasDdot(handle_cublas, n_, w, 1, r, 1, &delta);
-  alpha           = gam_i / delta;
-  double minalpha = -alpha;
-  int i;
-  for(i = 0; i < itmax_; i++)
+ 
+  int SchurComplementConjugateGradient::solve()
   {
-    cublasDscal(handle_cublas, n_, &beta, p, 1);
-    cublasDaxpy(handle_cublas, n_, &one, r, 1, p, 1);
+    gettimeofday(&t1_, 0);
+    fun_SpMV_full(handle_, ONE, jct_desc_, vecx_, ZERO, vecy_);
+    cc_->Solve(z_, y_);
+  
+    fun_SpMV_full(handle_, MINUS_ONE, jc_desc_, vecz_, ONE, vecr_);
+    
+    dotProduct(handle_cublas_, n_, r_, r_, &gam_i_);
+    fun_SpMV_full(handle_, ONE, jct_desc_, vecr_, ZERO, vecy_);
+    cc_->Solve(z_, y_);
+  
+    fun_SpMV_full(handle_, ONE, jc_desc_, vecz_, ZERO, vecw_);
+    dotProduct(handle_cublas_, n_, w_, r_, &delta_);
+    alpha_           = gam_i_ / delta_;
+    minalpha_ = -alpha_;
+    int i;
+  
+    for(i = 0; i < itmax_; i++){
+      scaleVector(handle_cublas_, n_, &beta_, p_);
+      sumVectors(handle_cublas_, n_, r_, p_);
+      scaleVector(handle_cublas_, n_, &beta_, s_);
+      sumVectors(handle_cublas_, n_, w_, s_);
+      sumVectors(handle_cublas_, n_, p_, x0_, &alpha_);
+      minalpha_ = -alpha_;
+      sumVectors(handle_cublas_, n_, s_, r_, &minalpha_);
+      dotProduct(handle_cublas_, n_, r_, r_, &gam_i1_);
+      if(sqrt(gam_i1_) < tol_){
+        gettimeofday(&t2_, 0);
+        timeIO_ = (1000000.0 * (t2_.tv_sec - t1_.tv_sec) + t2_.tv_usec - t1_.tv_usec) / 1000.0;
+        printf("time for CG ev(ms). : %16.16f\n", timeIO_);
+        printf("Convergence occured at iteration %d\n", i);
+        break;
+      }
+      // product with w=Ar starts here
+      fun_SpMV_full(handle_, ONE, jct_desc_, vecr_, ZERO, vecy_);
+    
+      cc_->Solve(z_, y_);
+      fun_SpMV_full(handle_, ONE, jc_desc_, vecz_, ZERO, vecw_);
 
-    cublasDscal(handle_cublas, n_, &beta, s, 1);
-    cublasDaxpy(handle_cublas, n_, &one, w, 1, s, 1);
-
-    cublasDaxpy(handle_cublas, n_, &alpha, p, 1, x0_, 1);
-    minalpha = -alpha;
-    cublasDaxpy(handle_cublas, n_, &minalpha, s, 1, r, 1);
-
-    cublasDdot(handle_cublas, n_, r, 1, r, 1, &gam_i1);
-    if(sqrt(gam_i1) < tol_)
-    {
-      gettimeofday(&t2, 0);
-      timeIO = (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
-      printf("time for CG ev(ms). : %16.16f\n", timeIO);
-      printf("Convergence occured at iteration %d\n", i);
-      break;
+      dotProduct(handle_cublas_, n_, w_, r_, &delta_);
+      beta_  = gam_i1_ / gam_i_;
+      gam_i_ = gam_i1_;
+      alpha_ = gam_i_ / (delta_ - beta_ * gam_i_ / alpha_);
     }
-    // product with w=Ar starts here
-    fun_SpMV(one, matJCt_, vecr, zero, vecy);
-    cusolverSpDcsrcholSolve(handle_cusolver, m_, y, z, dH_, buffer_gpu_);
-    fun_SpMV(one, matJC_, vecz, zero, vecw);
 
-    cublasDdot(handle_cublas, n_, w, 1, r, 1, &delta);
-    beta  = gam_i1 / gam_i;
-    gam_i = gam_i1;
-    alpha = gam_i / (delta - beta * gam_i / alpha);
-  }
-  printf("Error is %32.32g \n", sqrt(gam_i1));
-  if (i==itmax_){
-    gettimeofday(&t2, 0);
-    timeIO = (1000000.0 * (t2.tv_sec - t1.tv_sec) + t2.tv_usec - t1.tv_usec) / 1000.0;
-    printf("time for CG ev(ms). : %16.16f\n", timeIO);
-    printf("No CG convergence in %d iterations\n", itmax_);
-    return 1;
-  }
+    printf("Error is %32.32g \n", sqrt(gam_i1_));
+    if (i == itmax_){
+      gettimeofday(&t2_, 0);
+      timeIO_ = (1000000.0 * (t2_.tv_sec - t1_.tv_sec) + t2_.tv_usec - t1_.tv_usec) / 1000.0;
+      printf("time for CG ev(ms). : %16.16f\n", timeIO_);
+      printf("No CG convergence in %d iterations\n", itmax_);
+      return 1;
+    }
     return 0;
   }
+
   void SchurComplementConjugateGradient::set_solver_tolerance(double tol)
   {
     tol_ = tol;
   }
+
   void SchurComplementConjugateGradient::set_solver_itmax(int itmax)
   {
     itmax_ = itmax;
   }
-

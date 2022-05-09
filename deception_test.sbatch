@@ -10,8 +10,6 @@
 #SBATCH -e test.%J.err
 
 
-source ./buildsystem/deception-env.sh
-./buildsystem/build.sh
 cd build
 ctest -VV
 

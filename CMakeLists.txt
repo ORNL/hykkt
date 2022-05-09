@@ -22,14 +22,14 @@ endif()
 
 if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
   #set(CMAKE_CUDA_ARCHITECTURES 70) #for summit, ascent
-  set(CMAKE_CUDA_ARCHITECTURES 80) #for deception
-  #set(CMAKE_CUDA_ARCHITECTURES 80 CACHE "Selects CUDA architectures") #this doesn't work
+  #set(CMAKE_CUDA_ARCHITECTURES 80) #for deception
+  set(CMAKE_CUDA_ARCHITECTURES 80 CACHE STRING "Selects CUDA architectures") #this doesn't work
 endif()
 
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-extended-lambda")
 
 # HiOp requires this since we require static
-set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
+set(CMAKE_CUDA_SEPARABLE_COMPILATION OFF)
 
 # Link in required cuda dependencies
 find_package(CUDAToolkit REQUIRED)
@@ -38,14 +38,18 @@ add_library(cuda_libs INTERFACE)
 target_link_libraries(cuda_libs INTERFACE
                       CUDA::cusolver
                       CUDA::cublas
-                      CUDA::cusparse)
+                      CUDA::cusparse
+                      CUDA::cudart)
 
 # Enable testing
 enable_testing()
 
 # TODO - use target based includes
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/include
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src
+                    ${CMAKE_CURRENT_SOURCE_DIR}/examples)
 
 # Add code directory
 add_subdirectory(src)
+add_subdirectory(examples)
 
