@@ -8,7 +8,7 @@ struct indexPlusValue
 };
 
 /*
- * @brief compares indeces of values for use in sorting methods
+ * @brief compares indices of values for use in sorting methods
  *
  * @param a - first indexPlusValue to be compared
  * b - second indexPlusValue to be compared
@@ -40,7 +40,7 @@ typedef struct
  * 
  * @param matrix_file_name - name of file holding matrix to be read
  * mat_a - MMatrix structure to be written to
- * lines - number of lines in file to be read
+ * lines - First useful (non comment) line of matrix market file
  *
  * @pre matrix_file_name is a valid file
  * @post mat_a now holds the values for the loaded matrix using COO format

@@ -44,7 +44,12 @@ void selection_sort2(int len, int* arr1, int* arr2)
   }
 }
 
-void make_vec_map_c(int n, int* rows, int* cols, int* rev_perm, int* perm_cols, int* perm_map)
+void make_vec_map_c(int n, 
+    int* rows, 
+    int* cols, 
+    int* rev_perm, 
+    int* perm_cols, 
+    int* perm_map)
 {
   int row_s;
   int rowlen;
@@ -69,8 +74,13 @@ void reverse_perm(int n, int* perm, int* rev_perm)
   }
 }
 
-void make_vec_map_r(
-  int n, int* rows, int* cols, int* perm, int* perm_rows, int* perm_cols, int* perm_map)
+void make_vec_map_r(int n, 
+    int* rows, 
+    int* cols, 
+    int* perm, 
+    int* perm_rows, 
+    int* perm_cols, 
+    int* perm_map)
 {
   perm_rows[0] = 0;
   int count    = 0;
@@ -92,8 +102,14 @@ void make_vec_map_r(
   }
 }
 
-void make_vec_map_rc(int n, int* rows, int* cols, int* perm, int* rev_perm, int* perm_rows,
-  int* perm_cols, int* perm_map)
+void make_vec_map_rc(int n, 
+    int* rows, 
+    int* cols, 
+    int* perm, 
+    int* rev_perm, 
+    int* perm_rows,
+    int* perm_cols, 
+    int* perm_map)
 {
   perm_rows[0] = 0;
   int count    = 0;

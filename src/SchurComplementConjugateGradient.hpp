@@ -6,21 +6,20 @@
 
 class SchurComplementConjugateGradient
 {
-
 public:
   // default constructor
   SchurComplementConjugateGradient();
 
   // parametrized constructor
   SchurComplementConjugateGradient(cusparseSpMatDescr_t jc_desc, 
-                                   cusparseSpMatDescr_t jct_desc, 
-                                   double* x0, 
-                                   double* b, 
-                                   int n, 
-                                   int m, 
-                                   CholeskyClass* cc,
-                                   cusparseHandle_t handle, 
-                                   cublasHandle_t handle_cublas);
+      cusparseSpMatDescr_t jct_desc, 
+      double* x0, 
+      double* b, 
+      int n, 
+      int m, 
+      CholeskyClass* cc,
+      cusparseHandle_t handle, 
+      cublasHandle_t handle_cublas);
 
   // destructor
   ~SchurComplementConjugateGradient();
@@ -49,17 +48,18 @@ public:
   void setup();
 
 /*
- * @brief solve Schur Complement using conjugate gradient 
+ * @brief solve Schur Complement system using conjugate gradient 
  *
  * @pre Member variables handle_, handle_cublas_,
  *      all dense vector descriptors, all vectors on device, tol_m_,
- *      itmax_, gam_i_, gam_i1_, alpha_, beta_, minalpha_, are
+ *      itmax_, gam_i_, gam_i1_, alpha_, beta_, and minalpha_ are
  *      initialized to a cuSPARSE handler, a cuBLAS handler, initialized
  *      to their respective device vectors, allocated on the device,
  *      initialized to the max tolerance of the conjugate gradient, the
  *      maximum number of iterations for conjugate gradient, and the
  *      respective scalar values
- * @post iterative solver on the Schur complement using Cholesky solver
+ *
+ * @post x_ holds the solution of the Schur Complement system
 */
   int solve();
 
@@ -68,7 +68,6 @@ public:
  *
  * @param tol - the new tolerance level
  *
- * @pre
  * @post tol_ is now set to tol
 */
   void set_solver_tolerance(double tol);
@@ -78,7 +77,6 @@ public:
  *
  * @param itmax - the new max iterations
  *
- * @pre
  * @post itmax_ is now set to itmax
 */
   void set_solver_itmax(int itmax);
@@ -92,7 +90,7 @@ private:
   double tol_ = 1e-12; // solver tolerance for Schur
 
   cusparseSpMatDescr_t jc_desc_; // sparse matrix descriptor for JC
-  cusparseSpMatDescr_t jct_desc_; // sparse matrix descriptor for JC transform
+  cusparseSpMatDescr_t jct_desc_; // sparse matrix descriptor for JC transpose
 
   cusparseHandle_t handle_; // handle to the cuSPARSE library context
   cublasHandle_t handle_cublas_; //handle to the cuBLAS library context
@@ -128,11 +126,5 @@ private:
   cusparseDnVecDescr_t vecs_ = NULL;
   
   CholeskyClass* cc_; // cholesky factorization on 1,1 block
- 
-  // timers used for testing
-  double timeIO_ = 0.0;
-  struct timeval t1_;
-  struct timeval t2_;
-
 };
 

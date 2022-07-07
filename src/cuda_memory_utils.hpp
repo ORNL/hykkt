@@ -6,6 +6,7 @@
 
 #include <cusparse.h>
 
+#include "matrix_matrix_ops.hpp"
 #include "matrix_vector_ops.hpp"
 #include "matrix_vector_ops_cuda.hpp"
 
@@ -13,9 +14,9 @@
 struct MMatrix;
 
 /* 
- * @brief deletes variable v from device
+ * @brief deletes variable from device
  *
- * @param v - a vector on the device
+ * @param v - a variable on the device
  *
  * @post v is freed from the device
  */
@@ -113,11 +114,12 @@ void cloneVectorToDevice(int n, T** src, T** dst)
 */
 template <typename T>
 void displayHostVector(T* v, 
+                       int start_i,
                        int display_n, 
                        std::string label = "Vector")
 {
   std::cout<<"\n\n"<<label<<": {";
-  for(int i = 0; i < display_n - 1; i++){
+  for(int i = start_i; i < start_i + display_n - 1; i++){
     std::cout<<v[i]<<", ";
   }
   std::cout<<v[display_n - 1]<<"}\n"<<std::endl; 
@@ -137,12 +139,13 @@ void displayHostVector(T* v,
 template <typename T>
 void displayDeviceVector(T* v, 
                          int n, 
+                         int start_i,
                          int display_n, 
                          std::string label = "Vector")
 {
   T* h_v = new T[n];
   copyVectorToHost(n, v, h_v);
-  displayHostVector(h_v, display_n, label);
+  displayHostVector(h_v, start_i, display_n, label);
 }
 
 /* 
@@ -165,6 +168,22 @@ void cloneDeviceVector(int n, T** src, T** dst)
 }
 
 //***************************************************************************//
+/*
+ * @brief displays the nonzero values of a matrix from its sparse descriptor
+ *
+ * @param mat_desc - sparse matrix descriptor
+ * start_i - first index of nonzero values to display
+ * display_n - number of elements to display
+ * label - name of values array
+ *
+ * @pre start_i<number of nonzeros and start_i+display_n-1<number of nonzeros
+ * @post displays display_n number of nonzero values starting at start_i
+*/
+void displaySpMatValues(cusparseSpMatDescr_t mat_desc, 
+    int start_i, 
+    int display_n,
+    std::string label = "Values");
+
 void allocateBufferOnDevice(void** b, size_t b_size);
 
 /* 
@@ -180,6 +199,19 @@ void allocateBufferOnDevice(void** b, size_t b_size);
  *       n + 1, nnz, nnz to follow CSR format
  */
 void allocateMatrixOnDevice(int n, int nnz, int** a_i, int** a_j, double** a_v);
+
+/* 
+ * @brief destroys cusparse descriptor
+ *
+ * @param desc - a cusparse descriptor
+ *
+ * @post desc is destroyed
+ */
+void deleteDescriptor(cusparseSpGEMMDescr_t& desc);
+
+void deleteDescriptor(cusparseSpMatDescr_t& desc);
+
+void deleteDescriptor(cusparseMatDescr_t& desc);
 
 /* 
  * @brief deletes a matrix in CSR format from the device
@@ -274,7 +306,7 @@ void matrixDeviceToDeviceCopy(int n,
 void copyMatrixToHost(const int* a_i,
                       const int* a_j, 
                       const double* a_v, 
-                      MMatrix& mat_a);
+                      MMatrix* mat_a);
 
 /* 
  * @brief copies host MMatrix object mat_a onto the device in CSR format
@@ -287,7 +319,7 @@ void copyMatrixToHost(const int* a_i,
  * @post mat_a member variables - csr_ rows, coo_cols, coo_vals - 
  *       are copied onto device vectors a_i, a_j, a_v
  */
-void copyMatrixToDevice(const MMatrix& mat_a, int* a_i, int* a_j, double* a_v);
+void copyMatrixToDevice(const MMatrix* mat_a, int* a_i, int* a_j, double* a_v);
 
 /* 
  * @brief copies host symmetric MMatrix object mat_a onto the device in CSR format
@@ -297,7 +329,7 @@ void copyMatrixToDevice(const MMatrix& mat_a, int* a_i, int* a_j, double* a_v);
  * @post mat_a member variables - csr_ rows, csr_cols, csr_vals - 
  *       are copied onto device vectors a_i, a_j, a_v
  */
-void copySymmetricMatrixToDevice(const MMatrix& mat_a, 
+void copySymmetricMatrixToDevice(const MMatrix* mat_a, 
                                  int* a_i, 
                                  int* a_j, 
                                  double* a_v);
@@ -315,7 +347,7 @@ void copySymmetricMatrixToDevice(const MMatrix& mat_a,
  *       are copied onto a_i, a_j, a_v which are first allocated
  *       onto the device
  */
-void cloneMatrixToDevice(const MMatrix& mat_a, int** a_i, int** a_j, double** a_v);
+void cloneMatrixToDevice(const MMatrix* mat_a, int** a_i, int** a_j, double** a_v);
 
 /* 
  * @brief copies CSR format of symmetric MMatrix object mat_a onto 
@@ -327,7 +359,7 @@ void cloneMatrixToDevice(const MMatrix& mat_a, int** a_i, int** a_j, double** a_
  *       are copied onto a_i, a_j, a_v which are first allocated
  *       onto the device
  */
-void cloneSymmetricMatrixToDevice(const MMatrix& mat_a,
+void cloneSymmetricMatrixToDevice(const MMatrix* mat_a,
                                   int** a_i, 
                                   int** a_j, 
                                   double** a_v);
@@ -342,11 +374,11 @@ void cloneSymmetricMatrixToDevice(const MMatrix& mat_a,
  * a_i - row offsets for CSR format for A
  * a_j - column pointers for CSR format for A
  * a_v - nonzero values for CSR format for A
- * at_i - vector where transformed matrix row offsets are stored
- * at_j - vector where transformed matrix column pointers are stored
- * at_v - vector where transformed matrix nonzero values are stored
+ * at_i - vector where transposed matrix row offsets are stored
+ * at_j - vector where transposed matrix column pointers are stored
+ * at_v - vector where transposed matrix nonzero values are stored
  *
- * @post v at_ik at_j, at_v now represent the CSR format of the transform of A
+ * @post v at_ik at_j, at_v now represent the CSR format of the transpose of A
  */
 void transposeMatrixOnDevice(int n,
                              int m,
@@ -385,7 +417,6 @@ void createCsrMat(cusparseSpMatDescr_t* mat_desc,
  * n - size of dense vector
  * d_vec - values of dense vector on device with size n
  * 
- * @pre
  * @post vec_desc is now initialized as a dense vector descriptor
 */
 void createDnVec(cusparseDnVecDescr_t* vec_desc, int n, double* d_vec);
@@ -395,3 +426,38 @@ void createDnVec(cusparseDnVecDescr_t* vec_desc, int n, double* d_vec);
 */
 void checkGpuMem();
 
+/**
+ * @brief creates a SpGEMM cusparse descriptor
+ *
+ * @param spgemm_desc - descriptor to be initialized
+ *
+ * @post sgemm_desc is now a SpGEMM cusparse descriptor
+ */
+void createSpGEMMDescr(cusparseSpGEMMDescr_t* spgemm_desc);
+
+/*
+ * @brief creates a matrix descriptor
+ *
+ * @param descr - descriptor to be initialized
+ *
+ * @post descr is now a matrix descriptor with default setup
+*/
+void createSparseMatDescr(cusparseMatDescr_t& descr);
+
+/*
+ * @brief creates a handle for the cuSPARSE library context
+ *
+ * @param handle - handle to be initialized
+ *
+ * @post handle is now a handle for cuSPARSE
+*/
+void createSparseHandle(cusparseHandle_t& handle);
+
+/*
+ * @brief creates a handle for the cuBLAS library context
+ *
+ * @param handle - handle to be initialized
+ *
+ * @post handle is now a handle for cuBLAS
+*/
+void createCublasHandle(cublasHandle_t& handle);

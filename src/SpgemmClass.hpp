@@ -1,340 +1,181 @@
 #pragma once
 
-#include <algorithm>
-#include "matrix_vector_ops.hpp"
-#include "cuda_memory_utils.hpp"
-#include "constants.hpp"
-#include "cusparse_params.hpp"
-
-//C = A*B
-//E = D + C
+#include <cusparse.h>
+//C = alpha_p_*A*B
+//E = alpha_s_*D + beta_s_*C
 
 class SpgemmClass
 {
 public:
   // constructor
-  SpgemmClass(int n, 
-              cusparseHandle_t handle, 
-              double alpha_p, 
-              double alpha_s, 
-              double beta_s) 
-    : n_(n),
-      handle_(handle),
-      alpha_p_(alpha_p),
-      alpha_s_(alpha_s),
-      beta_s_(beta_s)
-  {
-    allocate_workspace();
-  }
-
+  SpgemmClass(int n,
+      int m,
+      cusparseHandle_t handle, 
+      double alpha_p, 
+      double alpha_s, 
+      double beta_s); 
 
   // destructor
-  ~SpgemmClass()
-  {
-    checkCudaErrors(cusparseSpGEMM_destroyDescr(spgemm_desc_));
-    checkCudaErrors(cusparseDestroySpMat(c_desc_));
-    
-    deleteMatrixOnDevice(c_i_, c_j_, c_v_);
-    deleteOnDevice(buffer_add_);
-  }
-
-  void load_product_matrices(int m_c,
-                             cusparseSpMatDescr_t a_desc, 
-                             cusparseSpMatDescr_t b_desc)
-  {
-    a_desc_ = a_desc; 
-    b_desc_ = b_desc;
+  ~SpgemmClass();
   
-    c_desc_ = NULL;
-    createCsrMat(&c_desc_, m_c, m_c, 0, NULL, NULL, NULL);
-  }
+  /*
+   * @brief loads matrices used for SpGEMM 
+   *
+   * @param a_desc - sparse matrix desriptor for first product matrix
+   * b_desc - sparse matrix descriptor for second product matrix
+   *
+   * @post a_desc_ now equal to a_desc, b_desc_ now equal to b_desc
+  */
+  void load_product_matrices(cusparseSpMatDescr_t a_desc, 
+      cusparseSpMatDescr_t b_desc);
 
-  void allocate_product()
-  {
-    void*  d_buffer1    = NULL;
-    void*  d_buffer2    = NULL;
-    void*  d_buffer3    = NULL;
-    void*  d_buffer4    = NULL;
-    void*  d_buffer5    = NULL;
-    
-    size_t buffer_size1 = 0;
-    size_t buffer_size2 = 0;
-    size_t buffer_size3 = 0;
-    size_t buffer_size4 = 0;
-    size_t buffer_size5 = 0;
-    
-    //------------------------------------------------------------------------
-    
-    checkCudaErrors(cusparseSpGEMMreuse_workEstimation(handle_,
-          CUSPARSE_OPERATION,
-          CUSPARSE_OPERATION,
-          a_desc_,
-          b_desc_,
-          c_desc_,
-          CUSPARSE_ALGORITHM,
-          spgemm_desc_,
-          &buffer_size1,
-          NULL));
-    
-    allocateBufferOnDevice(&d_buffer1, buffer_size1);
- 
-    checkCudaErrors(cusparseSpGEMMreuse_workEstimation(handle_,
-          CUSPARSE_OPERATION,
-          CUSPARSE_OPERATION,
-          a_desc_,
-          b_desc_,
-          c_desc_,
-          CUSPARSE_ALGORITHM,
-          spgemm_desc_,
-          &buffer_size1,
-          d_buffer1));
-
-    //-----------------------------------------------------------------------
-
-    checkCudaErrors(cusparseSpGEMMreuse_nnz(handle_,
-          CUSPARSE_OPERATION,
-          CUSPARSE_OPERATION,
-          a_desc_,
-          b_desc_,
-          c_desc_,
-          CUSPARSE_ALGORITHM,
-          spgemm_desc_,
-          &buffer_size2,
-          NULL,
-          &buffer_size3,
-          NULL,
-          &buffer_size4,
-          NULL));
-    
-    allocateBufferOnDevice(&d_buffer2, buffer_size2);
-    allocateBufferOnDevice(&d_buffer3, buffer_size3);
-    allocateBufferOnDevice(&d_buffer4, buffer_size4);
-
-    checkCudaErrors(cusparseSpGEMMreuse_nnz(handle_,
-          CUSPARSE_OPERATION,
-          CUSPARSE_OPERATION,
-          a_desc_,
-          b_desc_,
-          c_desc_,
-          CUSPARSE_ALGORITHM,
-          spgemm_desc_,
-          &buffer_size2,
-          d_buffer2,
-          &buffer_size3,
-          d_buffer3,
-          &buffer_size4,
-          d_buffer4));
-
-    //-----------------------------------------------------------------------
-  
-    int64_t c_n; //rows
-    int64_t c_m; //cols
-
-    checkCudaErrors(cusparseSpMatGetSize(c_desc_, &c_n, &c_m, &nnz_c_));
-    allocateMatrixOnDevice(n_, nnz_c_, &c_i_, &c_j_, &c_v_);
-    checkCudaErrors(cusparseCsrSetPointers(c_desc_,
-          c_i_,
-          c_j_,
-          c_v_));
-    
-    printf("\n\nNNZ_C: %d\n\n", nnz_c_);
-    printf("\n\nBuffers: %d, %d, %d, %d, %d\n\n",
-        buffer_size1,
-        buffer_size2,
-        buffer_size3,
-        buffer_size4,
-        buffer_size5);
-
-    //------------------------------------------------------------
-   
-    checkCudaErrors(cusparseSpGEMMreuse_copy(handle_,
-          CUSPARSE_OPERATION,
-          CUSPARSE_OPERATION,
-          a_desc_,
-          b_desc_,
-          c_desc_,
-          CUSPARSE_ALGORITHM,
-          spgemm_desc_,
-          &buffer_size5,
-          NULL));
-
-    allocateBufferOnDevice(&d_buffer5, buffer_size5);
-
-    checkCudaErrors(cusparseSpGEMMreuse_copy(handle_,
-          CUSPARSE_OPERATION,
-          CUSPARSE_OPERATION,
-          a_desc_,
-          b_desc_,
-          c_desc_,
-          CUSPARSE_ALGORITHM,
-          spgemm_desc_,
-          &buffer_size5,
-          d_buffer5));
- 
-    //------------------------------------------------------------
-
-    deleteOnDevice(d_buffer1);
-    deleteOnDevice(d_buffer2);
-    deleteOnDevice(d_buffer3);
-    deleteOnDevice(d_buffer4);
-    deleteOnDevice(d_buffer5);
-  }
-
-  void compute_product()
-  { 
-    checkCudaErrors(cusparseSpGEMMreuse_compute(handle_,
-          CUSPARSE_OPERATION,
-          CUSPARSE_OPERATION,
-          &alpha_p_,
-          a_desc_,
-          b_desc_,
-          &beta_p_,
-          c_desc_,
-          COMPUTE_TYPE,
-          CUSPARSE_ALGORITHM,
-          spgemm_desc_));
-    
-    return; 
-    displayDeviceVector(c_v_, nnz_c_, 10, "Product");
-  }
-
+  /*
+   * @brief loads matrices used for sum E = alpha_s_*D + beta_s_*C
+   *
+   * @param d_i - row offsets for CSR format of matrix D
+   * d_j - column pointers for CSR format of matrix D
+   * d_v - nonzero values for CSR format of matrix D
+   * nnz_d - number of nonzero values in matrix D
+   *
+   * @post d_i_ now equals d_i, d_j_ now equals d_j, d_v_ now equals d_v, 
+   *       nnz_d_ now equals nnz_d
+  */
   void load_sum_matrices(int* d_i, 
-                         int* d_j, 
-                         double* d_v,
-                         int nnz_d)
-  {
-    d_i_ = d_i;
-    d_j_ = d_j;
-    d_v_ = d_v;
-    
-    nnz_d_ = nnz_d; 
-  }
+      int* d_j, 
+      double* d_v,
+      int nnz_d);
 
-  void allocate_sum()
-  {
-    size_t buffer_add_size;
-    allocateVectorOnDevice(n_ + 1, &e_i_);
-    checkCudaErrors(cusparseSetPointerMode(handle_, 
-                                           CUSPARSE_POINTER_MODE_HOST));
-    checkCudaErrors(cusparseDcsrgeam2_bufferSizeExt(handle_, 
-                                    n_, 
-                                    n_, 
-                                    &alpha_s_, 
-                                    descr_a_, 
-                                    nnz_d_ , 
-                                    d_v_, 
-                                    d_i_, 
-                                    d_j_, 
-                                    &beta_s_,
-                                    descr_a_, 
-                                    nnz_c_, 
-                                    c_v_, 
-                                    c_i_, 
-                                    c_j_, 
-                                    descr_a_, 
-                                    e_v_, 
-                                    e_i_,
-                                    e_j_, 
-                                    &buffer_add_size));
-    allocateBufferOnDevice(&buffer_add_, buffer_add_size);
-    checkCudaErrors(cusparseXcsrgeam2Nnz(handle_, 
-                         n_, 
-                         n_, 
-                         descr_a_, 
-                         nnz_d_, 
-                         d_i_, 
-                         d_j_, 
-                         descr_a_, 
-                         nnz_c_,
-                         c_i_, 
-                         c_j_, 
-                         descr_a_, 
-                         e_i_, 
-                         nnz_e_pointer_, 
-                         buffer_add_));
-    
-    nnz_e_ = *nnz_e_pointer_;
-    
-    allocateVectorOnDevice(nnz_e_, &e_j_);
-    allocateVectorOnDevice(nnz_e_, &e_v_);
-  }
-
-  void compute_sum()
-  {
-    checkCudaErrors(cusparseDcsrgeam2(handle_, 
-                      n_, 
-                      n_, 
-                      &alpha_s_, 
-                      descr_a_, 
-                      nnz_d_, 
-                      d_v_, 
-                      d_i_, 
-                      d_j_, 
-                      &beta_s_, 
-                      descr_a_,
-                      nnz_c_, 
-                      c_v_, 
-                      c_i_, 
-                      c_j_, 
-                      descr_a_, 
-                      e_v_, 
-                      e_i_,
-                      e_j_, 
-                      buffer_add_));
-  }
-
-  int getResultMatrix(int** e_i, int** e_j, double** e_v)
-  {
-    cloneDeviceVector(n_ + 1, &e_i_, e_i);
-    cloneDeviceVector(nnz_e_, &e_j_, e_j);
-    cloneDeviceVector(nnz_e_, &e_v_, e_v);
-    
-    return nnz_e_;
-  }
+  /*
+   * @brief loads pointers to CSR format of result matrix E
+   *
+   * @param e_i - a pointer for the row offsets of E
+   * e_j - a pointer for the column pointers of E
+   * e_v - a pointer for the nonzero values of E
+   * nnz_e - a pointer to the number of nonzero values in E
+   *
+   * @post e_i_ now equals e_i, e_j_ now equals e_j, e_v_ now equals e_v,
+   *       nnz_e_ now equals nnz_e
+  */
+  void load_result_matrix(int** e_i, int** e_j, double** e_v, int* nnz_e);
+  
+  /*
+   * @brief computes SpGEMM and sum, only allocating for product and sum on 
+   *        first call of the function
+   *
+   * @pre all member variables for matrices used in the product and sum CSR
+   *      formats are properly initialized using the load functions
+   * 
+   * @post matrix E is now equal to alpha_s_*alpha_p_*A*B + beta_s_*D 
+   *       in CSR format where e_i is the row offsets, e_j is the 
+   *       column pointers, e_v is the nonzero values, and nnz_e is 
+   *       the number of nonzeros. After the first spGEMM_reuse()
+   *       call, spgemm_desc_ contains the information needed to 
+   *       repeat the product and sum methods without allocation
+  */
+  void spGEMM_reuse();
 
 private:
 
-  void allocate_workspace()
-  {
-    checkCudaErrors(cusparseSpGEMM_createDescr(&spgemm_desc_));
-    checkCudaErrors(cusparseCreateMatDescr(&descr_a_));
-    checkCudaErrors(cusparseSetMatType(descr_a_, CUSPARSE_MATRIX_TYPE_GENERAL));
-    checkCudaErrors(cusparseSetMatIndexBase(descr_a_, INDEX_BASE));
-    nnz_e_pointer_ = &nnz_e_;
-  }
+  /*
+   * @brief creates matrix descriptors used for SpGEMM and sum and setups
+   *        resulting matrices of SpGEMM and sum
+   *
+   * @post spgemm_desc_ and descr_d_ are now properly initialized matrix
+   *       descriptors for executing SpGEMM and sum, c_desc_ is now an empty
+   *       matrix in CSR format, the
+   *       number of nonzeros in the resulting matrix 
+   *       E = alpha_s_*alpha_p_*A*B + beta_s_*D
+  */
+  void allocate_workspace();
+ 
+  /*
+   * @brief allocates memory used for computing SpGEMM
+   *
+   * @pre variables used in computing SpGEMM are properly initialized using
+   *      load_product_matrices() function
+   *
+   * @post c_desc_ now contains properly allocated CSR pointers c_i_, c_j_,
+   *       and c_v_; nnz_c_ contains the nonzeros of the result of SpGEMM;
+   *       spgemm_desc_ now contains information so that compute product
+   *       function can be repeated without repeated allocation; d_buffer1_ 
+   *       and d_buffer2 now have properly allocated memory for computing 
+   *       the product
+  */
+  void allocate_spGEMM_product();
+ 
+  /*
+   * @brief computes SpGEMM C = alpha_p_*A*B
+   *
+   * @pre product matrices properly initialized with load_product_matrices(),
+   *      result descriptor c_desc_ and spgemm_desc_ are properly initialized
+   *      with allocate_spGEMM_product()
+   *
+   * @post c_desc_ now has the resulting product alpha_p_*A*B in CSR format 
+   *       stored in the pointers c_i_, c_j_, and c_v_
+  */
+  void compute_spGEMM_product();
+ 
+  /*
+   * @brief allocates memory used for computing matrix sum
+   *
+   * @pre matrices used for matrix sum are properly initialized using
+   *      load_sum_matrices()
+   *
+   * @post CSR format for result matrix E are properly loaded in e_i_,
+   *       e_j_, e_v_, and nnz_e_;
+   *       buffer_add_ has the proper amount of memory allocated for the sum
+  */
+  void allocate_spGEMM_sum();
+
+  /*
+   * @brief computes sum E = alpha_s_*C + beta_s_*D
+   *
+   * @pre sum matrices from SpGEMM properly intialized and memory 
+   *      allocated for sum
+   *
+   * @post the sum alpha_s_*C + beta_s_*D is stored in CSR format 
+   *       in e_i_, e_j_, e_v_,
+  */
+  void compute_spGEMM_sum();
   
   // member variables
-  cusparseHandle_t handle_;
-  cusparseSpGEMMDescr_t spgemm_desc_;
-  cusparseMatDescr_t descr_a_;
+  cusparseHandle_t handle_; //handle to the cuSPARSE library context
+  cusparseSpGEMMDescr_t spgemm_desc_; //descriptor for SpGEMM computation
+  cusparseMatDescr_t descr_d_; //descriptor for matrix D used in sum
 
+  bool spgemm_allocated_ = false; //check if allocation needed for spGEMM_reuse
+
+  //dimensions of matrix D in sum alpha_s_*alpha_p_*A*B + beta_s_*D
   int n_;
+  int m_; 
 
-  double alpha_p_;
-  double beta_p_ = ZERO;
-  double alpha_s_;
-  double beta_s_;
+  double alpha_p_; //scalar for first product matrix
+  double alpha_s_; //scalar for first sum matrix
+  double beta_s_; //scalar for second sum matrix
  
-  cusparseSpMatDescr_t a_desc_;
-  cusparseSpMatDescr_t b_desc_;
-  cusparseSpMatDescr_t c_desc_;
+  cusparseSpMatDescr_t a_desc_; //matrix descriptor for first product matrix
+  cusparseSpMatDescr_t b_desc_; //matrix descriptor for second product matrix
+  cusparseSpMatDescr_t c_desc_; //matrix descriptor for product result matrix
+
+  //buffers used for memory use in product computation
+  void* d_buffer1_;
+  void* d_buffer2_;
+
+  void* buffer_add_; //buffer for matrix sum computation
+
+  int* c_i_; //row offsets of product result matrix
+  int* c_j_; //column pointers of product result matrix
+  double* c_v_; //nonzero values of product result matrix
   
-  void* buffer_add_; 
+  int* d_i_; //row offsets for sum matrix D
+  int* d_j_; //column pointers for sum matrix D
+  double* d_v_; //nonzero values for sum matrix D
 
-  int* c_i_;
-  int* c_j_;
-  double* c_v_;
-  
-  int* d_i_;
-  int* d_j_;
-  double* d_v_;
+  int** e_i_; //pointer to row offsets for result matrix E
+  int** e_j_; //pointer to column pointers for result matrix E
+  double** e_v_; //pointer to nonzero values for result matrix E
 
-  int* e_i_;
-  int* e_j_;
-  double* e_v_;
-
-  int64_t nnz_c_;
-  int nnz_d_;
-  int* nnz_e_pointer_;
-  int nnz_e_;
+  int64_t nnz_c_; //number of nonzeros in result product matrix
+  int nnz_d_; //number of nonzeros in sum matrix D
+  int* nnz_e_; //pointer to number of nonzeros in result matrix E
 };

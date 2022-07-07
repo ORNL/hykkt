@@ -3,57 +3,24 @@
 struct MMatrix
   {
 
+  //constructors
   MMatrix() = default;
-
-  //constructor
-  MMatrix(int n, int m, int nnz) 
-    : n_(n), 
-      m_(m), 
-      nnz_(nnz)
-  {
-    coo_rows = new int[nnz];
-    coo_cols = new int[nnz];
-    coo_vals = new double[nnz];
-    csr_rows = new int[n + 1];
-    csr_cols = new int[nnz];
-    csr_vals = new double[nnz];
-  }
+  MMatrix(int n, int m, int nnz);
  
   //destructor
-  ~MMatrix()
-  {
-    delete [] coo_rows;
-    delete [] coo_cols;
-    delete [] coo_vals;
-    delete [] csr_rows;
-    delete [] csr_cols;
-    delete [] csr_vals;
-  }
+  ~MMatrix();
   
   /*
    * @brief loads structured values of matrix
    *
-   * @param n,m - dimensions of matrix
+   * @param n, m - dimensions of matrix
    * nnz - number of nonzeros of matrix 
    *
-   * @pre 
+   * @pre  n, m, nnz are positive integers
    * @post Coordinate format and CSR format for matrix are allocated and
    *       the dimensions and number of nonzeros for CSR formate are set
   */
-  void populate(int n, int m, int nnz)
-  {
-    n_ = n;
-    m_ = m;
-    nnz_= nnz;
-
-    coo_rows = new int[nnz];
-    coo_cols = new int[nnz];
-    coo_vals = new double[nnz];
-
-    csr_rows = new int[n + 1];
-    csr_cols = new int[nnz];
-    csr_vals = new double[nnz];
-  }
+  void populate(int n, int m, int nnz);
 
   int* coo_rows; // row pointers of coo storage
   int* coo_cols; // column pointers of coo storage
@@ -66,5 +33,5 @@ struct MMatrix
   int n_; // number of rows
   int m_; // number of cols
   int nnz_; // number of nonzeros
-  int nnz_unpacked_;
+  int nnz_unpacked_; // nnz after unpacking implicit symmetric format
 };

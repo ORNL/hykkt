@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <sys/time.h>
 #include "SchurComplementConjugateGradient.hpp"
 #include "matrix_vector_ops_cuda.hpp"
 #include "vector_vector_ops.hpp"
@@ -77,19 +76,18 @@
  
   int SchurComplementConjugateGradient::solve()
   {
-    gettimeofday(&t1_, 0);
     fun_SpMV_full(handle_, ONE, jct_desc_, vecx_, ZERO, vecy_);
-    cc_->Solve(z_, y_);
+    cc_->solve(z_, y_);
   
     fun_SpMV_full(handle_, MINUS_ONE, jc_desc_, vecz_, ONE, vecr_);
     
     dotProduct(handle_cublas_, n_, r_, r_, &gam_i_);
     fun_SpMV_full(handle_, ONE, jct_desc_, vecr_, ZERO, vecy_);
-    cc_->Solve(z_, y_);
+    cc_->solve(z_, y_);
   
     fun_SpMV_full(handle_, ONE, jc_desc_, vecz_, ZERO, vecw_);
     dotProduct(handle_cublas_, n_, w_, r_, &delta_);
-    alpha_           = gam_i_ / delta_;
+    alpha_    = gam_i_ / delta_;
     minalpha_ = -alpha_;
     int i;
   
@@ -103,16 +101,13 @@
       sumVectors(handle_cublas_, n_, s_, r_, &minalpha_);
       dotProduct(handle_cublas_, n_, r_, r_, &gam_i1_);
       if(sqrt(gam_i1_) < tol_){
-        gettimeofday(&t2_, 0);
-        timeIO_ = (1000000.0 * (t2_.tv_sec - t1_.tv_sec) + t2_.tv_usec - t1_.tv_usec) / 1000.0;
-        printf("time for CG ev(ms). : %16.16f\n", timeIO_);
         printf("Convergence occured at iteration %d\n", i);
         break;
       }
       // product with w=Ar starts here
       fun_SpMV_full(handle_, ONE, jct_desc_, vecr_, ZERO, vecy_);
     
-      cc_->Solve(z_, y_);
+      cc_->solve(z_, y_);
       fun_SpMV_full(handle_, ONE, jc_desc_, vecz_, ZERO, vecw_);
 
       dotProduct(handle_cublas_, n_, w_, r_, &delta_);
@@ -123,9 +118,6 @@
 
     printf("Error is %32.32g \n", sqrt(gam_i1_));
     if (i == itmax_){
-      gettimeofday(&t2_, 0);
-      timeIO_ = (1000000.0 * (t2_.tv_sec - t1_.tv_sec) + t2_.tv_usec - t1_.tv_usec) / 1000.0;
-      printf("time for CG ev(ms). : %16.16f\n", timeIO_);
       printf("No CG convergence in %d iterations\n", itmax_);
       return 1;
     }

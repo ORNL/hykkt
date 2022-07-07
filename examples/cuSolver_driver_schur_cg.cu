@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <ctype.h>
 #include <string.h>
-#include <sys/time.h>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -23,12 +22,8 @@
 
 int main(int argc, char *argv[]){
 
-  struct timeval t3;
-  struct timeval t4;
-  double timeIO = 0.0f;
   const double tol = 1e-12;
   const double abs_tol = 1e-6;
-  gettimeofday(&t3, 0);
   /*** cuda stuff ***/
 
   cusparseHandle_t handle = 0;
@@ -40,24 +35,24 @@ int main(int argc, char *argv[]){
   char const* const h_file_name = argv[2];
   char const* const rhs_file_name = argv[3];
 
-  MMatrix mat_h = MMatrix();
-  MMatrix mat_jc = MMatrix();
+  MMatrix* mat_h  = new MMatrix();
+  MMatrix* mat_jc = new MMatrix();
   
-  read_mm_file_into_coo(jc_file_name, &mat_jc, 3);
+  read_mm_file_into_coo(jc_file_name, mat_jc, 3);
   printf("\n/******* Matrix size: %d x %d nnz: %d *******/\n\n", 
-         mat_jc.n_, 
-         mat_jc.m_, 
-         mat_jc.nnz_); 
-  coo_to_csr(&mat_jc);
+         mat_jc->n_, 
+         mat_jc->m_, 
+         mat_jc->nnz_); 
+  coo_to_csr(mat_jc);
 
-  read_mm_file_into_coo(h_file_name, &mat_h, 3);
+  read_mm_file_into_coo(h_file_name, mat_h, 3);
   printf("\n/******* Matrix size: %d x %d nnz: %d *******/\n\n", 
-         mat_h.n_, 
-         mat_h.m_, 
-         mat_h.nnz_);  
-  coo_to_csr(&mat_h);
+         mat_h->n_, 
+         mat_h->m_, 
+         mat_h->nnz_);  
+  coo_to_csr(mat_h);
   
-  double* h_rhs = new double[mat_h.n_];
+  double* h_rhs = new double[mat_h->n_];
   
   read_rhs(rhs_file_name, h_rhs);
   printf("RHS reading completed ..............................\n"); 
@@ -71,7 +66,7 @@ int main(int argc, char *argv[]){
   int*    jc_j  = nullptr;
   double* jc_v  = nullptr;
  
-  cloneVectorToDevice(mat_jc.n_, &h_rhs, &d_rhs);
+  cloneVectorToDevice(mat_jc->n_, &h_rhs, &d_rhs);
   cloneMatrixToDevice(mat_jc, &jc_i, &jc_j, &jc_v);
   cloneMatrixToDevice(mat_h, &h_i, &h_j, &h_v);
   
@@ -80,66 +75,68 @@ int main(int argc, char *argv[]){
   int*    jc_t_j = nullptr;
   int*    jc_t_i = nullptr;
   
-  allocateMatrixOnDevice(mat_jc.m_, mat_jc.nnz_, &jc_t_i, &jc_t_j, &jc_t_v);
-  transposeMatrixOnDevice(mat_jc.n_,
-                          mat_jc.m_, 
-                          mat_jc.nnz_, 
-                          jc_i, 
-                          jc_j, 
-                          jc_v, 
-                          jc_t_i, 
-                          jc_t_j, 
-                          jc_t_v);
+  allocateMatrixOnDevice(mat_jc->m_, mat_jc->nnz_, &jc_t_i, &jc_t_j, &jc_t_v);
+  transposeMatrixOnDevice(mat_jc->n_,
+      mat_jc->m_, 
+      mat_jc->nnz_, 
+      jc_i, 
+      jc_j, 
+      jc_v, 
+      jc_t_i, 
+      jc_t_j, 
+      jc_t_v);
   
   /*** matrix structures */
   cusparseSpMatDescr_t jc_desc;
   createCsrMat(&jc_desc,
-               mat_jc.n_,
-               mat_jc.m_,
-               mat_jc.nnz_,
-               jc_i,
-               jc_j,
-               jc_v);
+      mat_jc->n_,
+      mat_jc->m_,
+      mat_jc->nnz_,
+      jc_i,
+      jc_j,
+      jc_v);
 
   cusparseSpMatDescr_t jc_t_desc;
   createCsrMat(&jc_t_desc,
-               mat_jc.m_,
-               mat_jc.n_,
-               mat_jc.nnz_,
-               jc_t_i,
-               jc_t_j,
-               jc_t_v);
+      mat_jc->m_,
+      mat_jc->n_,
+      mat_jc->nnz_,
+      jc_t_i,
+      jc_t_j,
+      jc_t_v);
  
   /*** malloc x */
-  double* h_x = new double[mat_jc.n_]{0.0};
+  double* h_x = new double[mat_jc->n_]{0.0};
   double* d_x = nullptr;
   
-  cloneVectorToDevice(mat_h.n_, &h_x, &d_x);
+  cloneVectorToDevice(mat_h->n_, &h_x, &d_x);
   
   //factorize H
-  CholeskyClass cc(mat_h.n_, mat_h.nnz_, h_v, h_i, h_j);
-  cc.Analysis();
-  cc.set_pivot_tolerance(tol);
+  CholeskyClass* cc = new CholeskyClass(mat_h->n_, mat_h->nnz_, h_v, h_i, h_j);
+  cc->symbolic_analysis();
+  cc->set_pivot_tolerance(tol);
+  cc->numerical_factorization();
 
-  cc.Factorization();
 
 //class implementation
-  SchurComplementConjugateGradient sccg(jc_desc, 
-                                        jc_t_desc, 
-                                        d_x, 
-                                        d_rhs, 
-                                        mat_jc.n_, 
-                                        mat_jc.m_, 
-                                        &cc,
-                                        handle, 
-                                        handle_cublas);
+  SchurComplementConjugateGradient* sccg = 
+    new SchurComplementConjugateGradient(jc_desc, 
+        jc_t_desc, 
+        d_x, 
+        d_rhs, 
+        mat_jc->n_, 
+        mat_jc->m_, 
+        cc,
+        handle, 
+        handle_cublas);
   
-  sccg.allocate();
-  sccg.setup();
-  sccg.solve();
+  sccg->allocate();
+  sccg->setup();
+  sccg->solve();
  
+
   int fails = 0;
-  copyVectorToHost(mat_jc.n_, d_x, h_x);
+  copyVectorToHost(mat_jc->n_, d_x, h_x);
   if (fabs(h_x[0] - 22.171865776354700) > abs_tol){
     fails ++;
     printf("x[0] incorrect, x[0] = %32.32g\n", h_x[0]);
@@ -148,18 +145,25 @@ int main(int argc, char *argv[]){
     fails ++;
     printf("x[6] incorrect, x[6] = %32.32g\n", h_x[6]);
   }
-  gettimeofday(&t3, 0);
+  
+  delete sccg;
+  delete cc;
+  
+  delete mat_h;
+  delete mat_jc;
+  
   deleteOnDevice(d_rhs);
   deleteOnDevice(d_x);
+  
   deleteMatrixOnDevice(h_i, h_j, h_v);
   deleteMatrixOnDevice(jc_i, jc_j, jc_v);
   deleteMatrixOnDevice(jc_t_i, jc_t_j, jc_t_v);
-  delete [] h_rhs;
+  
+  delete [] h_rhs; 
   delete [] h_x;
-  cusparseDestroy(handle);
-  cublasDestroy(handle_cublas);
-  gettimeofday(&t4, 0);
-  timeIO = (1000000.0 * (t4.tv_sec - t3.tv_sec) + t4.tv_usec - t3.tv_usec) / 1000.0;
-  printf("time for IO+API+error ev(ms). : %16.16f\n", timeIO);
+  
+  checkCudaErrors(cusparseDestroy(handle));
+  checkCudaErrors(cublasDestroy(handle_cublas));
+  
   return fails;
 }

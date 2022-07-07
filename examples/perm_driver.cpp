@@ -30,9 +30,9 @@ int main(int argc, char* argv[])
   int flagc = 0;
  
   PermClass pc(n, nnz, nnz);
-  pc.add_H_info(a_i, a_j);
-  pc.add_J_info(a_i, a_j, n, m);
-  pc.add_Jt_info(a_i, a_j);
+  pc.add_h_info(a_i, a_j);
+  pc.add_j_info(a_i, a_j, n, m);
+  pc.add_jt_info(a_i, a_j);
   pc.add_perm(perm);
   pc.invert_perm();
   pc.vec_map_rc(b_i, b_j);

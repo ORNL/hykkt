@@ -52,7 +52,6 @@ void read_mm_file_into_coo(const char* matrix_file_name,
 
 void sym_coo_to_csr(MMatrix* mat_a)
 {
-  // this is diffucult
   // first, decide how many nnz we have in each row
   int* nnz_counts = new int[mat_a->n_]{0};
   int nnz_unpacked = 0;

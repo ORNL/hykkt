@@ -9,6 +9,29 @@
 #include "cuda_memory_utils.hpp"
 #include "cusparse_params.hpp"
 
+void displaySpMatValues(cusparseSpMatDescr_t mat_desc, 
+    int start_i, 
+    int display_n,
+    std::string label)
+{
+  int64_t rows;
+  int64_t cols;
+  int64_t nnz;
+  checkCudaErrors(cusparseSpMatGetSize(mat_desc,
+        &rows,
+        &cols,
+        &nnz));
+
+  double* mat_v;
+  allocateVectorOnDevice(nnz, &mat_v);
+  cusparseSpMatGetValues(mat_desc, (void**)(&mat_v));
+  displayDeviceVector(mat_v, 
+      nnz, 
+      start_i, 
+      display_n, 
+      label);
+}
+
 void allocateBufferOnDevice(void** b, size_t b_size)
 {
   checkCudaErrors(cudaMalloc((void**)b, sizeof(char) * b_size));
@@ -19,6 +42,21 @@ void allocateMatrixOnDevice(int n, int nnz, int** a_i, int** a_j, double** a_v)
   allocateVectorOnDevice(n + 1, a_i);
   allocateVectorOnDevice(nnz, a_j);
   allocateVectorOnDevice(nnz, a_v);
+}
+
+void deleteDescriptor(cusparseSpGEMMDescr_t& desc)
+{
+  checkCudaErrors(cusparseSpGEMM_destroyDescr(desc));
+}
+
+void deleteDescriptor(cusparseSpMatDescr_t& desc)
+{
+  checkCudaErrors(cusparseDestroySpMat(desc));
+}
+
+void deleteDescriptor(cusparseMatDescr_t& desc)
+{
+  checkCudaErrors(cusparseDestroyMatDescr(desc));
 }
 
 void deleteMatrixOnDevice(int* a_i, int* a_j, double* a_v)
@@ -73,53 +111,53 @@ void matrixDeviceToDeviceCopy(int n,
 void copyMatrixToHost(const int* a_i,
     const int* a_j, 
     const double* a_v, 
-    MMatrix& mat_a)
+    MMatrix* mat_a)
 {
-  copyVectorToHost(mat_a.n_ + 1, a_i, mat_a.csr_rows);
-  copyVectorToHost(mat_a.nnz_, a_j, mat_a.coo_cols);
-  copyVectorToHost(mat_a.nnz_, a_v, mat_a.coo_vals);
+  copyVectorToHost(mat_a->n_ + 1, a_i, mat_a->csr_rows);
+  copyVectorToHost(mat_a->nnz_, a_j, mat_a->coo_cols);
+  copyVectorToHost(mat_a->nnz_, a_v, mat_a->coo_vals);
 }
 
-void copyMatrixToDevice(const MMatrix& mat_a, int* a_i, int* a_j, double* a_v)
+void copyMatrixToDevice(const MMatrix* mat_a, int* a_i, int* a_j, double* a_v)
 {
-  matrixHostToDeviceCopy(mat_a.n_, 
-                         mat_a.nnz_,
-                         mat_a.csr_rows,
-                         mat_a.coo_cols,
-                         mat_a.coo_vals,
+  matrixHostToDeviceCopy(mat_a->n_, 
+                         mat_a->nnz_,
+                         mat_a->csr_rows,
+                         mat_a->coo_cols,
+                         mat_a->coo_vals,
                          a_i,
                          a_j,
                          a_v);
 }
 
-void copySymmetricMatrixToDevice(const MMatrix& mat_a, 
+void copySymmetricMatrixToDevice(const MMatrix* mat_a, 
                                  int* a_i, 
                                  int* a_j, 
                                  double* a_v)
 {
-  matrixHostToDeviceCopy(mat_a.n_,
-                         mat_a.nnz_,
-                         mat_a.csr_rows,
-                         mat_a.csr_cols,
-                         mat_a.csr_vals,
+  matrixHostToDeviceCopy(mat_a->n_,
+                         mat_a->nnz_,
+                         mat_a->csr_rows,
+                         mat_a->csr_cols,
+                         mat_a->csr_vals,
                          a_i,
                          a_j,
                          a_v);
 }
 
 
-void cloneMatrixToDevice(const MMatrix& mat_a, int** a_i, int** a_j, double** a_v)
+void cloneMatrixToDevice(const MMatrix* mat_a, int** a_i, int** a_j, double** a_v)
 {
-  allocateMatrixOnDevice(mat_a.n_, mat_a.nnz_, a_i, a_j, a_v);
+  allocateMatrixOnDevice(mat_a->n_, mat_a->nnz_, a_i, a_j, a_v);
   copyMatrixToDevice(mat_a, *a_i, *a_j, *a_v);
 }
 
-void cloneSymmetricMatrixToDevice(const MMatrix& mat_a,
+void cloneSymmetricMatrixToDevice(const MMatrix* mat_a,
                                   int** a_i, 
                                   int** a_j, 
                                   double** a_v)
 {
-  allocateMatrixOnDevice(mat_a.n_, mat_a.nnz_, a_i, a_j, a_v);
+  allocateMatrixOnDevice(mat_a->n_, mat_a->nnz_, a_i, a_j, a_v);
   copySymmetricMatrixToDevice(mat_a, *a_i, *a_j, *a_v);
 }
 
@@ -218,3 +256,24 @@ void checkGpuMem()
   printf("Used memory of a : %zu\n", used);
 }
 
+void createSpGEMMDescr(cusparseSpGEMMDescr_t* spgemm_desc)
+{
+  checkCudaErrors(cusparseSpGEMM_createDescr(spgemm_desc));
+}
+
+void createSparseMatDescr(cusparseMatDescr_t& descr)
+{ 
+    checkCudaErrors(cusparseCreateMatDescr(&descr));
+    checkCudaErrors(cusparseSetMatType(descr, CUSPARSE_MATRIX_TYPE_GENERAL));
+    checkCudaErrors(cusparseSetMatIndexBase(descr, INDEX_BASE));
+}
+
+void createSparseHandle(cusparseHandle_t& handle)
+{
+  checkCudaErrors(cusparseCreate(&handle));  
+}
+
+void createCublasHandle(cublasHandle_t& handle)
+{
+  checkCudaErrors(cublasCreate(&handle));
+}
