@@ -4,6 +4,7 @@
 #include "matrix_vector_ops.hpp"
 #include "cuda_memory_utils.hpp"
 #include "constants.hpp"
+#include "cusparse_params.hpp"
 
   SpgemmClass::SpgemmClass(int n,
       int m,

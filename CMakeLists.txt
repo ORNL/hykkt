@@ -23,7 +23,7 @@ endif()
 if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
   #set(CMAKE_CUDA_ARCHITECTURES 70) #for summit, ascent
   #set(CMAKE_CUDA_ARCHITECTURES 80) #for deception
-  set(CMAKE_CUDA_ARCHITECTURES 80 CACHE STRING "Selects CUDA architectures") #this doesn't work
+  set(CMAKE_CUDA_ARCHITECTURES 60 CACHE STRING "Selects CUDA architectures") #this doesn't work
 endif()
 
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-extended-lambda")

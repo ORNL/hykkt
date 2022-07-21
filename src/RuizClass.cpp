@@ -53,6 +53,8 @@
   
   void RuizClass::ruiz_scale()
   {
+    reset_scaling();
+
     for(int i = 0; i < ruiz_its_; i++) {
       fun_adapt_row_max(n_,
           totn_,
@@ -90,9 +92,14 @@
     return max_d_;
   }
 
+  void RuizClass::reset_scaling()
+  {
+    fun_set_const(totn_, ONE, max_d_);
+  }
+
   void RuizClass::allocate_workspace()
   {
     allocateVectorOnDevice(totn_, &scale_);
     allocateVectorOnDevice(totn_, &max_d_);
-    fun_set_const(totn_, ONE, max_d_);
+    reset_scaling();
   }

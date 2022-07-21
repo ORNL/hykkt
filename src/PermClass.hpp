@@ -149,6 +149,8 @@ public:
       double* old_val, 
       double* new_val);
 
+  void display_perm() const;
+
 private:
 
 /*

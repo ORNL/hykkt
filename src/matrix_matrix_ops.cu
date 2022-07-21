@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include "cuda_memory_utils.hpp"
+#include "cusparse_params.hpp"
 #include "constants.hpp"
 #include "cusparse_params.hpp"
 

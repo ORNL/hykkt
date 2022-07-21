@@ -5,7 +5,7 @@
 #include "cuda_memory_utils.hpp"
 #include "permcheck_cuda.hpp"
 #include "permcheck.hpp"
-#include "constants.hpp"
+#include "cusparse_params.hpp"
 
   PermClass::PermClass(int n_h, int nnz_h, int nnz_j) 
 : n_h_(n_h),
@@ -123,6 +123,16 @@
     }
   }
 
+  void PermClass::display_perm() const
+  {
+    displayDeviceVector(d_perm_,
+        n_h_,
+        0,
+        10,
+        "PERMUTATION"); 
+
+  }
+  
   void PermClass::allocate_workspace()
   {
     perm_ = new int[n_h_];

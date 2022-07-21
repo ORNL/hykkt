@@ -111,11 +111,11 @@ void matrixDeviceToDeviceCopy(int n,
 void copyMatrixToHost(const int* a_i,
     const int* a_j, 
     const double* a_v, 
-    MMatrix* mat_a)
+    MMatrix& mat_a)
 {
-  copyVectorToHost(mat_a->n_ + 1, a_i, mat_a->csr_rows);
-  copyVectorToHost(mat_a->nnz_, a_j, mat_a->coo_cols);
-  copyVectorToHost(mat_a->nnz_, a_v, mat_a->coo_vals);
+  copyVectorToHost(mat_a.n_ + 1, a_i, mat_a.csr_rows);
+  copyVectorToHost(mat_a.nnz_, a_j, mat_a.coo_cols);
+  copyVectorToHost(mat_a.nnz_, a_v, mat_a.coo_vals);
 }
 
 void copyMatrixToDevice(const MMatrix* mat_a, int* a_i, int* a_j, double* a_v)
@@ -161,7 +161,8 @@ void cloneSymmetricMatrixToDevice(const MMatrix* mat_a,
   copySymmetricMatrixToDevice(mat_a, *a_i, *a_j, *a_v);
 }
 
-void transposeMatrixOnDevice(int n,
+void transposeMatrixOnDevice(cusparseHandle_t handle,
+    int n,
                              int m,
                              int nnz,
                              const int* a_i,
@@ -169,35 +170,31 @@ void transposeMatrixOnDevice(int n,
                              const double* a_v,
                              int* at_i,
                              int* at_j,
-                             double* at_v)
+                             double* at_v,
+                             void** buffer,
+                             bool allocated)
 {
-  cusparseHandle_t handle = nullptr;
-  checkCudaErrors(cusparseCreate(&handle));
+  if(!allocated){
+    size_t buffersize;
+    checkCudaErrors(cusparseCsr2cscEx2_bufferSize(handle,
+                                                  n, 
+                                                  m, 
+                                                  nnz,
+                                                  a_v,  
+                                                  a_i,  
+                                                  a_j,
+                                                  at_v, 
+                                                  at_i, 
+                                                  at_j,
+                                                  COMPUTE_TYPE,
+                                                  CUSPARSE_ACTION_NUMERIC,
+                                                  INDEX_BASE,
+                                                  CUSPARSE_CSR2CSC_ALG1,
+                                                  &buffersize));
 
-  size_t buffersize;
-  printf("Transpose A \n");
-  checkCudaErrors(cusparseCsr2cscEx2_bufferSize(handle,
-                                                n, 
-                                                m, 
-                                                nnz,
-                                                a_v,  
-                                                a_i,  
-                                                a_j,
-                                                at_v, 
-                                                at_i, 
-                                                at_j,
-                                                COMPUTE_TYPE,
-                                                CUSPARSE_ACTION_NUMERIC,
-                                                INDEX_BASE,
-                                                CUSPARSE_CSR2CSC_ALG1,
-                                                &buffersize));
-
-  // Create a buffer
-  void *buffercsr = nullptr;
-  allocateBufferOnDevice(&buffercsr,buffersize);
-  printf("Buffer size is %d\n", buffersize);
-  printf("A dimensions are %d by %d with %d nnz\n", n, m, nnz);
-
+    // Create a buffer
+    allocateBufferOnDevice(buffer,buffersize);
+  }
   checkCudaErrors(cusparseCsr2cscEx2(handle,
                                      n,
                                      m,
@@ -212,10 +209,7 @@ void transposeMatrixOnDevice(int n,
                                      CUSPARSE_ACTION_NUMERIC,
                                      INDEX_BASE,
                                      CUSPARSE_CSR2CSC_ALG1,
-                                     buffercsr));
-
-  deleteOnDevice(buffercsr);
-  checkCudaErrors(cusparseDestroy(handle));
+                                     *buffer));
 }
 
 void createCsrMat(cusparseSpMatDescr_t* mat_desc, 
@@ -245,17 +239,6 @@ void createDnVec(cusparseDnVecDescr_t* vec_desc, int n, double* d_vec)
   checkCudaErrors(cusparseCreateDnVec(vec_desc, n, d_vec, COMPUTE_TYPE));
 }
 
-void checkGpuMem()
-{
-  size_t avail;
-  size_t total;
-  cudaMemGetInfo(&avail, &total);
-  size_t used = total - avail;
-  printf("Available memory of a : %zu\n", avail);
-  printf("Total memory of a : %zu\n", total);
-  printf("Used memory of a : %zu\n", used);
-}
-
 void createSpGEMMDescr(cusparseSpGEMMDescr_t* spgemm_desc)
 {
   checkCudaErrors(cusparseSpGEMM_createDescr(spgemm_desc));
@@ -276,4 +259,15 @@ void createSparseHandle(cusparseHandle_t& handle)
 void createCublasHandle(cublasHandle_t& handle)
 {
   checkCudaErrors(cublasCreate(&handle));
+}
+
+void checkGpuMem()
+{
+  size_t avail;
+  size_t total;
+  cudaMemGetInfo(&avail, &total);
+  size_t used = total - avail;
+  printf("Available memory of a : %zu\n", avail);
+  printf("Total memory of a : %zu\n", total);
+  printf("Used memory of a : %zu\n", used);
 }

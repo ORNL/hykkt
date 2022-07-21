@@ -26,6 +26,7 @@
      handle_(handle), 
      handle_cublas_(handle_cublas)
   {
+    allocate_workspace();
   }
 
   // destructor
@@ -37,14 +38,20 @@
     deleteOnDevice(w_);
     deleteOnDevice(p_);
     deleteOnDevice(s_);
+    
+    deleteOnDevice(buffer1_);
+    deleteOnDevice(buffer2_);
+    deleteOnDevice(buffer3_);
+    deleteOnDevice(buffer4_);
+    
     delete [] ycp_;
   };
-
+  
   // solver API
-  void SchurComplementConjugateGradient::allocate()
+  void SchurComplementConjugateGradient::allocate_workspace()
   {
-    ycp_ = new double[m_] {0.0};
-
+    ycp_ = new double[m_]{0.0};
+    
     allocateVectorOnDevice(m_, &y_);
     allocateVectorOnDevice(m_, &z_);
     allocateVectorOnDevice(n_, &r_);
@@ -66,26 +73,56 @@
   void SchurComplementConjugateGradient::setup()
   {
     copyVectorToDevice(m_, ycp_, y_);
-  
+
     copyDeviceVector(m_, y_, z_);
     copyDeviceVector(n_, b_, r_);
     copyDeviceVector(n_, b_, w_);
     copyDeviceVector(n_, r_, p_);
     copyDeviceVector(n_, w_, s_);
+    
+    beta_ = 0;
   }
  
   int SchurComplementConjugateGradient::solve()
   {
-    fun_SpMV_full(handle_, ONE, jct_desc_, vecx_, ZERO, vecy_);
+    SpMV_product_reuse(handle_,
+        ONE,
+        jct_desc_,
+        vecx_,
+        ZERO,
+        vecy_,
+        &buffer1_,
+        allocated_);
     cc_->solve(z_, y_);
   
-    fun_SpMV_full(handle_, MINUS_ONE, jc_desc_, vecz_, ONE, vecr_);
+    SpMV_product_reuse(handle_,
+        MINUS_ONE,
+        jc_desc_,
+        vecz_,
+        ONE,
+        vecr_,
+        &buffer2_,
+        allocated_);
     
     dotProduct(handle_cublas_, n_, r_, r_, &gam_i_);
-    fun_SpMV_full(handle_, ONE, jct_desc_, vecr_, ZERO, vecy_);
+    SpMV_product_reuse(handle_,
+        ONE,
+        jct_desc_,
+        vecr_,
+        ZERO,
+        vecy_,
+        &buffer3_,
+        allocated_);
     cc_->solve(z_, y_);
   
-    fun_SpMV_full(handle_, ONE, jc_desc_, vecz_, ZERO, vecw_);
+    SpMV_product_reuse(handle_,
+        ONE,
+        jc_desc_,
+        vecz_,
+        ZERO,
+        vecw_,
+        &buffer4_,
+        allocated_);
     dotProduct(handle_cublas_, n_, w_, r_, &delta_);
     alpha_    = gam_i_ / delta_;
     minalpha_ = -alpha_;
@@ -105,16 +142,32 @@
         break;
       }
       // product with w=Ar starts here
-      fun_SpMV_full(handle_, ONE, jct_desc_, vecr_, ZERO, vecy_);
+      SpMV_product_reuse(handle_,
+          ONE,
+          jct_desc_,
+          vecr_,
+          ZERO,
+          vecy_,
+          &buffer3_,
+          allocated_);
     
       cc_->solve(z_, y_);
-      fun_SpMV_full(handle_, ONE, jc_desc_, vecz_, ZERO, vecw_);
+      SpMV_product_reuse(handle_,
+          ONE,
+          jc_desc_,
+          vecz_,
+          ZERO,
+          vecw_,
+          &buffer4_,
+          allocated_);
 
       dotProduct(handle_cublas_, n_, w_, r_, &delta_);
       beta_  = gam_i1_ / gam_i_;
       gam_i_ = gam_i1_;
       alpha_ = gam_i_ / (delta_ - beta_ * gam_i_ / alpha_);
     }
+    
+    allocated_ = true;
 
     printf("Error is %32.32g \n", sqrt(gam_i1_));
     if (i == itmax_){

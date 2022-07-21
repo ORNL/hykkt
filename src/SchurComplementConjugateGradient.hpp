@@ -25,18 +25,6 @@ public:
   ~SchurComplementConjugateGradient();
  
 /*
- * @brief allocate and create dense vector descriptors
- *
- * @pre Member variables m_ and n_ are initialized to the row and
- *      column number of the JC
- * @post y_, z_, r_, w_, p_, s_ are all allocated on the device and vecx_,
- *       vecb_, vecy_, vecz_, vecr_, vecw_, vecp_, vecs_ are the respective
- *       dense vector descriptors; y_ and z_ have size m_, the other vectors
- *       have size n_, and ycp_ is now a vector of size m_ with values of 0
-*/
-  void allocate();
-
-/*
  * @brief copy ycp_ onto the device and copy device vectors
  *
  * @pre Member variables m_, n_, y_, b_, r_, w_ are initialized to the
@@ -82,6 +70,17 @@ public:
   void set_solver_itmax(int itmax);
 
 private:
+/*
+ * @brief allocate and create dense vector descriptors
+ *
+ * @pre Member variables m_ and n_ are initialized to the row and
+ *      column number of the JC
+ * @post y_, z_, r_, w_, p_, s_ are all allocated on the device and vecx_,
+ *       vecb_, vecy_, vecz_, vecr_, vecw_, vecp_, vecs_ are the respective
+ *       dense vector descriptors; y_ and z_ have size m_, the other vectors
+ *       have size n_, and ycp_ is now a vector of size m_ with values of 0
+*/
+  void allocate_workspace();
 
   // member variables
   int n_; // dimension of outer system
@@ -96,11 +95,11 @@ private:
   cublasHandle_t handle_cublas_; //handle to the cuBLAS library context
 
   // scalars used for conjugate gradient
-  double gam_i_;
-  double beta_ = 0;
+  double beta_;
   double delta_;
   double alpha_;
   double minalpha_;
+  double gam_i_;
   double gam_i1_;
 
   double* x0_; // lhs of entire system
@@ -114,7 +113,14 @@ private:
   double* p_;
   double* s_;
   double* w_;
-  
+
+  bool allocated_ = false;
+
+  void* buffer1_;
+  void* buffer2_;
+  void* buffer3_;
+  void* buffer4_;
+
   // resepctive dense vector descriptors on host
   cusparseDnVecDescr_t vecx_ = NULL;
   cusparseDnVecDescr_t vecb_ = NULL;

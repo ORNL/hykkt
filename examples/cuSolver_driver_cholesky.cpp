@@ -28,16 +28,16 @@ int main(int argc, char *argv[]){
 	char const* const h_file_name = argv[1];
 	char const* const rhs_file_name = argv[2];
   
-  MMatrix* mat_h = new MMatrix();
+  MMatrix mat_h = MMatrix();
 
 	read_mm_file_into_coo(h_file_name, mat_h, 3);
 	printf("\n/******* Matrix size: %d x %d nnz: %d *******/\n\n", 
-         mat_h->n_, 
-         mat_h->m_, 
-         mat_h->nnz_);	
+         mat_h.n_, 
+         mat_h.m_, 
+         mat_h.nnz_);	
 	coo_to_csr(mat_h);
   
-  double* h_rhs = new double[mat_h->n_];
+  double* h_rhs = new double[mat_h.n_];
 	read_rhs(rhs_file_name, h_rhs);
 	printf("RHS reading completed ..............................\n");	
 
@@ -47,17 +47,17 @@ int main(int argc, char *argv[]){
 	int* h_j = nullptr;
   int* h_i = nullptr; //columns and rows of H
  
-  cloneVectorToDevice(mat_h->n_, &h_rhs, &d_rhs);
-  cloneMatrixToDevice(mat_h, &h_i, &h_j, &h_v);
+  cloneVectorToDevice(mat_h.n_, &h_rhs, &d_rhs);
+  cloneMatrixToDevice(&mat_h, &h_i, &h_j, &h_v);
 
   /*** malloc x */
-  double* h_x = new double[mat_h->n_]{0.0};
+  double* h_x = new double[mat_h.n_]{0.0};
 	double* d_x;
 
-  cloneVectorToDevice(mat_h->n_, &h_x, &d_x);
+  cloneVectorToDevice(mat_h.n_, &h_x, &d_x);
   //factorize mat_h
 
-  CholeskyClass* cc = new CholeskyClass(mat_h->n_, mat_h->nnz_, h_v, h_i, h_j);
+  CholeskyClass* cc = new CholeskyClass(mat_h.n_, mat_h.nnz_, h_v, h_i, h_j);
   cc->symbolic_analysis();
   cc->set_pivot_tolerance(tol);
   // cc.set_matrix_values(H_a); // needed only at subsequent iterations
@@ -65,7 +65,7 @@ int main(int argc, char *argv[]){
   cc->solve(d_x, d_rhs);
   
   int fails = 0;
-  copyVectorToHost(mat_h->n_, d_x, h_x);
+  copyVectorToHost(mat_h.n_, d_x, h_x);
   if (fabs(h_x[0] + 97.663191790329750) > abs_tol){
     fails ++;
     printf("x[0] incorrect, x[0] = %32.32g\n", h_x[0]);
@@ -75,7 +75,6 @@ int main(int argc, char *argv[]){
     printf("x[6] incorrect, x[6] = %32.32g\n", h_x[6]);
   }
   delete cc;
-  delete mat_h;
   
   deleteOnDevice(d_rhs);
   deleteOnDevice(d_x);

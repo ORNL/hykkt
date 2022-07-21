@@ -3,7 +3,7 @@
 #include "matrix_vector_ops.hpp"
 #include "matrix_vector_ops_cuda.hpp"
 #include "cuda_memory_utils.hpp"
-#include "constants.hpp"
+#include "cusparse_params.hpp"
 
   CholeskyClass::CholeskyClass(int n, 
       int nnz, 
@@ -63,6 +63,11 @@
   void CholeskyClass::set_matrix_values(double* a_v)
   {
     a_v_ = a_v;
+  }
+
+  void CholeskyClass::set_nnz(int nnz)
+  {
+    nnz_ = nnz;
   }
 
   void CholeskyClass::numerical_factorization()

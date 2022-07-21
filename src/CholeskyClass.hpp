@@ -41,6 +41,7 @@ public:
  * @post tol_ is set to tol
  */
   void set_pivot_tolerance(const double tol);
+  void set_nnz(int nnz);
 
 /* 
  * @brief Set matrix values (for optimization solver iterations after the first

@@ -76,6 +76,7 @@ public:
 */
   double* get_max_d() const;
 
+  void reset_scaling();
 private:
 
 /*

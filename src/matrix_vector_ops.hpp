@@ -8,6 +8,15 @@
 #include <cusolverSp_LOWLEVEL_PREVIEW.h>
 #include <cusolverRf.h>
 
+void SpMV_product_reuse(cusparseHandle_t handle,
+    double alpha,
+    cusparseSpMatDescr_t a_desc_sp,
+    cusparseDnVecDescr_t b_desc_dn,
+    double beta,
+    cusparseDnVecDescr_t c_desc_dn,
+    void** buffer,
+    bool allocated);
+
 /*
  * @brief wrapper for matrix-vector product buffer size calculation wrapper 
  *        and matrix-vector product wrapper

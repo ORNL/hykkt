@@ -306,7 +306,7 @@ void matrixDeviceToDeviceCopy(int n,
 void copyMatrixToHost(const int* a_i,
                       const int* a_j, 
                       const double* a_v, 
-                      MMatrix* mat_a);
+                      MMatrix& mat_a);
 
 /* 
  * @brief copies host MMatrix object mat_a onto the device in CSR format
@@ -368,7 +368,8 @@ void cloneSymmetricMatrixToDevice(const MMatrix* mat_a,
  * @brief creates the transpose of matrix A by converting from
  *        CSR format to CSC format
  *
- * @param n - number of rows in A
+ * @param  handle - handle to the cuSPARSE library context
+ * n - number of rows in A
  * m - number of cols in A
  * nnz - number of nonzeros in A
  * a_i - row offsets for CSR format for A
@@ -377,10 +378,13 @@ void cloneSymmetricMatrixToDevice(const MMatrix* mat_a,
  * at_i - vector where transposed matrix row offsets are stored
  * at_j - vector where transposed matrix column pointers are stored
  * at_v - vector where transposed matrix nonzero values are stored
+ * buffer - reusable buffer so transpose allocates only once
+ * allocated - boolean for if buffer is allocated
  *
  * @post v at_ik at_j, at_v now represent the CSR format of the transpose of A
  */
-void transposeMatrixOnDevice(int n,
+void transposeMatrixOnDevice(cusparseHandle_t handle,
+                             int n,
                              int m,
                              int nnz,
                              const int* a_i,
@@ -388,7 +392,9 @@ void transposeMatrixOnDevice(int n,
                              const double* a_v,
                              int* at_i,
                              int* at_j,
-                             double* at_v);
+                             double* at_v,
+                             void** buffer,
+                             bool allocated);
 
 /* 
  * @brief initializes mat_desc in CSR format of matrix A
@@ -461,3 +467,9 @@ void createSparseHandle(cusparseHandle_t& handle);
  * @post handle is now a handle for cuBLAS
 */
 void createCublasHandle(cublasHandle_t& handle);
+
+/*
+ * @brief checks used, total, and avaible GPU memory
+*/
+void checkGpuMem();
+

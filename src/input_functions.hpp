@@ -46,7 +46,7 @@ typedef struct
  * @post mat_a now holds the values for the loaded matrix using COO format
 */
 void read_mm_file_into_coo(const char* matrix_file_name, 
-                           MMatrix* mat_a, 
+                           MMatrix& mat_a, 
                            int lines);
 
 /*
@@ -58,7 +58,7 @@ void read_mm_file_into_coo(const char* matrix_file_name,
  * @pre matrix is already in COO format in mat_a
  * @post matrix is now also stored in MMatrix in CSR format
 */
-void sym_coo_to_csr(MMatrix* mat_a);
+void sym_coo_to_csr(MMatrix& mat_a);
 
 /*
  * @brief takes a matrix stored in COO format in mat_a and fills out the entries
@@ -69,7 +69,7 @@ void sym_coo_to_csr(MMatrix* mat_a);
  * @pre matrix is already in COO format in mat_a
  * @post matrix is now also stored in MMatrix in CSR format
 */
-void coo_to_csr(MMatrix*);
+void coo_to_csr(MMatrix& mat_a);
 
 /*
  * @brief reads a 1-index based permutation array stored in rhs_file_name into
