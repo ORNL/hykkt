@@ -1,7 +1,6 @@
 #include "vector_vector_ops.hpp"
 #include "matrix_vector_ops_cuda.hpp"
 #include <cublas_v2.h>
-#include "constants.hpp"
 
 void sumVectors(cublasHandle_t& handle_cublas,
                 int n,

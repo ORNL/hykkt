@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include "cuda_memory_utils.hpp"
 #include "constants.hpp"
+#include "cusparse_params.hpp"
 
 /*
 @brief: wrapper for CUDA matrix-matrix product and sum

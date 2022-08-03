@@ -6,7 +6,7 @@
 #include "cuda_memory_utils.hpp"
 #include "permcheck_cuda.hpp"
 #include "permcheck.hpp"
-#include "constants.hpp"
+#include "cusparse_params.hpp"
 
 enum Permutation_Type { perm_v, rev_perm_v, perm_h_v, perm_j_v, perm_jt_v }; 
 

@@ -94,8 +94,3 @@ void read_1idx_perm(const char* rhs_file_name, int* rhs);
 */
 void read_rhs(const char* rhs_file_name, double* rhs);
 
-/*
- * @brief checks used, total, and avaible GPU memory
-*/
-void checkGpuMem();
-
