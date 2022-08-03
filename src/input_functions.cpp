@@ -210,13 +210,3 @@ void read_rhs(const char* rhs_file_name, double* rhs)
   fclose(fpr);
 }
 
-void checkGpuMem()
-{
-  size_t avail;
-  size_t total;
-  cudaMemGetInfo(&avail, &total);
-  size_t used = total - avail;
-  printf("Available memory of a : %zu\n", avail);
-  printf("Total memory of a : %zu\n", total);
-  printf("Used memory of a : %zu\n", used);
-}

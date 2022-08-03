@@ -389,3 +389,9 @@ void createCsrMat(cusparseSpMatDescr_t* mat_desc,
  * @post vec_desc is now initialized as a dense vector descriptor
 */
 void createDnVec(cusparseDnVecDescr_t* vec_desc, int n, double* d_vec);
+
+/*
+ * @brief checks used, total, and avaible GPU memory
+*/
+void checkGpuMem();
+

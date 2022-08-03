@@ -3,7 +3,7 @@
 #include "cuda_memory_utils.hpp"
 #include <assert.h>
 #include <stdio.h>
-#include "constants.hpp"
+#include "cusparse_params.hpp"
 
 void fun_SpMV_full(cusparseHandle_t handle, 
                    double alpha, 

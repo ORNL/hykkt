@@ -1,5 +1,5 @@
 set(HYBRID_SRC
-  input_functions.cu
+  input_functions.cpp
   SchurComplementConjugateGradient.cu
   permcheck.cu
   matrix_vector_ops.cu

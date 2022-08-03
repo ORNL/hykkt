@@ -24,6 +24,7 @@
 #include "PermClass.hpp"
 #include "SpgemmClass.hpp"
 #include "constants.hpp"
+#include "cusparse_params.hpp"
 
 // this version reads NORMAL mtx matrices; dont have to be sorted.
 /**

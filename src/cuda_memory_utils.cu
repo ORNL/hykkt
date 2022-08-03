@@ -7,7 +7,7 @@
 #include "matrix_vector_ops_cuda.hpp"
 #include "MMatrix.hpp"
 #include "cuda_memory_utils.hpp"
-#include "constants.hpp"
+#include "cusparse_params.hpp"
 
 void allocateBufferOnDevice(void** b, size_t b_size)
 {
@@ -206,3 +206,15 @@ void createDnVec(cusparseDnVecDescr_t* vec_desc, int n, double* d_vec)
 {
   checkCudaErrors(cusparseCreateDnVec(vec_desc, n, d_vec, COMPUTE_TYPE));
 }
+
+void checkGpuMem()
+{
+  size_t avail;
+  size_t total;
+  cudaMemGetInfo(&avail, &total);
+  size_t used = total - avail;
+  printf("Available memory of a : %zu\n", avail);
+  printf("Total memory of a : %zu\n", total);
+  printf("Used memory of a : %zu\n", used);
+}
+
