@@ -5,6 +5,36 @@
 #include <stdio.h>
 #include "cusparse_params.hpp"
 
+void SpMV_product_reuse(cusparseHandle_t handle,
+    double alpha,
+    cusparseSpMatDescr_t a_desc_sp,
+    cusparseDnVecDescr_t b_desc_dn,
+    double beta,
+    cusparseDnVecDescr_t c_desc_dn,
+    void** buffer,
+    bool allocated)
+{
+    if(!allocated){
+      size_t buffer_size = 0;
+      fun_SpMV_buffer(handle,
+          alpha,
+          a_desc_sp,
+          b_desc_dn,
+          beta,
+          c_desc_dn,
+          &buffer_size);
+
+      allocateBufferOnDevice(buffer, buffer_size);
+    }
+    fun_SpMV_product(handle,
+        alpha,
+        a_desc_sp,
+        b_desc_dn,
+        beta,
+        c_desc_dn,
+        *buffer);
+}
+
 void fun_SpMV_full(cusparseHandle_t handle, 
                    double alpha, 
                    cusparseSpMatDescr_t a_desc_sp, 

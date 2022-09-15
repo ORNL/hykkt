@@ -8,6 +8,15 @@
 #include <cusolverSp_LOWLEVEL_PREVIEW.h>
 #include <cusolverRf.h>
 
+void SpMV_product_reuse(cusparseHandle_t handle,
+    double alpha,
+    cusparseSpMatDescr_t a_desc_sp,
+    cusparseDnVecDescr_t b_desc_dn,
+    double beta,
+    cusparseDnVecDescr_t c_desc_dn,
+    void** buffer,
+    bool allocated);
+
 /*
  * @brief wrapper for matrix-vector product buffer size calculation wrapper 
  *        and matrix-vector product wrapper
@@ -64,16 +73,17 @@ void fun_SpMV_product(cusparseHandle_t handle,
  * @brief diagonally scales a matrix from the left and right, and
  *        diagonally scales rhs (from the left)
  *
- * @param Size n of the matrix, the lower half of the matrix stored in csr 
- *        format, the upper half of the matrix stored in csr format, a scaling 
- *        vector representing a diagonal matrix, a rhs (vector) of the 
- *        equation, max_d a vector that aggregates scaling, a flag to 
- *        determine whether to scale the second matrix (not necessary in 
- *        last iteration)
+ * @param Size n of A, m - total rows in matrix (1), matrices A, B, B^T, in
+ *        csr format (works also if the third matrix is not B^T provided 
+ *        dimensions are correct), a scaling vector representing a 
+ *        diagonal matrix, 
  *
- * @post The value arrays of the matrices (a_v, at_v) are scaled along 
- *       with d_rhs the rhs vector. max_d is updated to include the 
- *       aggregate scaling
+ * @pre   scale is initialized to positive values 
+ *        1/sqrt(the maximum entry magnitude of each row) of matrix (1)
+ *
+ * @post  The value arrays of the matrices (a_v, b_v, bt_v) are scaled along 
+ *        with d_rhs the rhs vector. max_d is updated to include the 
+ *        aggregate scaling
 */
 void fun_adapt_diag_scale(int n, 
                           int m, 
@@ -101,8 +111,8 @@ void fun_adapt_diag_scale(int n,
  *        dimensions are correct), an empty scaling vector representing a 
  *        diagonal matrix
  * 
- * @post The scaling vector scale which is updated entry-wise with
- *       1/sqrt(the maximum of each row) of matrix (1)
+ * @post  The scaling vector scale is updated entry-wise with
+ *        1/sqrt(the maximumentry magnitude of each row) of matrix (1)
 */
 void fun_adapt_row_max(int n, 
                        int m, 
@@ -123,7 +133,7 @@ void fun_adapt_row_max(int n,
  * @param Length of array n, val - the value the array is set to,
  *        arr - a pointer to the array that is initialized
  * 
- * @pos arr with entries set to val
+ * @post  arr with entries set to val
 */
 void fun_set_const(int n, double val, double* arr);
 
@@ -133,17 +143,17 @@ void fun_set_const(int n, double val, double* arr);
  * @param Length of array n, val - the value to be added,
  *        arr - a pointer to the array the constant is added to
  *
- * @post arr with entries increased by val
+ * @post  arr with entries increased by val
 */
 void fun_add_const(int n, int val, int* arr);
 
 /*
-@brief: add arrays arr1, arr2 such that arr1 = arr1+ alp*arr2
-
-@inputs: Length of array n, arr1, arr2 - arrays to be added,
-alp - scaling constant
-
-@outputs: arr1 += alp*arr2
+ * @brief:  add arrays arr1, arr2 such that arr1 = arr1+ alp*arr2
+ *
+ * @params: Length of array n, arr1, arr2 - arrays to be added,
+ *          alp - scaling constant
+ *
+ * @post:   arr1 += alp*arr2
  */
 void fun_add_vecs(int n, double* arr1, double alp, double* arr2);
 
@@ -185,7 +195,7 @@ void fun_inv_vec_scale(int n, double* d_rhs, double* ds);
  * @param Size n of the matrix, d_rhs a (dense) vector, ds a dense 
  *        vector represting a diagonal matrix
  * 
- * @post d_rhs=ds*d_rhs (elementwise)
+ * @post d_rhs=ds.*d_rhs (elementwise)
  */
 void fun_vec_scale(int n, double* d_rhs, double* ds);
 

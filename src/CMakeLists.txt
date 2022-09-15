@@ -1,10 +1,17 @@
 set(HYBRID_SRC
-  input_functions.cpp
-  SchurComplementConjugateGradient.cu
-  permcheck.cu
+  cuda_memory_utils.cu
+  MMatrix.cpp
+  PermClass.cpp
+  RuizClass.cpp
+  matrix_matrix_ops.cu
   matrix_vector_ops.cu
   vector_vector_ops.cu
-  cuda_memory_utils.cu
+  input_functions.cpp
+  permcheck.cu
+  SchurComplementConjugateGradient.cu
+  CholeskyClass.cu
+  SpgemmClass.cu
+  HykktSolver.cu
 )
 
 

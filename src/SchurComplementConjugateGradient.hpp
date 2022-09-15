@@ -6,37 +6,24 @@
 
 class SchurComplementConjugateGradient
 {
-
 public:
   // default constructor
   SchurComplementConjugateGradient();
 
   // parametrized constructor
   SchurComplementConjugateGradient(cusparseSpMatDescr_t jc_desc, 
-                                   cusparseSpMatDescr_t jct_desc, 
-                                   double* x0, 
-                                   double* b, 
-                                   int n, 
-                                   int m, 
-                                   CholeskyClass* cc,
-                                   cusparseHandle_t handle, 
-                                   cublasHandle_t handle_cublas);
+      cusparseSpMatDescr_t jct_desc, 
+      double* x0, 
+      double* b, 
+      int n, 
+      int m, 
+      CholeskyClass* cc,
+      cusparseHandle_t handle, 
+      cublasHandle_t handle_cublas);
 
   // destructor
   ~SchurComplementConjugateGradient();
  
-/*
- * @brief allocate and create dense vector descriptors
- *
- * @pre Member variables m_ and n_ are initialized to the row and
- *      column number of the JC
- * @post y_, z_, r_, w_, p_, s_ are all allocated on the device and vecx_,
- *       vecb_, vecy_, vecz_, vecr_, vecw_, vecp_, vecs_ are the respective
- *       dense vector descriptors; y_ and z_ have size m_, the other vectors
- *       have size n_, and ycp_ is now a vector of size m_ with values of 0
-*/
-  void allocate();
-
 /*
  * @brief copy ycp_ onto the device and copy device vectors
  *
@@ -49,17 +36,18 @@ public:
   void setup();
 
 /*
- * @brief solve Schur Complement using conjugate gradient 
+ * @brief solve Schur Complement system using conjugate gradient 
  *
  * @pre Member variables handle_, handle_cublas_,
  *      all dense vector descriptors, all vectors on device, tol_m_,
- *      itmax_, gam_i_, gam_i1_, alpha_, beta_, minalpha_, are
+ *      itmax_, gam_i_, gam_i1_, alpha_, beta_, and minalpha_ are
  *      initialized to a cuSPARSE handler, a cuBLAS handler, initialized
  *      to their respective device vectors, allocated on the device,
  *      initialized to the max tolerance of the conjugate gradient, the
  *      maximum number of iterations for conjugate gradient, and the
  *      respective scalar values
- * @post iterative solver on the Schur complement using Cholesky solver
+ *
+ * @post x_ holds the solution of the Schur Complement system
 */
   int solve();
 
@@ -68,7 +56,6 @@ public:
  *
  * @param tol - the new tolerance level
  *
- * @pre
  * @post tol_ is now set to tol
 */
   void set_solver_tolerance(double tol);
@@ -78,12 +65,22 @@ public:
  *
  * @param itmax - the new max iterations
  *
- * @pre
  * @post itmax_ is now set to itmax
 */
   void set_solver_itmax(int itmax);
 
 private:
+/*
+ * @brief allocate and create dense vector descriptors
+ *
+ * @pre Member variables m_ and n_ are initialized to the row and
+ *      column number of the JC
+ * @post y_, z_, r_, w_, p_, s_ are all allocated on the device and vecx_,
+ *       vecb_, vecy_, vecz_, vecr_, vecw_, vecp_, vecs_ are the respective
+ *       dense vector descriptors; y_ and z_ have size m_, the other vectors
+ *       have size n_, and ycp_ is now a vector of size m_ with values of 0
+*/
+  void allocate_workspace();
 
   // member variables
   int n_; // dimension of outer system
@@ -92,17 +89,17 @@ private:
   double tol_ = 1e-12; // solver tolerance for Schur
 
   cusparseSpMatDescr_t jc_desc_; // sparse matrix descriptor for JC
-  cusparseSpMatDescr_t jct_desc_; // sparse matrix descriptor for JC transform
+  cusparseSpMatDescr_t jct_desc_; // sparse matrix descriptor for JC transpose
 
   cusparseHandle_t handle_; // handle to the cuSPARSE library context
   cublasHandle_t handle_cublas_; //handle to the cuBLAS library context
 
   // scalars used for conjugate gradient
-  double gam_i_;
-  double beta_ = 0;
+  double beta_;
   double delta_;
   double alpha_;
   double minalpha_;
+  double gam_i_;
   double gam_i1_;
 
   double* x0_; // lhs of entire system
@@ -116,7 +113,14 @@ private:
   double* p_;
   double* s_;
   double* w_;
-  
+
+  bool allocated_ = false;
+
+  void* buffer1_;
+  void* buffer2_;
+  void* buffer3_;
+  void* buffer4_;
+
   // resepctive dense vector descriptors on host
   cusparseDnVecDescr_t vecx_ = NULL;
   cusparseDnVecDescr_t vecb_ = NULL;
@@ -128,11 +132,5 @@ private:
   cusparseDnVecDescr_t vecs_ = NULL;
   
   CholeskyClass* cc_; // cholesky factorization on 1,1 block
- 
-  // timers used for testing
-  double timeIO_ = 0.0;
-  struct timeval t1_;
-  struct timeval t2_;
-
 };
 
