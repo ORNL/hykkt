@@ -1,0 +1,14 @@
+#!/bin/bash
+
+
+#BSUB -P CSC359
+#BSUB -J hykkt
+#BSUB -o hykkt.o%J
+#BSUB -W 100
+#BSUB -nnodes 1
+#BSUB -step_cgroup n
+#BSUB -env "all"
+#BSUB -step_cgroup n
+
+cd build
+ctest -VV

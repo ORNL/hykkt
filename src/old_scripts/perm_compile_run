@@ -1,0 +1,6 @@
+#!/bin/bash
+
+source ~/deception_vars.sh
+nvcc -ccbin=gcc -Xcompiler -g -G -gencode arch=compute_80,code=sm_80 -DCUDA11 \
+  -o run_perm -lcusparse -lcusolver -lcublas -lrt -lgfortran perm_driver.cu && \
+  ./run_perm

@@ -1,3 +1,4 @@
+#include <ruiz_scaling.hpp>
 /*
 @brief: diagonally scales a matrix from the left and right, and
 diagonally scales rhs (from the left)
