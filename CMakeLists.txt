@@ -21,9 +21,7 @@ if(NOT DEFINED CMAKE_CUDA_STANDARD)
 endif()
 
 if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-  #set(CMAKE_CUDA_ARCHITECTURES 70) #for summit, ascent
-  #set(CMAKE_CUDA_ARCHITECTURES 80) #for deception
-  set(CMAKE_CUDA_ARCHITECTURES 60 CACHE STRING "Selects CUDA architectures") #this doesn't work
+  set(CMAKE_CUDA_ARCHITECTURES 60 CACHE STRING "Selects CUDA architectures")
 endif()
 
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-extended-lambda")
@@ -45,8 +43,7 @@ target_link_libraries(cuda_libs INTERFACE
 enable_testing()
 
 # TODO - use target based includes
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/include
-                    ${CMAKE_CURRENT_SOURCE_DIR}/src
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src
                     ${CMAKE_CURRENT_SOURCE_DIR}/examples)
 
 # Add code directory
