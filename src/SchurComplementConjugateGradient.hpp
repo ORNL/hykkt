@@ -1,8 +1,11 @@
 #pragma once
 
-#include "matrix_vector_ops.hpp"
-#include "vector_vector_ops.hpp"
-#include "CholeskyClass.hpp"
+#include <cusparse.h>
+#include <cublas.h>
+#include <cusparse_utils.hpp>
+
+// Froward declaration of CholeskyClass
+class CholeskyClass;
 
 class SchurComplementConjugateGradient
 {

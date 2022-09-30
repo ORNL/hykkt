@@ -1,19 +1,8 @@
 #include "HykktSolver.hpp"
 
-#include <algorithm>
-#include <unistd.h>
-#include <cstdlib>
-#include <assert.h>
-#include <ctype.h>
-#include <string.h>
-#include <iostream>
-#include <memory>
-#include <string>
-#include "permcheck.hpp"
 #include "input_functions.hpp"
 #include "SchurComplementConjugateGradient.hpp"
 #include "RuizClass.hpp"
-#include "matrix_vector_ops_cuda.hpp"
 #include "vector_vector_ops.hpp"
 #include "SpgemmClass.hpp"
 #include "MMatrix.hpp"
@@ -22,6 +11,8 @@
 #include "SpgemmClass.hpp"
 #include "constants.hpp"
 #include "cuda_memory_utils.hpp"
+#include "cusparse_utils.hpp"
+#include "matrix_vector_ops.hpp"
 
   HykktSolver::HykktSolver(double gamma)
   {

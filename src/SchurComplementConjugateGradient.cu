@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include "SchurComplementConjugateGradient.hpp"
-#include "matrix_vector_ops_cuda.hpp"
+#include "matrix_vector_ops.hpp"
 #include "vector_vector_ops.hpp"
 #include "cuda_memory_utils.hpp"
 #include "constants.hpp"
+#include "cusparse_utils.hpp"
+#include "CholeskyClass.hpp"
 
   // parametrized constructor
   SchurComplementConjugateGradient::SchurComplementConjugateGradient(

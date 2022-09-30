@@ -1,16 +1,15 @@
 #include "PermClass.hpp"
-#include <algorithm>
 #include "matrix_vector_ops.hpp"
-#include "matrix_vector_ops_cuda.hpp"
 #include "cuda_memory_utils.hpp"
-#include "permcheck_cuda.hpp"
 #include "permcheck.hpp"
-#include "cusparse_params.hpp"
+#include <cusparse_utils.hpp>
 
-  PermClass::PermClass(int n_h, int nnz_h, int nnz_j) 
-: n_h_(n_h),
-  nnz_h_(nnz_h),
-  nnz_j_(nnz_j)
+#include "cuda_check_errors.hpp"
+
+PermClass::PermClass(int n_h, int nnz_h, int nnz_j) 
+  : n_h_(n_h),
+    nnz_h_(nnz_h),
+    nnz_j_(nnz_j)
   {
     allocate_workspace();
   }

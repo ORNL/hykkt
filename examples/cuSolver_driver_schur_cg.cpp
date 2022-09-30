@@ -11,6 +11,12 @@
 #include "matrix_vector_ops_cuda.hpp"
 #include "cuda_memory_utils.hpp"
 #include "MMatrix.hpp"
+#include "cusparse_utils.hpp"
+#include "CholeskyClass.hpp"
+
+
+#include "cuda_check_errors.hpp"
+
 
 /**
   *@brief Driver file demonstrates use of both Cholesky 

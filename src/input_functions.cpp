@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <assert.h>
+#include <cstdlib>
 
 #include "input_functions.hpp"
 #include "MMatrix.hpp"
@@ -106,7 +107,7 @@ void sym_coo_to_csr(MMatrix& mat_a)
     int col_start = mat_a.csr_rows[i];
     int col_end   = mat_a.csr_rows[i + 1];
     int length   = col_end - col_start;
-    qsort(&tmp[col_start], length, sizeof(indexPlusValue), indexPlusValue_comp);
+    std::qsort(&tmp[col_start], length, sizeof(indexPlusValue), indexPlusValue_comp);
   }
 
   for(int i = 0; i < mat_a.nnz_unpacked_; ++i) {
@@ -156,7 +157,7 @@ void coo_to_csr(MMatrix& mat_a)
     int col_start = mat_a.csr_rows[i];
     int col_end   = mat_a.csr_rows[i + 1];
     int length    = col_end - col_start;
-    qsort(&tmp[col_start], length, sizeof(indexPlusValue), indexPlusValue_comp);
+    std::qsort(&tmp[col_start], length, sizeof(indexPlusValue), indexPlusValue_comp);
   }
 
   // and copy
