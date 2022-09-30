@@ -18,22 +18,6 @@ struct indexPlusValue
 */
 static int indexPlusValue_comp(const void* a, const void* b);
 
-typedef struct
-{
-  int*    coo_rows;
-  int*    coo_cols;
-  double* coo_vals;
-
-  int*    csr_rows;
-  int*    csr_cols;
-  double* csr_vals;
-
-  int n;
-  int m;
-  int nnz;
-  int nnz_unpacked;
-} mmatrix;
-
 /*
  * @brief reads a matrix stored in matrix_file_name into a
  *        structure mat_a of COO format

@@ -1,12 +1,9 @@
 #pragma once
 
-#include <cusolver_common.h>
 #include <cuda_runtime.h>
 #include <cusparse.h>
 #include <cublas_v2.h>
-#include "cusolverSp.h"
 #include <cusolverSp_LOWLEVEL_PREVIEW.h>
-#include <cusolverRf.h>
 
 void SpMV_product_reuse(cusparseHandle_t handle,
     double alpha,

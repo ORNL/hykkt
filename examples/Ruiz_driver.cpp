@@ -5,6 +5,7 @@
 #include <RuizClass.hpp>
 #include <MMatrix.hpp>
 #include <cuda_memory_utils.hpp>
+#include <cusparse_utils.hpp>
 
 /*
  * @brief Initializes matrices with testing values to demonstrate Ruiz scaling 

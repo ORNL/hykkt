@@ -1,10 +1,9 @@
 #include "SpgemmClass.hpp"
-#include <algorithm>
 #include "matrix_matrix_ops.hpp"
 #include "matrix_vector_ops.hpp"
 #include "cuda_memory_utils.hpp"
 #include "constants.hpp"
-#include "cusparse_params.hpp"
+#include "cusparse_utils.hpp"
 
   SpgemmClass::SpgemmClass(int n,
       int m,

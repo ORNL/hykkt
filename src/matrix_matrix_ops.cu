@@ -1,5 +1,4 @@
 #include "matrix_matrix_ops.hpp"
-#include "matrix_vector_ops_cuda.hpp"
 #include "matrix_vector_ops.hpp"
 #include "cuda_memory_utils.hpp"
 #include <assert.h>
@@ -7,7 +6,9 @@
 #include "cuda_memory_utils.hpp"
 #include "cusparse_params.hpp"
 #include "constants.hpp"
-#include "cusparse_params.hpp"
+
+#include "cuda_check_errors.hpp"
+
 
 void SpGEMM_workEstimation(cusparseHandle_t& handle,
     const cusparseSpMatDescr_t& a_desc,

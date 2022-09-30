@@ -1,5 +1,4 @@
 #include "RuizClass.hpp"
-#include <algorithm>
 #include "matrix_vector_ops.hpp"
 #include "cuda_memory_utils.hpp"
 #include "constants.hpp"

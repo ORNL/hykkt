@@ -15,7 +15,7 @@
 #include "input_functions.hpp"
 #include "SchurComplementConjugateGradient.hpp"
 #include "RuizClass.hpp"
-#include "matrix_vector_ops_cuda.hpp"
+#include "matrix_vector_ops.hpp"
 #include "vector_vector_ops.hpp"
 #include "SpgemmClass.hpp"
 #include "MMatrix.hpp"
@@ -23,9 +23,9 @@
 #include "PermClass.hpp"
 #include "SpgemmClass.hpp"
 #include "constants.hpp"
-#include "cusparse_params.hpp"
 #include "cuda_memory_utils.hpp"
 #include "HykktSolver.hpp"
+#include "cusparse_utils.hpp"
 
 // this version reads NORMAL mtx matrices; dont have to be sorted.
 /**
