@@ -1,3 +1,5 @@
+#include <cstdio>
+
 #include "vector_vector_ops.hpp"
 #include "matrix_vector_ops_cuda.hpp"
 #include <cublas_v2.h>

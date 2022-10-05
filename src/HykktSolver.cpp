@@ -1,3 +1,6 @@
+#include <cusparse.h>
+#include <cublas.h>
+
 #include "HykktSolver.hpp"
 
 #include "input_functions.hpp"
@@ -5,13 +8,9 @@
 #include "RuizClass.hpp"
 #include "vector_vector_ops.hpp"
 #include "SpgemmClass.hpp"
-#include "MMatrix.hpp"
 #include "CholeskyClass.hpp"
 #include "PermClass.hpp"
 #include "SpgemmClass.hpp"
-#include "constants.hpp"
-#include "cuda_memory_utils.hpp"
-#include "cusparse_utils.hpp"
 #include "matrix_vector_ops.hpp"
 
   HykktSolver::HykktSolver(double gamma)

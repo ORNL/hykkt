@@ -1,40 +1,25 @@
-/* written by SR based on a code by KS
-         How to compile:
-         nvcc -lcusparse -lcusolver -lcublas cuSolver_driver_chol.cu
- */
-#include <algorithm>
-#include <unistd.h>
-#include <cstdlib>
-#include <assert.h>
-#include <ctype.h>
-#include <string.h>
 #include <iostream>
-#include <memory>
 #include <string>
-#include "permcheck.hpp"
 #include "input_functions.hpp"
 #include "SchurComplementConjugateGradient.hpp"
 #include "RuizClass.hpp"
 #include "matrix_vector_ops.hpp"
 #include "vector_vector_ops.hpp"
-#include "SpgemmClass.hpp"
 #include "MMatrix.hpp"
 #include "CholeskyClass.hpp"
 #include "PermClass.hpp"
 #include "SpgemmClass.hpp"
-#include "constants.hpp"
 #include "cuda_memory_utils.hpp"
-#include "HykktSolver.hpp"
-#include "cusparse_utils.hpp"
 
 // this version reads NORMAL mtx matrices; dont have to be sorted.
 /**
-  *@brief Driver file demonstrates hybrid use of Cholesky
-          decomposition, Schur complement, Ruiz scaling,
-          and Permutation using the respective classes
-  *
-  *@pre Only NORMAL mtx matrices are read; don't have to be sorted
-**/
+ * @brief Driver file demonstrates hybrid use of Cholesky
+ * decomposition, Schur complement, Ruiz scaling,
+ * and Permutation using the respective classes.
+ * 
+ * @pre Only NORMAL mtx matrices are read; don't have to be sorted
+ * 
+ */
 
 int main(int argc, char* argv[])
 {
