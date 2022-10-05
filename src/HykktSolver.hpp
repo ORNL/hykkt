@@ -1,12 +1,18 @@
 #pragma once
 
-#include "SchurComplementConjugateGradient.hpp"
-#include "RuizClass.hpp"
-#include "SpgemmClass.hpp"
+#include <cusparse.h>
+#include <cublas.h>
+
+#include <cuda_memory_utils.hpp>
 #include "MMatrix.hpp"
-#include "CholeskyClass.hpp"
-#include "PermClass.hpp"
-#include "SpgemmClass.hpp"
+
+// Forward declarations 
+class RuizClass;
+class SpgemmClass;
+class PermClass;
+class CholeskyClass;
+class SchurComplementConjugateGradient;
+
 
 class HykktSolver
 {

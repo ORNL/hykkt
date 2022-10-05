@@ -1,19 +1,10 @@
-#include <unistd.h>
-#include <cstdlib>
-#include <assert.h>
-#include <ctype.h>
-#include <string.h>
 #include <iostream>
-#include <memory>
 #include <string>
 #include "input_functions.hpp"
 #include "SchurComplementConjugateGradient.hpp"
-#include "matrix_vector_ops_cuda.hpp"
 #include "cuda_memory_utils.hpp"
 #include "MMatrix.hpp"
-#include "cusparse_utils.hpp"
 #include "CholeskyClass.hpp"
-
 
 #include "cuda_check_errors.hpp"
 
