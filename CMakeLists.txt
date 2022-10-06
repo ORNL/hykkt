@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 11)
 
 option(HYKKT_TEST_WITH_BSUB "Use `jsrun` instead of `mpirun` commands when running tests" OFF)
 set(HYKKT_CTEST_OUTPUT_DIR ${PROJECT_BINARY_DIR} CACHE PATH "Directory where CTest outputs are saved")
-
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH)
 
 # Configure CUDA
 include(CheckLanguage)
