@@ -19,5 +19,5 @@ set(HYBRID_SRC_CUDA
 )
 
 set_source_files_properties(${HYBRID_SRC_CUDA} PROPERTIES LANGUAGE CUDA)
-add_library(hybrid OBJECT ${HYBRID_SRC} ${HYBRID_SRC_CUDA})
-
+add_library(hybrid SHARED ${HYBRID_SRC} ${HYBRID_SRC_CUDA})
+target_link_libraries(hybrid PRIVATE cuda_libs)
