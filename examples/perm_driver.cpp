@@ -108,5 +108,6 @@ int main(int argc, char* argv[])
   else{
     printf("C permute passed\n");
   }
+
   return flagrc + flagr + flagc;
 }
