@@ -1,0 +1,101 @@
+
+.hykkt_script_template: &test_script_definition
+ script:
+    - |
+      set -xv
+      export WORKDIR="$HOME/gitlab/$CI_JOB_ID"
+      if [[ ! -d "$WORKDIR" ]]; then
+        mkdir -p "$WORKDIR"
+        cp -R ./* "$WORKDIR"
+      fi
+      cd $WORKDIR
+      [ -f output ] && rm output
+      touch output
+      tail -f output &
+      tailpid=$!
+      sinfo -l | grep $SLURM_Q
+
+      #test build script 
+      jobid=$(sbatch --export=ALL -A EXASGD --gres=gpu:1 --ntasks=1 -p $SLURM_Q -o output -e output -t 5:00 $WORKDIR/deception_test.sbatch $SCRIPT_ARGS)
+      export jobid=$(echo $jobid | cut -f4 -d' ')
+      echo $jobid > "$WORKDIR/jobid"
+      res=1
+      while :;
+      do
+        if [[ "$(awk 'BEGIN{i=0}/BUILD_STATUS/{i++}END{print i}' output)" != "0" ]]; then
+          kill $tailpid
+          echo 'Last tail of build output:'
+          tail -n 200 output
+          res=$(grep BUILD_STATUS output | tail -n 1 | cut -f2 -d':')
+          break
+        fi
+        sleep 30
+      done
+      rm "$WORKDIR/jobid"
+      echo "Finished job with code $res"
+      exit $res
+
+
+.pnnl_tags_template: &pnnl_tags_definition
+  tags:
+    - k8s
+    - ikp
+    - exasgd
+    - marianas
+
+.pnnl-rules: &pnnl-rules
+  rules:
+    - &pnnl-rule
+      if: '$CI_PROJECT_ROOT_NAMESPACE == "exasgd"' # Will only apply to PNNL
+
+.pnnl-nonhpc-tags: &pnnl-nonhpc-definition
+  tags:
+    - k8s
+    - ikp
+    - exasgd
+    - basic
+
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
+stages:
+  - .pre
+  - test
+
+# Include PNNL GitLab stdlib
+include:
+  - remote: 'https://raw.githubusercontent.com/pnnl-miscscripts/gitlab-lib/v1/gitlab-lib.yaml'
+
+.pnnl_tags_template: &pnnl_tags_definition
+  tags:
+    - k8s
+    - ikp 
+    - exasgd
+    - marianas
+
+.pnnl-rules: &pnnl-rules
+  rules:
+    - &pnnl-rule
+      if: '$CI_PROJECT_ROOT_NAMESPACE == "exasgd"' # Will only apply to PNNL
+      
+SVC Account Cleanup:
+  stage: .pre
+  <<: *pnnl-rules
+  <<: *pnnl_tags_definition
+  script:
+    - export WORKDIR="$HOME/gitlab/"
+    # clears directory of files more than 1 day/1440 minutes old
+    - find $WORKDIR -type d -mmin +1440 -prune -print -exec rm -rf {} \; || true
+    - ls -hal $WORKDIR             
+
+hykkt-test-all-8:
+  stage: test
+  variables:
+    SLURM_Q: "a100_shared"
+    MY_CLUSTER: "deception"
+    OUTPUT_SUFFIX: "_build"
+    SCRIPT_ARGS: " --build-only --job=gcc-cuda "
+    WORKDIR_SUFFIX: "x86_64-gcc-cuda-build"
+  <<: *pnnl-rules
+  <<: *pnnl_tags_definition
+  <<: *test_script_definition
