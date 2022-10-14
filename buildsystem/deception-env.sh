@@ -1,4 +1,4 @@
-#!/bin/bash
+source /etc/profile.d/modules.sh
 
 module purge
 module load cmake/3.19.6

@@ -1,3 +1,6 @@
+[![pipeline status](https://gitlab.pnnl.gov/exasgd/frameworks/exago/badges/master/pipeline.svg)](https://gitlab.pnnl.gov/exasgd/solvers/hykkt/-/commits/develop)
+
+
 # HyKKT
 
 ## Description
