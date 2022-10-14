@@ -108,6 +108,7 @@ int main(int argc, char* argv[])
   else{
     printf("C permute passed\n");
   }
+  printf("Infinte loop start for testing CI");
 
   return flagrc + flagr + flagc;
 }

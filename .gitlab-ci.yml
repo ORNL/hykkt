@@ -16,7 +16,7 @@
       sinfo -l | grep $SLURM_Q
 
       #test build script 
-      jobid=$(sbatch --export=ALL -A EXASGD --gres=gpu:1 --ntasks=1 -p $SLURM_Q -o output -e output -t 5:00 $WORKDIR/deception_test.sbatch $SCRIPT_ARGS)
+      jobid=$(sbatch --export=ALL -A EXASGD --gres=gpu:1 --ntasks=1 -p $SLURM_Q -o output -e output -t 5:00 $WORKDIR/buildsystem/build.sh $SCRIPT_ARGS)
       export jobid=$(echo $jobid | cut -f4 -d' ')
       echo $jobid > "$WORKDIR/jobid"
       res=1
@@ -88,7 +88,7 @@ SVC Account Cleanup:
     - find $WORKDIR -type d -mmin +1440 -prune -print -exec rm -rf {} \; || true
     - ls -hal $WORKDIR             
 
-hykkt-test-all-8:
+hykkt-test-deception:
   stage: test
   variables:
     SLURM_Q: "a100_shared"
@@ -96,6 +96,18 @@ hykkt-test-all-8:
     OUTPUT_SUFFIX: "_build"
     SCRIPT_ARGS: " --build-only --job=gcc-cuda "
     WORKDIR_SUFFIX: "x86_64-gcc-cuda-build"
+  <<: *pnnl-rules
+  <<: *pnnl_tags_definition
+  <<: *test_script_definition
+
+hykkt-test-newell:
+  stage: test
+  variables:
+    SLURM_Q: "newell_shared"
+    MY_CLUSTER: "newell"
+    OUTPUT_SUFFIX: "_test"
+    SCRIPT_ARGS: " --test-only --job=gcc-cuda "
+    WORKDIR_SUFFIX: "ppc64le-gcc-cuda-build"
   <<: *pnnl-rules
   <<: *pnnl_tags_definition
   <<: *test_script_definition
