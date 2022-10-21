@@ -16,7 +16,7 @@
       sinfo -l | grep $SLURM_Q
 
       #test build script 
-      jobid=$(sbatch --export=ALL -A EXASGD --gres=gpu:1 --ntasks=1 -p $SLURM_Q -o output -e output -t 5:00 $WORKDIR/buildsystem/build.sh $SCRIPT_ARGS)
+      jobid=$(sbatch --export=ALL -A EXASGD --gres=gpu:1 --ntasks=1 -p $SLURM_Q -o output -e output -t 10:00 $WORKDIR/buildsystem/build.sh $SCRIPT_ARGS)
       export jobid=$(echo $jobid | cut -f4 -d' ')
       echo $jobid > "$WORKDIR/jobid"
       res=1
@@ -85,7 +85,7 @@ SVC Account Cleanup:
   script:
     - export WORKDIR="$HOME/gitlab/"
     # clears directory of files more than 1 day/1440 minutes old
-    - find $WORKDIR -type d -mmin +1440 -prune -print -exec rm -rf {} \; || true
+    - find $WORKDIR -D -type d -mindepth 1 -mmin +1440 -prune -print -exec rm -rf {} \; || true
     - ls -hal $WORKDIR             
 
 hykkt-test-deception:
