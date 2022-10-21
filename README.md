@@ -4,58 +4,84 @@
 # HyKKT
 
 ## Description
-A linear solver tailored for Karush Kuhn Tucker (KKT) linear systems and 
+HyKKT is a package for solving systems of equations and unknowns resulting from an iterative solution of an optimization
+problem, for example optimal power flow, which uses hardware accelerators (GPUs) efficiently.
+
+The HyKKT package contains a linear solver tailored for Karush Kuhn Tucker (KKT) linear systems and
 deployment on hardware accelerator hardware such as GPUs. The solver requires
-all blocks of the 4X4 block system separately and solves the system to a desired
+all blocks of the $`4\times 4`$ block system: 
+
+```math
+\begin{bmatrix}
+    H + D_x     & 0         & J_c^T     & J_d^T \\
+      0         & D_s       & 0           & -I  \\
+     J_c        & 0         & 0           & 0   \\
+     J_d        & -I        & 0           & 0
+\end{bmatrix}
+\begin{bmatrix}
+  \Delta x \\ \Delta s \\ \Delta y_c \\ \Delta y_d
+\end{bmatrix} =
+\begin{bmatrix}
+  \tilde{r}_x \\ r_s \\ r_c \\ r_d
+\end{bmatrix}
+```
+
+separately and solves the system to a desired
 numerical precision exactly via block reduction and conjugate gradient on the
-schur complement. 
+schur complement.
 
-## Installation
-No installation is required
-
-## make
-To run on deception, from the root directory run
+## Installation and build instructions
+Clone the repository 
+``` 
+git clone https://gitlab.pnnl.gov/exasgd/solvers/hykkt.git
+``` 
+and cd into the root directory (hykkt). The build dependencies are
+* C++ compiler supporting C++11 standard or higher
+* CMake >= 3.19
+* CUDA >= 11.0
 ```
-source buildsystem/deception-env.sh // or alternatively load these modules
 ./buildsystem/build.sh // to make
-sbatch deception_test.sbatch // to run, or use as template for batch script
+cd build
+ctest -VV // to test - this must be done from a compute node with a GPU or in a batch script as shown [here](https://gitlab.pnnl.gov/exasgd/solvers/hykkt/-/blob/README/deception_test.sbatch)
 ```
 
-To run on summit, first set CMAKE\_CUDA\_ARCHITECTURES to 60
-(you can also do this by going to CMakeLists.txt in the root directory, and uncommenting/ commenting the relevant lines
-Then, from the root directory run
-```
-source buildsystem/summit-env.sh // or alternatively load these modules
-./buildsystem/build.sh // to make
-bsub summit_test.bsub // to run, or use as template for batch script
-```
 ## Usage
+
 The executable ```hybrid_solver``` is built in build/src by make
 This executable can be run with an appropriate batch script with 10 arguments
-```
-Hfile #represents the $H+D_x$ matrix block
-Dsfile #represents the $D_s$ matrix block
-Jfile #represents the $J$ matrix block
-Jdfile #represents the $J_d$ matrix block
-rxfile #represents the $r_x$ vector block
-rsfile #represents the $r_s$ vector block
-ryfile #represents the $r_y$ vector block
-rydfile #represents the $r_{yd}$ vector block
-skip #number of lines to ignore in the .mtx matrix files
-gamma #constant to make system more PD in eq(6)
-```
-Examples of this script can be found in ```src/old_scripts```
+
+1. `h_file_name` - contains the sparse symmetric $`H+D_x`$ matrix block in matrix market format
+2. `ds_file_name` - contains the diagonal $`D_s`$ matrix block in matrix market format
+3. `jc_file_name` - contains the sparse $`J_c`$ matrix block in matrix market format
+4. `jd_file_name` - contains the sparse $`J_d`$ matrix block in matrix market format
+5. `rx_file_name` - contains the $`r_{x}`$ vector block in matrix market format
+6. `rs_file_name` - contains the $`r_{s}`$ vector block in matrix market format
+7. `ryc_file_name` - contains the $`r_{yc}`$ vector block in matrix market format
+8. `ryd_file_name` - contains the $`r_{yd}`$ vector block in matrix market format
+9. `skip` - number of header lines to ignore in the .mtx matrix files
+10. `gamma` - constant to make $`H_\gamma= H + D_x + J_d^T D_s J_d + \gamma J_c^T J_c`$ more positive definite (typically $`10^4-10^6`$)
+
+In the case of solution of multiple systems, the first 8 arguments are repated for the next matrix in the series. Both matrices must have the same sparsity structure.
+
+Examples of this script can be found in [`src/old_scripts`](./src/old_scripts)
 ## Support
-Email Shaked Regev at sregev@stanford.edu or submit an issue
+To receive support or ask a question, submit an issue on [Gitlab](https://gitlab.pnnl.gov/exasgd/solvers/hykkt/-/issues).
 
 ## Contributing
-Contributions are welcome and are should ideally be in their own .cu or .cpp 
-files with an explanation of their functionality. For improvements in efficiency
-in the main code, please have a comment explaining the difference between the 
-approaches and the advantages (and disadvantages) of your suggested one.
+Please see [the developer guidelines](https://gitlab.pnnl.gov/exasgd/solvers/hykkt/-/blob/README/README_hiop_developers.md) before attempting to contribute.
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+## Authors
+* Shaked Regev
+* Maksudul Alam
+* Ryan Danahy
+* Cameron Rutherford
+* Kasia Swirydowicz
+* Slaven Peles 
+
+## Acknowledgement
+This package is developed as a part of [ExaSGD](https://www.exascaleproject.org/research-project/exasgd/) project under the [Exascale computing project](https://www.exascaleproject.org/).
 
 ## License
-For open source projects, say how it is licensed.
+Copyright &copy; 2022, Battelle Memorial Institute.
+
+ExaGO<sup>TM</sup> is a free software distributed under a BSD 2-clause license. You may reuse, modify, and redistribute the software. See the [license](https://gitlab.pnnl.gov/exasgd/solvers/hykkt/-/blob/README/LICENSE) file for details.
