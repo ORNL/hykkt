@@ -16,7 +16,7 @@
       sinfo -l | grep $SLURM_Q
 
       #test build script 
-      jobid=$(sbatch --export=ALL -A EXASGD --gres=gpu:1 --ntasks=1 -p $SLURM_Q -o output -e output -t 10:00 $WORKDIR/buildsystem/build.sh $SCRIPT_ARGS)
+      jobid=$(sbatch --export=ALL -A EXASGD --gres=gpu:1 --ntasks=1 -p $SLURM_Q -o output -e output -t 60:00 $WORKDIR/buildsystem/build.sh $SCRIPT_ARGS)
       export jobid=$(echo $jobid | cut -f4 -d' ')
       echo $jobid > "$WORKDIR/jobid"
       res=1
