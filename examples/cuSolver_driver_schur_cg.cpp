@@ -17,7 +17,13 @@
   *@pre Only NORMAL mtx matrices are read; don't have to be sorted
  **/
 
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[])
+{
+  if(argc != 4)
+  {
+    std::cout << "Incorrect number of inputs. Exiting ...\n";
+    return -1;
+  }
 
   const double tol = 1e-12;
   const double abs_tol = 1e-6;

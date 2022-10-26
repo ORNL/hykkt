@@ -5,21 +5,21 @@
 #include "constants.hpp"
 #include "cusparse_utils.hpp"
 
-  SpgemmClass::SpgemmClass(int n,
-      int m,
-      cusparseHandle_t handle,
-      double alpha_p,
-      double alpha_s,
-      double beta_s)
-  :n_(n),
-  m_(m),
-  handle_(handle),
-  alpha_p_(alpha_p),
-  alpha_s_(alpha_s),
-  beta_s_(beta_s)
-  {
-    allocate_workspace();
-  }
+SpgemmClass::SpgemmClass(int n,
+                         int m,
+                         cusparseHandle_t handle,
+                         double alpha_p,
+                         double alpha_s,
+                         double beta_s)
+  : handle_(handle),
+    n_(n),
+    m_(m),
+    alpha_p_(alpha_p),
+    alpha_s_(alpha_s),
+    beta_s_(beta_s)
+{
+  allocate_workspace();
+}
 
   SpgemmClass::~SpgemmClass()
   {
@@ -119,44 +119,44 @@
   void SpgemmClass::allocate_spGEMM_sum()
   {
     allocate_for_sum(handle_,
-        d_i_,
-        d_j_,
-        d_v_,
-        alpha_s_,
-        c_i_,
-        c_j_,
-        c_v_,
-        beta_s_,
-        e_i_,
-        e_j_,
-        e_v_,
-        m_,
-        n_,
-        nnz_d_,
-        nnz_c_,
-        descr_d_,
-        &buffer_add_,
-        nnz_e_);
+                     d_i_,
+                     d_j_,
+                     d_v_,
+                     alpha_s_,
+                     c_i_,
+                     c_j_,
+                     c_v_,
+                     beta_s_,
+                     e_i_,
+                     e_j_,
+                     e_v_,
+                     m_,
+                     n_,
+                     nnz_d_,
+                     static_cast<int>(nnz_c_),
+                     descr_d_,
+                     &buffer_add_,
+                     nnz_e_);
   }
   
   void SpgemmClass::compute_spGEMM_sum()
   {
     compute_sum(handle_,
-        d_i_,
-        d_j_,
-        d_v_,
-        alpha_s_,
-        c_i_,
-        c_j_,
-        c_v_,
-        beta_s_,
-        *e_i_,
-        *e_j_,
-        *e_v_,
-        m_,
-        n_,
-        nnz_d_,
-        nnz_c_,
-        descr_d_,
-        &buffer_add_);
+                d_i_,
+                d_j_,
+                d_v_,
+                alpha_s_,
+                c_i_,
+                c_j_,
+                c_v_,
+                beta_s_,
+                *e_i_,
+                *e_j_,
+                *e_v_,
+                m_,
+                n_,
+                nnz_d_,
+                static_cast<int>(nnz_c_),
+                descr_d_,
+                &buffer_add_);
   }

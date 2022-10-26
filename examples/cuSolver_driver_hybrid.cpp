@@ -23,6 +23,11 @@
 
 int main(int argc, char* argv[])
 {
+  if(argc != 11)
+  {
+    std::cout << "Incorrect number of inputs. Exiting ...\n";
+    return -1;
+  }
 
   char const* const h_file_name  = argv[1];
   char const* const ds_file_name = argv[2];

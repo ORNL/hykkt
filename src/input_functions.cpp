@@ -5,7 +5,7 @@
 #include "input_functions.hpp"
 #include "MMatrix.hpp"
 
-static int indexPlusValue_comp(const void* a, const void* b)
+int indexPlusValue_comp(const void* a, const void* b)
 {
   const struct indexPlusValue* da = (indexPlusValue*) a;
   const struct indexPlusValue* db = (indexPlusValue*) b;
@@ -28,7 +28,7 @@ void read_mm_file_into_coo(const char* matrix_file_name,
   }
   
   // first line is size and nnz, need this info to allocate memory
-  sscanf(line_buffer, "%ld %ld %ld", &(mat_a.n_), &(mat_a.m_), &(mat_a.nnz_));
+  sscanf(line_buffer, "%d %d %d", &(mat_a.n_), &(mat_a.m_), &(mat_a.nnz_));
   // allocate
   printf("allocating COO structures %d %d %d\n", mat_a.n_, mat_a.m_, mat_a.nnz_);
 
@@ -176,13 +176,13 @@ void read_1idx_perm(const char* rhs_file_name, int* rhs)
   fgets(line_buffer, sizeof(line_buffer), fpr);
   int n;
   int m;
-  sscanf(line_buffer, "%ld %ld", &n, &m);
+  sscanf(line_buffer, "%d %d", &n, &m);
   printf("N = %d, m=%d\n", n, m);
   int i = 0;
   int val;
 
   while(fgets(line_buffer, sizeof(line_buffer), fpr) != NULL) {
-    sscanf(line_buffer, "%ld", &val);
+    sscanf(line_buffer, "%d", &val);
     rhs[i] = val - 1;
     i++;
   }
@@ -197,7 +197,7 @@ void read_rhs(const char* rhs_file_name, double* rhs)
   fgets(line_buffer, sizeof(line_buffer), fpr);
   fgets(line_buffer, sizeof(line_buffer), fpr);
   int n, m;
-  sscanf(line_buffer, "%ld %ld", &n, &m);
+  sscanf(line_buffer, "%d %d", &n, &m);
   int    i = 0;
   double val;
   // allocate

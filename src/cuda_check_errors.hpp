@@ -7,7 +7,7 @@ void check(T result,
            int const line) 
 {
   if (result) {
-    printf("CUDA error at %s:%d, error# %d\n", file, line, result);
+    printf("CUDA error in function %s at %s:%d, error# %d\n", func, file, line, result);
     exit(EXIT_FAILURE);
   }
 }
