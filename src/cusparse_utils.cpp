@@ -25,7 +25,7 @@ void displaySpMatValues(cusparseSpMatDescr_t mat_desc,
   allocateVectorOnDevice(nnz, &mat_v);
   cusparseSpMatGetValues(mat_desc, (void**)(&mat_v));
   displayDeviceVector(mat_v, 
-                      nnz, 
+                      static_cast<int>(nnz), 
                       start_i,
                       display_n,
                       label);

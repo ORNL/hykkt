@@ -6,18 +6,18 @@
 #include "cuda_check_errors.hpp"
 
 
-  CholeskyClass::CholeskyClass(int n, 
-      int nnz, 
-      double* a_v, 
-      int* a_i, 
-      int* a_j)
-: n_(n),
-  nnz_(nnz),
-  a_v_(a_v),
-  a_i_(a_i),
-  a_j_(a_j)
-  {
-  }
+CholeskyClass::CholeskyClass(int n, 
+                             int nnz, 
+                             double* a_v, 
+                             int* a_i, 
+                             int* a_j)
+  : n_(n),
+    nnz_(nnz),
+    a_i_(a_i),
+    a_j_(a_j),
+    a_v_(a_v)
+{
+}
 
   CholeskyClass::~CholeskyClass()
   {

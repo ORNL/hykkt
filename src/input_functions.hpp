@@ -16,7 +16,7 @@ struct indexPlusValue
  *         1 if a->idx > b->idx,
  *         0 if a->idx == b->idx
 */
-static int indexPlusValue_comp(const void* a, const void* b);
+int indexPlusValue_comp(const void* a, const void* b);
 
 /*
  * @brief reads a matrix stored in matrix_file_name into a

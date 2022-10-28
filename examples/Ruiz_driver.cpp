@@ -52,7 +52,7 @@ void initializeTestMatrices(MMatrix& mat_a, MMatrix& mat_h, double* h_rhs)
   * @brief Driver demonstrates the use of RuizClass for Ruiz scaling
 */
 
-int main(int argc, char *argv[])
+int main(int /* argc */, char** /* argv */)
 {
   const double tol = 1e-8;
   // Size of matrix block  
