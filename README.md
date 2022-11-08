@@ -1,10 +1,9 @@
-[![pipeline status](https://gitlab.pnnl.gov/exasgd/frameworks/exago/badges/master/pipeline.svg)](https://gitlab.pnnl.gov/exasgd/solvers/hykkt/-/commits/develop)
 
 
 # HyKKT
 
 ## Description
-HyKKT is a package for solving systems of equations and unknowns resulting from an iterative solution of an optimization
+HyKKT (pronounced as _hiked_) is a package for solving systems of equations and unknowns resulting from an iterative solution of an optimization
 problem, for example optimal power flow, which uses hardware accelerators (GPUs) efficiently.
 
 The HyKKT package contains a linear solver tailored for Karush Kuhn Tucker (KKT) linear systems and
@@ -28,26 +27,30 @@ all blocks of the $`4\times 4`$ block system:
 
 separately and solves the system to a desired
 numerical precision exactly via block reduction and conjugate gradient on the
-schur complement.
+schur complement. Please see the [HyKKT paper](https://www.tandfonline.com/doi/abs/10.1080/10556788.2022.2124990) for mathematical details.
 
 ## Installation and build instructions
 Clone the repository 
 ``` 
 git clone https://gitlab.pnnl.gov/exasgd/solvers/hykkt.git
 ``` 
-and cd into the root directory (hykkt). The build dependencies are
+Make sure you have following build dependencies installed:
 * C++ compiler supporting C++11 standard or higher
 * CMake >= 3.19
 * CUDA >= 11.0
+
+To build HyKKT library and drivers simply
 ```
-./buildsystem/build.sh // to make
+mkdir build
 cd build
-ctest -VV // to test - this must be done from a compute node with a GPU or in a batch script as shown [here](https://gitlab.pnnl.gov/exasgd/solvers/hykkt/-/blob/README/deception_test.sbatch)
+cmake ../hykkt
+make
+make test
 ```
 
 ## Usage
 
-The executable ```hybrid_solver``` is built in build/src by make
+The executable `hybrid_solver` provides an example driver for HyKKT solver
 This executable can be run with an appropriate batch script with 10 arguments
 
 1. `h_file_name` - contains the sparse symmetric $`H+D_x`$ matrix block in matrix market format
@@ -84,4 +87,4 @@ This package is developed as a part of [ExaSGD](https://www.exascaleproject.org/
 ## License
 Copyright &copy; 2022, Battelle Memorial Institute.
 
-ExaGO<sup>TM</sup> is a free software distributed under a BSD 2-clause license. You may reuse, modify, and redistribute the software. See the [license](https://gitlab.pnnl.gov/exasgd/solvers/hykkt/-/blob/README/LICENSE) file for details.
+HyKKT is a free software distributed under a BSD 2-clause license. You may reuse, modify, and redistribute the software. See the [license](https://gitlab.pnnl.gov/exasgd/solvers/hykkt/-/blob/README/LICENSE) file for details.
