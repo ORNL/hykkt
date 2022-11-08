@@ -6,6 +6,7 @@
 
 #include "cuda_check_errors.hpp"
 
+// Creates a class for the permutation of $H_\gamma$ in (6)
 PermClass::PermClass(int n_h, int nnz_h, int nnz_j) 
   : n_h_(n_h),
     nnz_h_(nnz_h),
@@ -57,7 +58,8 @@ PermClass::PermClass(int n_h, int nnz_h, int nnz_j)
     perm_ = custom_perm;
     cloneVectorToDevice(n_h_, &perm_, &d_perm_);
   }
-  
+ 
+// Symamd permutation of $H_\gamma$ in (6)
   void PermClass::symamd()
   {
     cusolverSpHandle_t handle_cusolver = NULL;
