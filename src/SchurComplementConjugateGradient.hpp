@@ -26,7 +26,33 @@ public:
 
   // destructor
   ~SchurComplementConjugateGradient();
- 
+/*
+ * @brief Updates SchurComplementConjugateGradient class with
+ *        variables that change between optimization solver iterations
+ *
+ * @pre x0 and b are initialized vectors of correct dimensions
+ *      cc is an initialized Cholesky class with factorizations computed
+ *      jc_desc and jct_desc are initialized sparse matrix descriptors
+ *
+ * @param x0[in, out] - initial guess for conjugate gradient,
+ *                      solution computed by conjugate gradient
+ *
+ * @param b[in] - right hand side for conjugate gradient
+ *
+ * @param cc[in] - Factorization of Hgamma to use for direct solve
+ *
+ * @param jc_desc[in] - Sparse matrix descriptor for the schur complement operator
+ *
+ * @param jct_desc[in] - Sparse matrix descriptor for the schur complement operator
+ *
+ * @post x0_, b_, cc_, jc_desc_, jct_desc_ are initialized to their
+ *       respective parameters
+*/
+  void update(double* x0, 
+      double* b, 
+      CholeskyClass* cc, 
+      cusparseSpMatDescr_t jc_desc, 
+      cusparseSpMatDescr_t jct_desc);
 /*
  * @brief copy ycp_ onto the device and copy device vectors
  *
@@ -86,14 +112,19 @@ private:
   void allocate_workspace();
 
   // member variables
+  cusparseSpMatDescr_t jc_desc_; // sparse matrix descriptor for JC
+  cusparseSpMatDescr_t jct_desc_; // sparse matrix descriptor for JC transpose
+  
+  double* x0_; // lhs of entire system
+  double* b_; // rhs of entire system
+  
   int n_; // dimension of outer system
   int m_; // dimension of inner system
   int itmax_  = 100; // maximum iterations for conjugate gradient
   double tol_ = 1e-12; // solver tolerance for Schur
 
-  cusparseSpMatDescr_t jc_desc_; // sparse matrix descriptor for JC
-  cusparseSpMatDescr_t jct_desc_; // sparse matrix descriptor for JC transpose
-
+  CholeskyClass* cc_; // cholesky factorization on 1,1 block
+  
   cusparseHandle_t handle_; // handle to the cuSPARSE library context
   cublasHandle_t handle_cublas_; //handle to the cuBLAS library context
 
@@ -105,8 +136,6 @@ private:
   double gam_i_;
   double gam_i1_;
 
-  double* x0_; // lhs of entire system
-  double* b_; // rhs of entire system
   double* ycp_; // used to copy to y_
   double* y_; // internal rhs of system
   double* z_; // internal lhs of system
@@ -134,6 +163,5 @@ private:
   cusparseDnVecDescr_t vecp_ = NULL;
   cusparseDnVecDescr_t vecs_ = NULL;
   
-  CholeskyClass* cc_; // cholesky factorization on 1,1 block
 };
 

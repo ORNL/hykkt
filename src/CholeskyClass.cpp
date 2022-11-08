@@ -27,6 +27,7 @@ CholeskyClass::CholeskyClass(int n,
     checkCudaErrors(cusolverSpDestroyCsrcholInfo(info_));
   }
 
+// Symbolic factorization of $H_\gamma$ in (6)
   void CholeskyClass::symbolic_analysis()
   {
     createSparseMatDescr(descr_a_);
@@ -71,6 +72,7 @@ CholeskyClass::CholeskyClass(int n,
     nnz_ = nnz;
   }
 
+// Numerical factorization of $H_\gamma$ in (6)
   void CholeskyClass::numerical_factorization()
   {
     int singularity = 0;
@@ -91,7 +93,8 @@ CholeskyClass::CholeskyClass(int n,
       fprintf(stderr, "Error: H not invertible, singularity=%d\n", singularity);
     }
   }
-  
+ 
+//Used for application of $S$ in solving (7) with CG and solving (8)
   void CholeskyClass::solve(double* x, double* b)
   {
     checkCudaErrors(cusolverSpDcsrcholSolve(handle_cusolver_, 

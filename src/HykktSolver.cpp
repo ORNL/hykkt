@@ -154,22 +154,32 @@
     }
 
     setup_parameters();
-
-    setup_spgemm_htil();
+    
+    if(!allocated_){
+      setup_spgemm_htil();
+    }
     compute_spgemm_htil();
     
     setup_solution_check();
 
-    setup_ruiz_scaling();
+    if(!allocated_){
+      setup_ruiz_scaling();
+    }
     compute_ruiz_scaling();
 
-    setup_spgemm_hgamma();
+    if(!allocated_){
+      setup_spgemm_hgamma();
+    }
     compute_spgemm_hgamma();
 
-    setup_permutation();
+    if(!allocated_){
+      setup_permutation();
+    }
     apply_permutation();
 
-    setup_hgamma_factorization();
+    if(!allocated_){
+      setup_hgamma_factorization();
+    }
     compute_hgamma_factorization();
   
     setup_conjugate_gradient();
@@ -178,7 +188,8 @@
     recover_solution();
     return check_error();
   }
-  
+
+// Computes $H_\tilde$ in eq (4)
   void HykktSolver::compute_spgemm_htil()
   {
     if(jd_flag_){
@@ -228,16 +239,22 @@
       nnz_htil_ = mat_h_.nnz_;
     }
   }
-  
+ 
+// Ruiz scaling of eq (4)
   void HykktSolver::compute_ruiz_scaling()
   {
+    rz_->add_block11(htil_v_, htil_i_, htil_j_);
+    rz_->add_block12(jc_t_v_, jc_t_i_, jc_t_j_);
+    rz_->add_block21(jc_v_, jc_i_, jc_j_);
+    rz_->add_rhs1(d_rx_til_);
+    rz_->add_rhs2(d_ry_);
     rz_->ruiz_scale();
     max_d_ = rz_->get_max_d();
   }
 
+// Sets up $H_\gamma$ of eq (6)
   void HykktSolver::setup_spgemm_hgamma()
   {
-   if(!allocated_){
     sc_gamma_ = new SpgemmClass(mat_h_.n_,
         mat_h_.n_,
         handle_cusparse_,
@@ -251,9 +268,9 @@
         htil_v_,
         nnz_htil_);
     sc_gamma_->load_result_matrix(&hgam_i_, &hgam_j_, &hgam_v_, &nnz_hgam_); 
-   }
   }
-  
+
+// Computes $H_\gamma$ of eq (6)
   void HykktSolver::compute_spgemm_hgamma()
   {
     sc_gamma_->spGEMM_reuse();
@@ -269,6 +286,7 @@
         allocated_);
   }
   
+// Applies permutation to $H_\gamma$ of eq (6)
   void HykktSolver::apply_permutation()
   {
     pc_->map_index(perm_h_v, hgam_v_, hgam_v_p_);
@@ -280,16 +298,19 @@
     pc_->map_index(perm_v, d_rx_hat_, d_rxp_);
   }
   
+// Factorization of $H_\gamma$ of eq (6)
   void HykktSolver::compute_hgamma_factorization()
   {
     cc_->numerical_factorization();
   }
   
+// Computes conjugate gradient using $S$ of eq (7)
   void HykktSolver::compute_conjugate_gradient()
   {
     sccg_->solve();
   }
   
+// Using the solution to eq (7) recover the solution to (3)
   void HykktSolver::recover_solution()
   {
     // block-recovering the solution to the original system by parts
@@ -547,22 +568,22 @@
         allocated_);
   }
 
+// Sets up matrix products used in eqs (4) and (6)
   void HykktSolver::setup_spgemm_htil()
   {
-    if(!allocated_){
-      sc_til_ = new SpgemmClass(mat_h_.n_,
-          mat_h_.n_,
-          handle_cusparse_,
-          ONE,
-          ONE,
-          ONE);
+    sc_til_ = new SpgemmClass(mat_h_.n_,
+        mat_h_.n_,
+        handle_cusparse_,
+        ONE,
+        ONE,
+        ONE);
     
-      sc_til_->load_product_matrices(jd_t_desc_, jd_s_desc_);
-      sc_til_->load_sum_matrices(h_i_, h_j_, h_v_, mat_h_.nnz_);
-      sc_til_->load_result_matrix(&htil_i_, &htil_j_, &htil_v_, &nnz_htil_);  
-    }
+    sc_til_->load_product_matrices(jd_t_desc_, jd_s_desc_);
+    sc_til_->load_sum_matrices(h_i_, h_j_, h_v_, mat_h_.nnz_);
+    sc_til_->load_result_matrix(&htil_i_, &htil_j_, &htil_v_, &nnz_htil_);  
   }
 
+// Set up to check the residual of eq (3) to make sure it's small
   void HykktSolver::setup_solution_check()
   {
     if(!allocated_){
@@ -614,77 +635,69 @@
         jct_v_c_);
   }
 
+//Sets up the Ruiz scaling of (4)
   void HykktSolver::setup_ruiz_scaling()
   {
-    if(!allocated_){
-      int n_hj = mat_h_.n_ + mat_jc_.n_;
-      allocateVectorOnDevice(n_hj, &max_d_);
-    
-      rz_ = new RuizClass(ruiz_its_, mat_h_.n_, n_hj); 
-      rz_->add_block11(htil_v_, htil_i_, htil_j_);
-      rz_->add_block12(jc_t_v_, jc_t_i_, jc_t_j_);
-      rz_->add_block21(jc_v_, jc_i_, jc_j_);
-      rz_->add_rhs1(d_rx_til_);
-      rz_->add_rhs2(d_ry_);
-    }
+    int n_hj = mat_h_.n_ + mat_jc_.n_;
+    allocateVectorOnDevice(n_hj, &max_d_);
+    rz_ = new RuizClass(ruiz_its_, mat_h_.n_, n_hj); 
   }
 
+// Sets up permutation of $H_\gamma$ of eq (6)
   void HykktSolver::setup_permutation()
   {
-    if(!allocated_){
-      hgam_h_j_ = new int[nnz_hgam_];
-      hgam_p_j_ = new int[nnz_hgam_];
+    hgam_h_j_ = new int[nnz_hgam_];
+    hgam_p_j_ = new int[nnz_hgam_];
     
-      allocateVectorOnDevice(nnz_hgam_, &hgam_v_p_);
-      allocateMatrixOnDevice(mat_h_.n_,
-          nnz_hgam_,
-          &hgam_i_p_,
-          &hgam_j_p_,
-          &hgam_v_p_);
+    allocateVectorOnDevice(nnz_hgam_, &hgam_v_p_);
+    allocateMatrixOnDevice(mat_h_.n_,
+        nnz_hgam_,
+        &hgam_i_p_,
+        &hgam_j_p_,
+        &hgam_v_p_);
 
-      copyVectorToHost(mat_h_.n_ + 1, hgam_i_, hgam_h_i_);
-      copyVectorToHost(nnz_hgam_, hgam_j_, hgam_h_j_);
-
-      pc_ = new PermClass(mat_h_.n_, nnz_hgam_, mat_jc_.nnz_);
-      pc_->add_h_info(hgam_h_i_, hgam_h_j_);
-      pc_->add_j_info(mat_jc_.csr_rows, 
-          mat_jc_.coo_cols, 
-          mat_jc_.n_, 
-          mat_jc_.m_); 
-      pc_->add_jt_info(jct_i_, jct_j_);
-      pc_->symamd(); 
-      pc_->invert_perm();
-      pc_->vec_map_rc(hgam_p_i_, hgam_p_j_);
-      pc_->vec_map_c(jc_p_j_);
+    copyVectorToHost(mat_h_.n_ + 1, hgam_i_, hgam_h_i_);
+    copyVectorToHost(nnz_hgam_, hgam_j_, hgam_h_j_);
+    pc_ = new PermClass(mat_h_.n_, nnz_hgam_, mat_jc_.nnz_);
+    pc_->add_h_info(hgam_h_i_, hgam_h_j_);
+    pc_->add_j_info(mat_jc_.csr_rows, 
+        mat_jc_.coo_cols, 
+        mat_jc_.n_, 
+        mat_jc_.m_); 
+      
+    pc_->add_jt_info(jct_i_, jct_j_);  
+    pc_->symamd(); 
+    pc_->invert_perm();
+    pc_->vec_map_rc(hgam_p_i_, hgam_p_j_);
+    pc_->vec_map_c(jc_p_j_);
    
-      copyVectorToHost(mat_jc_.m_ + 1, jc_t_i_, jct_i_);
-      copyVectorToHost(mat_jc_.nnz_, jc_t_j_, jct_j_);
-      pc_->vec_map_r(jct_p_i_, jct_p_j_);
+    copyVectorToHost(mat_jc_.m_ + 1, jc_t_i_, jct_i_);
+    copyVectorToHost(mat_jc_.nnz_, jc_t_j_, jct_j_);
+    pc_->vec_map_r(jct_p_i_, jct_p_j_);
 
-      copyVectorToDevice(mat_h_.n_ + 1, hgam_p_i_, hgam_i_p_);
-      copyVectorToDevice(nnz_hgam_, hgam_p_j_, hgam_j_p_);
+    copyVectorToDevice(mat_h_.n_ + 1, hgam_p_i_, hgam_i_p_);
+    copyVectorToDevice(nnz_hgam_, hgam_p_j_, hgam_j_p_);
     
-      copyVectorToDevice(mat_jc_.nnz_, jct_p_j_, jct_j_p_);
-      copyVectorToDevice(mat_jc_.m_ + 1, jct_p_i_, jct_i_p_);
-      copyVectorToDevice(mat_jc_.nnz_, jc_p_j_, jc_j_p_);
-      copyDeviceVector(mat_jc_.n_ + 1, jc_i_, jc_i_p_);
-    }
+    copyVectorToDevice(mat_jc_.nnz_, jct_p_j_, jct_j_p_);
+    copyVectorToDevice(mat_jc_.m_ + 1, jct_p_i_, jct_i_p_);
+    copyVectorToDevice(mat_jc_.nnz_, jc_p_j_, jc_j_p_);
+    copyDeviceVector(mat_jc_.n_ + 1, jc_i_, jc_i_p_);
   }
 
+// Sets up factorization of $H_\gamma$ of eq (6)
   void HykktSolver::setup_hgamma_factorization()
   {
-    if(!allocated_){
-      cc_ = new CholeskyClass(mat_h_.n_,
-          nnz_hgam_,
-          hgam_v_p_,
-          hgam_i_p_,
-          hgam_j_p_);
+    cc_ = new CholeskyClass(mat_h_.n_,
+        nnz_hgam_,
+        hgam_v_p_,
+        hgam_i_p_,
+        hgam_j_p_);
 
-      cc_->symbolic_analysis();
-      cc_->set_pivot_tolerance(tol_);
-    }
+    cc_->symbolic_analysis();
+    cc_->set_pivot_tolerance(tol_);
   }
 
+// Sets up conjugate gradient solution of eq (7)
   void HykktSolver::setup_conjugate_gradient()
   {
     //start of block: setting up the right hand side for equation 7
@@ -710,10 +723,13 @@
           cc_,
           handle_cusparse_,
           handle_cublas_);
+    } else {
+      sccg_->update(d_y_, d_schur_, cc_, jc_p_desc_, jc_t_descp_); 
     }
     sccg_->setup();
   }
 
+// Checks the residual of eq (3) to make sure it's small
   int HykktSolver::check_error()
   {
     //  Start of block, calculate error of Ax-b 

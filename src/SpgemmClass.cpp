@@ -5,6 +5,9 @@
 #include "constants.hpp"
 #include "cusparse_utils.hpp"
 
+// Spgemm class to compute eqs (4) and (6)
+// The product and sum are separated due to CUDA Spgemm computing C = AB + C
+// and not dealing with C having a different sparsity structure then A and B
 SpgemmClass::SpgemmClass(int n,
                          int m,
                          cusparseHandle_t handle,

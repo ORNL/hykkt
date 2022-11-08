@@ -91,7 +91,7 @@ private:
    * @brief computes ruiz scaling so we can judge the size of
    *        gamma and delta min relative to H gammma system
    *
-   * @pre matrices and rz_ properly allocated using setup method
+   * @pre matrices and ri_sssssssss allocated using setup method
    *      for ruiz_scaling 
    *
    * @post max_d_ now contains the aggregated Ruiz scaling
@@ -108,24 +108,27 @@ private:
   */
   void compute_spgemm_hgamma();
   
-  /*
-   * @brief computes permutations for H, J, J transpose matrices
+  /* 
+   * @brief Applies permutations to values of Hgam, Jc, Jc^T matrices 
+            and d_rx_hat vector
    *
-   * @pre permutation matrix computed using setup method for
-   *      permutation
+   * @pre Permutation maps for the matrices and vector
+   *      computed using setup_permutation()
+   *      
    *
    * @post hgam_v_p_, jc_v_p_, jct_v_p_, d_rxp_ are now permuted
-   *       values of hgam_v_, jc-v_, jc_t_v_, d_rx_hat_
+   *       values of hgam_v_, jc_v_, jc_t_v_, d_rx_hat_
   */
   void apply_permutation();
   
   /*
-   * @brief sparse Cholesky factorization on permuted (1,1) block   *        so that LDLt does not have to be used
+   * @brief sparse Cholesky factorization on permuted (1,1) block  
+   *        so that LDLt does not have to be used
    *
    * @pre symbolic analysis already computed using setup method
    *      for hgamma_factorization
    *
-   * @post hgamma inner factorization is computed, thus updating
+   * @post hgamma numerical factorization is computed, thus updating
    *       hgam_v_p_
   */
   void compute_hgamma_factorization();
@@ -171,12 +174,93 @@ private:
            related variables are not initiated if JD nnz == 0
   */
   void setup_parameters();
+  
+   /*
+   * @brief Allocates memory for product and sum required to form Htilde matrix
+   *        
+   * 
+   * @pre H, Jd^T, Jd-scaled matrices are properly allocated 
+   *      
+   *
+   * @post sc_til_ - the structure for the spgemm is properly allocated
+   *       and compute_spgemm_htil() can now be called.
+   *
+  */
   void setup_spgemm_htil();
+  
+  /*
+   * @brief Copies the matrices Jc and Jc^T which are later overwritten so
+   *        the solution can be checked
+   *
+   * @pre Matrices Jc and Jc^T are properly allocated and initialized.
+   *
+   * @post Jc and Jc^T are copied
+   *
+  */
+
   void setup_solution_check();
+ 
+   /*
+   * @brief Sets up the Ruiz scaling class rz_
+   *        
+   *
+   * @pre matrices H and Jc are properly allocated
+   *      
+   *
+   * @post max_d_ and rz_ are now allocated and 
+           compute_ruiz_scaling() can be called
+   *
+  */
+ 
   void setup_ruiz_scaling();
+  
+   /*
+   * @brief Allocates memory for product and sum required to form Hgamma matrix
+   *        
+   * 
+   * @pre Htilde, Jc^T, Jc matrices are properly allocated 
+   *      
+   *
+   * @post sc_gamma_ - the structure for the spgemm is properly allocated
+   *       and compute_spgemm_hgamma() can now be called.
+   *
+  */
   void setup_spgemm_hgamma();
+
+   /*
+   * @brief Calculates permutation maps for Hgam, Jc, Jc^T matrices 
+   *        and d_rx_hat vector and applies them to the rows and columns
+   *
+   * @pre Matrices Hgam, Jc, and Jc^T are allocated and initialized
+   *      
+   *
+   * @post hgam_i_p_, hgam_j_p_, jc_i_p_, jc_j_p_, jct_i_p_, jct_j_p_ are now 
+   *       permuted hgam_i_, hgam_j_, jc_i_, jc_j_, jct_i_, jct_j_
+   *       perm_h_v, perm_j_v, perm_jt_v, perm_v hold permutations for
+   *       h, j, jt, d_rx_hat respectively.
+   *
+  */
+ 
   void setup_permutation();
+  
+  /*
+   * @brief Computes the symbolic factorization of the permuted Hgamma
+   *
+   * @pre Hgamma is calculated and permuted correctly
+   *
+   * @post Hgamma symbolic factorization is computed
+   *       
+  */
   void setup_hgamma_factorization();
+  
+  /*
+   * @brief Sets up the right hand side and allocates memory necessary for
+   *        conjugate gradient on the Schur complement
+   *
+   * @pre Cholesky factorization on Hgamma succeeded
+   *
+   * @post Class sccg is set up and compute_conjugate_gradient() can be called.
+  */
   void setup_conjugate_gradient();
 
   //constants
@@ -227,7 +311,7 @@ private:
   cusparseDnVecDescr_t vec_d_yd_;
   cusparseDnVecDescr_t vec_d_ryc_;
   
-  //2x2 system of matrices
+  //4x4 system of matrices
   MMatrix mat_h_;
   MMatrix mat_ds_;
   MMatrix mat_jc_;
