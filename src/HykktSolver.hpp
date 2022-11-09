@@ -50,7 +50,7 @@ public:
   /*
    * @brief sets gamma value for hykkt solver
    * 
-   * @param gamma - new value for gamma_
+   * @param[in] gamma - new value for gamma_
    *
    * @post gamma_ is now equal to gamma
   */
@@ -60,6 +60,8 @@ public:
    * @brief uses Hykkt algorithm to solve KKT system
    *
    * @pre matrix files have been loaded into the solver
+   *
+   * @param[out] - Boolean that indicates whether the solve was successful
    *
    * @post solution to given KKT system is computed using Hykkt
   */
@@ -157,7 +159,8 @@ private:
    * @brief calculates the error of Ax - b
    *
    * @pre solution properly recovered using recover_solution()
-   * @return int - 0 if error small enough, 1 if hykkt failed
+   * 
+   * @param[out] Boolean - 0 if error small enough, 1 if hykkt failed
    *
    * @post solver status = success if error is smaller than
            optimization solver error

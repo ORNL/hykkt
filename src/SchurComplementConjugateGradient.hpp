@@ -76,6 +76,8 @@ public:
  *      maximum number of iterations for conjugate gradient, and the
  *      respective scalar values
  *
+ * @param[out] - Boolean saying whether conjugate gradient succeeded
+ *
  * @post x_ holds the solution of the Schur Complement system
 */
   int solve();
@@ -83,7 +85,7 @@ public:
 /*
  * @brief set solver tolerance for conjugate gradient
  *
- * @param tol - the new tolerance level
+ * @param[in] tol - the new tolerance level
  *
  * @post tol_ is now set to tol
 */
@@ -92,7 +94,7 @@ public:
 /*
  * @brief set the maximum number of iterations for conjugate gradient
  *
- * @param itmax - the new max iterations
+ * @param[in] itmax - the new max iterations
  *
  * @post itmax_ is now set to itmax
 */
