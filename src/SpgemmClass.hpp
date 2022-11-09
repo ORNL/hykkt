@@ -21,8 +21,8 @@ public:
   /*
    * @brief loads matrices used for SpGEMM 
    *
-   * @param a_desc - sparse matrix desriptor for first product matrix
-   * b_desc - sparse matrix descriptor for second product matrix
+   * @param[in] a_desc - sparse matrix desriptor for first product matrix
+   * @param[in] b_desc - sparse matrix descriptor for second product matrix
    *
    * @post a_desc_ now equal to a_desc, b_desc_ now equal to b_desc
   */
@@ -32,10 +32,10 @@ public:
   /*
    * @brief loads matrices used for sum E = alpha_s_*D + beta_s_*C
    *
-   * @param d_i - row offsets for CSR format of matrix D
-   * d_j - column pointers for CSR format of matrix D
-   * d_v - nonzero values for CSR format of matrix D
-   * nnz_d - number of nonzero values in matrix D
+   * @param[in] d_i - row offsets for CSR format of matrix D
+   * @param[in] d_j - column pointers for CSR format of matrix D
+   * @param[in] d_v - nonzero values for CSR format of matrix D
+   * @param[in] nnz_d - number of nonzero values in matrix D
    *
    * @post d_i_ now equals d_i, d_j_ now equals d_j, d_v_ now equals d_v, 
    *       nnz_d_ now equals nnz_d
@@ -48,10 +48,10 @@ public:
   /*
    * @brief loads pointers to CSR format of result matrix E
    *
-   * @param e_i - a pointer for the row offsets of E
-   * e_j - a pointer for the column pointers of E
-   * e_v - a pointer for the nonzero values of E
-   * nnz_e - a pointer to the number of nonzero values in E
+   * @param[in] e_i - a pointer for the row offsets of E
+   * @param[in] e_j - a pointer for the column pointers of E
+   * @param[in] e_v - a pointer for the nonzero values of E
+   * @param[in] nnz_e - a pointer to the number of nonzero values in E
    *
    * @post e_i_ now equals e_i, e_j_ now equals e_j, e_v_ now equals e_v,
    *       nnz_e_ now equals nnz_e

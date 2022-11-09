@@ -67,11 +67,6 @@ CholeskyClass::CholeskyClass(int n,
     a_v_ = a_v;
   }
 
-  void CholeskyClass::set_nnz(int nnz)
-  {
-    nnz_ = nnz;
-  }
-
 // Numerical factorization of $H_\gamma$ in (6)
   void CholeskyClass::numerical_factorization()
   {

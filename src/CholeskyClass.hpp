@@ -35,21 +35,20 @@ public:
 /* 
  * @brief Set pivot tolerance for numeric factorization
  *
- * @param tol - factorization tolerance 
+ * @param[in] tol - factorization tolerance to set in the class
  *
  * @pre tol is initialized to a double smaller than 1
  *
  * @post tol_ is set to tol
  */
   void set_pivot_tolerance(const double tol);
-  void set_nnz(int nnz);
 
 /* 
  * @brief Set matrix values (for optimization solver iterations after the first
  * there is no need to reconstruct the class, only the values should change).
  * This is for a new matrix with same nonzero structure.
  *
- * @param tol - double a_v
+ * @param[in] tol - double a_v to set in the class
  *
  * @pre tol is initialized to a double smaller than 1
  *
@@ -74,8 +73,8 @@ public:
 /* 
  * @brief solves Ax = b for x via Cholesky factors of A
  *
- * @param x - empty vector for solution to Ax = b
- * b - right hand side
+ * @param[in, out] x - empty vector for solution to Ax = b, set to solution
+ * @param[in] b - right hand side
  *
  * @pre variable of size n_ is initialized to the right hand side
  * buffer_gpu_ is allocated to the size needed 
