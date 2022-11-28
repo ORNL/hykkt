@@ -29,15 +29,15 @@ void deleteOnDevice(void* v);
 template <typename T1, typename T2>
 void allocateVectorOnDevice(T1 n, T2** v);
 
-/* 
+/** 
  * @brief copies vector from device to host
  *
- * @param n - size of src vector
- * src - vector on device
- * dst - vector on host
+ * @param[in]  n - size of src vector
+ * @param[in]  src - vector on device
+ * @param[out] dst - vector on host
  *
  * @pre src is a valid vector
- * @post src is copied onto dst
+ * @post Content of dst is overwritten by the content of src
  */
 template <typename T>
 void copyVectorToHost(int n, const T* src, T* dst);

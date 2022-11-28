@@ -108,8 +108,8 @@ void copyMatrixToHost(const int* a_i,
     MMatrix& mat_a)
 {
   copyVectorToHost(mat_a.n_ + 1, a_i, mat_a.csr_rows);
-  copyVectorToHost(mat_a.nnz_, a_j, mat_a.coo_cols);
-  copyVectorToHost(mat_a.nnz_, a_v, mat_a.coo_vals);
+  copyVectorToHost(mat_a.nnz_, a_j, mat_a.csr_cols);
+  copyVectorToHost(mat_a.nnz_, a_v, mat_a.csr_vals);
 }
 
 void copyMatrixToDevice(const MMatrix* mat_a, int* a_i, int* a_j, double* a_v)
@@ -117,8 +117,8 @@ void copyMatrixToDevice(const MMatrix* mat_a, int* a_i, int* a_j, double* a_v)
   matrixHostToDeviceCopy(mat_a->n_, 
                          mat_a->nnz_,
                          mat_a->csr_rows,
-                         mat_a->coo_cols,
-                         mat_a->coo_vals,
+                         mat_a->csr_cols,
+                         mat_a->csr_vals,
                          a_i,
                          a_j,
                          a_v);

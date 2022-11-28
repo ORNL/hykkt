@@ -47,6 +47,75 @@ public:
       char const* const ryd_file,
       int skip_lines);
 
+  /**
+   * @brief Sets Hessian matrix block in to user provided values.
+   * It will only set pointers to user provided data; it is user's
+   * responsibility to supply and later delete that data.
+   * 
+   * @param[in] rowptrs pointer to row starts
+   * @param[in] colidx  pointer to column indices
+   * @param[in] vals    pointer to matrix values
+   * @param[in] n   number of matrix rows
+   * @param[in] m   number of matrix columns
+   * @param[in] nnz number of nonzeros
+   */
+  void set_H(int* rowptrs, int* colidx, double* vals, int n, int m, int nnz);
+
+  /**
+   * @brief Sets slack variables derivatives matrix block in to user
+   * provided values. It will only set pointers to user provided data;
+   * it is user's responsibility to supply and later delete that data.
+   * 
+   * @param[in] rowptrs pointer to row starts
+   * @param[in] colidx  pointer to column indices
+   * @param[in] vals    pointer to matrix values
+   * @param[in] n   number of matrix rows
+   * @param[in] m   number of matrix columns
+   * @param[in] nnz number of nonzeros
+   */
+  void set_Ds(int* rowptrs, int* colidx, double* vals, int n, int m, int nnz);
+
+  /**
+   * @brief Sets equality constraints Jacobian block in to user provided
+   * values. It will only set pointers to user provided data; it is user's
+   * responsibility to supply and later delete that data.
+   * 
+   * @param[in] rowptrs pointer to row starts
+   * @param[in] colidx  pointer to column indices
+   * @param[in] vals    pointer to matrix values
+   * @param[in] n   number of matrix rows
+   * @param[in] m   number of matrix columns
+   * @param[in] nnz number of nonzeros
+   */
+  void set_Jc(int* rowptrs, int* colidx, double* vals, int n, int m, int nnz);
+
+  /**
+   * @brief Sets inequality constraints Jacobian block in to user provided
+   * values. It will only set pointers to user provided data; it is user's
+   * responsibility to supply and later delete that data.
+   * 
+   * @param[in] rowptrs pointer to row starts
+   * @param[in] colidx  pointer to column indices
+   * @param[in] vals    pointer to matrix values
+   * @param[in] n   number of matrix rows
+   * @param[in] m   number of matrix columns
+   * @param[in] nnz number of nonzeros
+   */
+  void set_Jd(int* rowptrs, int* colidx, double* vals, int n, int m, int nnz);
+
+  void set_rx(double*  vals, int n);
+
+  void set_rs(double*  vals, int n);
+
+  void set_ry(double*  vals, int n);
+
+  void set_ryd(double*  vals, int n);
+
+  void set_x_host(double* vals, int n);
+  void set_s_host(double* vals, int n);
+  void set_y_host(double* vals, int n);
+  void set_yd_host(double* vals, int n);
+
   /*
    * @brief sets gamma value for hykkt solver
    * 
@@ -123,8 +192,8 @@ private:
   */
   void apply_permutation();
   
-  /*
-   * @brief sparse Cholesky factorization on permuted (1,1) block  
+  /**
+   * @brief sparse Cholesky factorization on permuted (1,1) block
    *        so that LDLt does not have to be used
    *
    * @pre symbolic analysis already computed using setup method
@@ -132,30 +201,30 @@ private:
    *
    * @post hgamma numerical factorization is computed, thus updating
    *       hgam_v_p_
-  */
+   */
   void compute_hgamma_factorization();
   
-  /*
+  /**
    * @brief iterative solver on the Schur complement
    *
    * @pre matrices and sccg_ properly allocated using setup
    *      method for conjugate_gradient
    *
    * @post converged to approximate solution of block system
-  */
+   */
   void compute_conjugate_gradient();
   
-  /*
+  /**
    * @brief recovers solution from hykkt solver
    *
    * @pre execute functions setup and computed correctly
    *
    * @post d_rx_, d_rs_, d_ryc_, and d_ryd_ contain the solution
-           on the device
-  */
+   *       on the device
+   */
   void recover_solution();
   
-  /*
+  /**
    * @brief calculates the error of Ax - b
    *
    * @pre solution properly recovered using recover_solution()
@@ -163,19 +232,19 @@ private:
    * @param[out] Boolean - 0 if error small enough, 1 if hykkt failed
    *
    * @post solver status = success if error is smaller than
-           optimization solver error
-  */
+   *       optimization solver error
+   */
   int check_error();
   
-  /*
+  /**
    * @brief allocates and initiates variables for KKT system
    *
    * @pre jd_flag_ determines if variables used for Spgemm Htil
-          should be initiated
+   *      should be initiated
    *
    * @post all variables used for hykkt are allocated for; jd
-           related variables are not initiated if JD nnz == 0
-  */
+   *       related variables are not initiated if JD nnz == 0
+   */
   void setup_parameters();
   
    /*
@@ -266,6 +335,34 @@ private:
   */
   void setup_conjugate_gradient();
 
+  /**
+   * @brief Set pointers in `mat` to the input data arrays.
+   * 
+   * @param[out] mat - matrix container 
+   * @param[in]  rowptrs - integer array with row starts
+   * @param[in]  colidx  - integer array with column indices
+   * @param[in]  vals    - double array with matrix values
+   * @param[in]  n   - number of rows in the input matrix
+   * @param[in]  m   - number of columns in the input matrix
+   * @param[in]  nnz - number of nonzeros in the input matrix
+   */
+  void set_matrix_block(MMatrix& mat,
+                        int* rowptrs,
+                        int* colidx,
+                        double* vals,
+                        int n,
+                        int m,
+                        int nnz);
+
+  /**
+   * @brief Set pointer `*vec` to `vals`
+   * 
+   * @param[out] vec  - pointer to pointer to an array of doubles
+   * @param[in]  vals - pointer to an array of doubles
+   * @param[in]  n    - number of input vector elements
+   */
+  void set_vector_block(double** vec, double* vals, int n);
+
   //constants
   const int ruiz_its_ = 2;
   const double norm_tol_ = 1e-2;
@@ -281,7 +378,7 @@ private:
   
   //status of if solver is correctly used with matrices of same
   //nonzero structure
-  bool status = true;
+  bool status_ = true;
 
   cusparseHandle_t handle_cusparse_; //handle to cuSPARSE library
   cublasHandle_t handle_cublas_; //handle to cuBLAS library
@@ -347,7 +444,7 @@ private:
   
   double* max_d_; // ruiz scaling
  
-  //host vectors 
+  // host residual vector blocks 
   double* rx_;
   double* rs_;
   double* ry_;
@@ -366,11 +463,13 @@ private:
   double* jd_v_;
   double* jd_vs_;
 
-  //device vectors
+  // Device solution vector blocks
   double* d_x_;
   double* d_s_;
   double* d_y_;
   double* d_yd_;
+
+  // Device vectors
   double* d_rx_til_;
   double* d_rs_til_;
   double* d_rxp_;
@@ -382,6 +481,8 @@ private:
   //CSR FORMAT POINTERS
   int* h_j_;
   int* h_i_;
+
+  // Host solution vector blocks
   double* h_x_;
   double* h_s_;
   double* h_y_;
