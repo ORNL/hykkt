@@ -1,3 +1,5 @@
+#include <cassert>
+
 #include <cusparse.h>
 #include <cublas.h>
 
@@ -14,9 +16,25 @@
 #include "matrix_vector_ops.hpp"
 
   HykktSolver::HykktSolver(double gamma)
+    : gamma_(gamma),
+      rx_(nullptr),
+      rs_(nullptr),
+      ry_(nullptr),
+      ryd_(nullptr),
+      d_x_(nullptr),
+      d_s_(nullptr),
+      d_y_(nullptr),
+      d_yd_(nullptr),
+      h_x_(nullptr),
+      h_s_(nullptr),
+      h_y_(nullptr),
+      h_yd_(nullptr)
   {
     allocate_workspace();
-    set_gamma(gamma);
+    mat_h_.owns_csr_data(false);
+    mat_ds_.owns_csr_data(false);
+    mat_jc_.owns_csr_data(false);
+    mat_jd_.owns_csr_data(false);
   }
   
   HykktSolver::~HykktSolver()
@@ -62,14 +80,16 @@
     deleteOnDevice(buffer_trans1_);
     deleteOnDevice(buffer_trans2_);
 
-    delete [] rx_;
-    delete [] rs_;
-    delete [] ry_;
-    delete [] ryd_;
-    delete [] h_x_;
-    delete [] h_s_;
-    delete [] h_y_;
-    delete [] h_yd_;
+    // Uncommenting lines below causes double free segfault
+    //delete [] rx_;
+    //delete [] rs_;
+    //delete [] ry_;
+    // delete [] ryd_;
+
+    // delete [] h_x_;
+    // delete [] h_s_;
+    // delete [] h_y_;
+    // delete [] h_yd_;
     delete [] hgam_h_i_;
     delete [] hgam_h_j_;
     delete [] hgam_p_i_;
@@ -90,11 +110,6 @@
   
   void HykktSolver::allocate_workspace()
   {
-    mat_h_ = MMatrix();
-    mat_ds_ = MMatrix();
-    mat_jc_ = MMatrix();
-    mat_jd_ = MMatrix();
-
     createSparseHandle(handle_cusparse_);
     createCublasHandle(handle_cublas_);
   }
@@ -124,7 +139,7 @@
     
     bool jd_flag = mat_jd_.nnz_ > 0;
     
-    status = jd_flag_ == jd_flag; //if new nonzero structure then broken
+    status_ = (jd_flag_ == jd_flag); //if new nonzero structure then broken
       
     jd_flag_ = jd_flag;
     // read right hand side
@@ -133,6 +148,10 @@
       rs_ = new double[mat_ds_.n_];
       ry_ = new double[mat_jc_.n_];
       ryd_ = new double[mat_jd_.n_];
+      h_x_ = new double[mat_h_.n_]{0.0};
+      h_s_ = new double[mat_ds_.n_]{0.0};
+      h_y_ = new double[mat_jc_.n_]{0.0};
+      h_yd_ = new double[mat_jd_.n_]{0.0};
     }
     
     read_rhs(rx_file, rx_);
@@ -141,6 +160,74 @@
     read_rhs(ryd_file, ryd_);
   }
 
+  void HykktSolver::set_H(int* rowptrs, int* colidx, double* vals, int n, int m, int nnz)
+  {
+    assert(m == n);
+    set_matrix_block(mat_h_, rowptrs, colidx, vals, n, m, nnz);
+  }
+
+  void HykktSolver::set_Ds(int* rowptrs, int* colidx, double* vals, int n, int m, int nnz)
+  {
+    assert(n == m);
+    set_matrix_block(mat_ds_, rowptrs, colidx, vals, n, m, nnz);
+  }
+
+  void HykktSolver::set_Jc(int* rowptrs, int* colidx, double* vals, int n, int m, int nnz)
+  {
+    set_matrix_block(mat_jc_, rowptrs, colidx, vals, n, m, nnz);
+  }
+
+  void HykktSolver::set_Jd(int* rowptrs, int* colidx, double* vals, int n, int m, int nnz)
+  {
+    set_matrix_block(mat_jd_, rowptrs, colidx, vals, n, m, nnz);
+
+    bool jd_flag = mat_jd_.nnz_ > 0;
+    // status_ = (jd_flag_ == jd_flag);
+    status_ = true; // when using API, we can't check if sparsity pattern changed
+    jd_flag_ = jd_flag;
+  }
+
+  void HykktSolver::set_rx(double*  vals, int n)
+  {
+    set_vector_block(&rx_, vals, n);
+  }
+
+  void HykktSolver::set_rs(double*  vals, int n)
+  {
+    set_vector_block(&rs_, vals, n);
+  }
+
+  void HykktSolver::set_ry(double*  vals, int n)
+  {
+    set_vector_block(&ry_, vals, n);
+  }
+
+  void HykktSolver::set_ryd(double*  vals, int n)
+  {
+    set_vector_block(&ryd_, vals, n);
+  }
+
+  void HykktSolver::set_x_host(double*  vals, int n)
+  {
+    set_vector_block(&h_x_, vals, n);
+  }
+
+  void HykktSolver::set_s_host(double*  vals, int n)
+  {
+    set_vector_block(&h_s_, vals, n);
+  }
+
+  void HykktSolver::set_y_host(double*  vals, int n)
+  {
+    set_vector_block(&h_y_, vals, n);
+  }
+
+  void HykktSolver::set_yd_host(double*  vals, int n)
+  {
+    set_vector_block(&h_yd_, vals, n);
+  }
+
+
   void HykktSolver::set_gamma(double gamma)
   {
     gamma_ = gamma;
@@ -148,8 +235,13 @@
 
   int HykktSolver::execute()
   {
-    if(!status && allocated_){
+    // TODO: Review sparsity pattern checking in HyKKT
+    if(!status_ && allocated_){
       printf("\n\nERROR: USING HYKKT WITH NEW NONZERO STRUCTURE\n\n");
+      std::cout << "status = "      << status_ 
+                << ", allocated = " << allocated_
+                << ", Jd flag = "   << jd_flag_
+                << "\n";
       return 1;
     }
 
@@ -189,7 +281,7 @@
     return check_error();
   }
 
-// Computes $H_\tilde$ in eq (4)
+  // Computes $H_\tilde$ in eq (4)
   void HykktSolver::compute_spgemm_htil()
   {
     if(jd_flag_){
@@ -240,7 +332,7 @@
     }
   }
  
-// Ruiz scaling of eq (4)
+  // Ruiz scaling of eq (4)
   void HykktSolver::compute_ruiz_scaling()
   {
     rz_->add_block11(htil_v_, htil_i_, htil_j_);
@@ -252,7 +344,7 @@
     max_d_ = rz_->get_max_d();
   }
 
-// Sets up $H_\gamma$ of eq (6)
+  // Sets up $H_\gamma$ of eq (6)
   void HykktSolver::setup_spgemm_hgamma()
   {
     sc_gamma_ = new SpgemmClass(mat_h_.n_,
@@ -270,7 +362,7 @@
     sc_gamma_->load_result_matrix(&hgam_i_, &hgam_j_, &hgam_v_, &nnz_hgam_); 
   }
 
-// Computes $H_\gamma$ of eq (6)
+  // Computes $H_\gamma$ of eq (6)
   void HykktSolver::compute_spgemm_hgamma()
   {
     sc_gamma_->spGEMM_reuse();
@@ -286,7 +378,7 @@
         allocated_);
   }
   
-// Applies permutation to $H_\gamma$ of eq (6)
+  // Applies permutation to $H_\gamma$ of eq (6)
   void HykktSolver::apply_permutation()
   {
     pc_->map_index(perm_h_v, hgam_v_, hgam_v_p_);
@@ -298,19 +390,19 @@
     pc_->map_index(perm_v, d_rx_hat_, d_rxp_);
   }
   
-// Factorization of $H_\gamma$ of eq (6)
+  // Factorization of $H_\gamma$ of eq (6)
   void HykktSolver::compute_hgamma_factorization()
   {
     cc_->numerical_factorization();
   }
   
-// Computes conjugate gradient using $S$ of eq (7)
+  // Computes conjugate gradient using $S$ of eq (7)
   void HykktSolver::compute_conjugate_gradient()
   {
     sccg_->solve();
   }
   
-// Using the solution to eq (7) recover the solution to (3)
+  // Using the solution to eq (7) recover the solution to (3)
   void HykktSolver::recover_solution()
   {
     // block-recovering the solution to the original system by parts
@@ -334,29 +426,38 @@
     if(jd_flag_)
     {
       SpMV_product_reuse(handle_cusparse_,
-          ONE,
-          jd_desc_,
-          vec_d_x_,
-          MINUS_ONE,
-          vec_d_s_,
-          &buffer_solve2_,
-          jd_buffers_set_);
-    } else{//Math ops - happens every iteration
+                         ONE,
+                         jd_desc_,
+                         vec_d_x_,
+                         MINUS_ONE,
+                         vec_d_s_,
+                         &buffer_solve2_,
+                         jd_buffers_set_);
+    }
+    else
+    { //Math ops - happens every iteration
       fun_mult_const(mat_ds_.n_, MINUS_ONE, d_s_);
     }
    
     copyDeviceVector(mat_ds_.m_, d_s_, d_yd_);
     fun_vec_scale(mat_ds_.n_, d_yd_, ds_v_);
     fun_add_vecs(mat_ds_.n_, d_yd_, MINUS_ONE, d_rs_);
+
+    // Copy solution back to host
+    copyVectorToHost(mat_h_.n_,  d_x_,  h_x_);
+    copyVectorToHost(mat_ds_.n_, d_s_,  h_s_);
+    copyVectorToHost(mat_jc_.n_, d_y_,  h_y_);
+    copyVectorToHost(mat_jd_.n_, d_yd_, h_yd_);
   }
 
   void HykktSolver::setup_parameters()
   {
+    std::cout << "Matrix nnz = " << mat_ds_.nnz_ << "\n";
     if(!allocated_){
-      h_x_ = new double[mat_h_.m_]{0.0};
-      h_s_ = new double[mat_ds_.m_]{0.0};
-      h_y_ = new double[mat_jc_.n_]{0.0};
-      h_yd_ = new double[mat_jd_.n_]{0.0};
+      // h_x_ = new double[mat_h_.m_]{0.0};
+      // h_s_ = new double[mat_ds_.m_]{0.0};
+      // h_y_ = new double[mat_jc_.n_]{0.0};
+      // h_yd_ = new double[mat_jd_.n_]{0.0};
       hgam_h_i_ = new int[mat_h_.n_ + 1];
       hgam_p_i_ = new int[mat_h_.n_ + 1];
       jc_p_j_ = new int[mat_jc_.nnz_];
@@ -512,11 +613,13 @@
           jct_i_p_,
           jct_j_p_,
           jct_v_p_);
-    
+      std::cout << "H size: " << mat_h_.n_ << " "<< mat_h_.m_ << " "<< mat_h_.nnz_ << " \n";
       copySymmetricMatrixToDevice(&mat_h_, 
           h_i_, 
           h_j_, 
           h_v_);
+      std::cout << "Jc size: " << mat_jc_.n_ << "  " << mat_jc_.m_ << "  "<< mat_jc_.nnz_ << " \n";
+      // mat_jc_.print_csr();
       copyMatrixToDevice(&mat_jc_,
           jc_i_,
           jc_j_,
@@ -524,27 +627,31 @@
     } else{
     //nonzero structure stays same so only update values each it
       copyVectorToDevice(mat_h_.nnz_, mat_h_.csr_vals, h_v_);
-      copyVectorToDevice(mat_jc_.nnz_, mat_jc_.coo_vals, jc_v_);
+      copyVectorToDevice(mat_jc_.nnz_, mat_jc_.csr_vals, jc_v_);
     }
     
     if(jd_flag_){
       if(!jd_buffers_set_){
+      std::cout << "Jd size: " << mat_jd_.n_ << "  " << mat_jd_.m_ << "  "<< mat_jd_.nnz_ << " \n";
       copyMatrixToDevice(&mat_jd_,
           jd_i_,
           jd_j_,
           jd_v_);
 
-      } else{
-      //nonzero structure stays same so only update values each it
-        copyVectorToDevice(mat_jd_.nnz_, mat_jd_.coo_vals, jd_v_);
+      }
+      else
+      {
+        //nonzero structure stays same so only update values each it
+        copyVectorToDevice(mat_jd_.nnz_, mat_jd_.csr_vals, jd_v_);
       }
     }
-    
+    // for(int i=0; i<mat_h_.n_; ++i) std::cout << rx_[i] << " ";
+    // std::cout << "rx size: " << mat_ds_.n_ << " " << rx_[2] << "\n";
     copyVectorToDevice(mat_h_.n_, rx_, d_rx_);
     copyVectorToDevice(mat_ds_.n_, rs_, d_rs_);
     copyVectorToDevice(mat_jc_.n_, ry_, d_ry_);
     copyVectorToDevice(mat_jd_.n_, ryd_, d_ryd_);
-    copyVectorToDevice(mat_ds_.nnz_, mat_ds_.coo_vals, ds_v_);
+    copyVectorToDevice(mat_ds_.nnz_, mat_ds_.csr_vals, ds_v_);
     copyVectorToDevice(mat_h_.m_, h_x_, d_x_);
     copyVectorToDevice(mat_ds_.m_, h_s_, d_s_);
     copyVectorToDevice(mat_jc_.n_, h_y_, d_y_);
@@ -568,7 +675,7 @@
         allocated_);
   }
 
-// Sets up matrix products used in eqs (4) and (6)
+  // Sets up matrix products used in eqs (4) and (6)
   void HykktSolver::setup_spgemm_htil()
   {
     sc_til_ = new SpgemmClass(mat_h_.n_,
@@ -583,7 +690,7 @@
     sc_til_->load_result_matrix(&htil_i_, &htil_j_, &htil_v_, &nnz_htil_);  
   }
 
-// Set up to check the residual of eq (3) to make sure it's small
+  // Set up to check the residual of eq (3) to make sure it's small
   void HykktSolver::setup_solution_check()
   {
     if(!allocated_){
@@ -635,7 +742,7 @@
         jct_v_c_);
   }
 
-//Sets up the Ruiz scaling of (4)
+  //Sets up the Ruiz scaling of (4)
   void HykktSolver::setup_ruiz_scaling()
   {
     int n_hj = mat_h_.n_ + mat_jc_.n_;
@@ -643,7 +750,7 @@
     rz_ = new RuizClass(ruiz_its_, mat_h_.n_, n_hj); 
   }
 
-// Sets up permutation of $H_\gamma$ of eq (6)
+  // Sets up permutation of $H_\gamma$ of eq (6)
   void HykktSolver::setup_permutation()
   {
     hgam_h_j_ = new int[nnz_hgam_];
@@ -661,7 +768,7 @@
     pc_ = new PermClass(mat_h_.n_, nnz_hgam_, mat_jc_.nnz_);
     pc_->add_h_info(hgam_h_i_, hgam_h_j_);
     pc_->add_j_info(mat_jc_.csr_rows, 
-        mat_jc_.coo_cols, 
+        mat_jc_.csr_cols, 
         mat_jc_.n_, 
         mat_jc_.m_); 
       
@@ -808,10 +915,39 @@
     allocated_ = true;
   
     if (norm_res<norm_tol_){
-      printf("Residual test passed ");
+      printf("Residual test passed\n");
       return 0;
     }else{
-      printf("Residual test failed ");
+      printf("Residual test failed\n");
       return 1;
     }
+  }
+
+  void HykktSolver::set_matrix_block(MMatrix& mat,
+                                     int* rowptrs,
+                                     int* colidx,
+                                     double* vals,
+                                     int n,
+                                     int m,
+                                     int nnz)
+  {
+    assert(mat.owns_csr_data() == false);
+
+    // Use external data
+    mat.csr_rows = rowptrs;
+    mat.csr_cols = colidx;
+    mat.csr_vals = vals;
+    mat.n_ = n;
+    mat.m_ = m;
+    mat.nnz_ = nnz;
+  }
+
+  void HykktSolver::set_vector_block(double** vec, double* vals, int n)
+  {
+    assert(*vec == nullptr);
+
+    // Set to external vector data
+    *vec = vals;
+
+    (void) n; // surpress warning that n is unused
   }

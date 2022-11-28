@@ -127,3 +127,11 @@ add_test(NAME solver1
   COMMAND ${RUNCMD} $<TARGET_FILE:solver_driver> ${test_solver1_args})
 add_test(NAME solver2
   COMMAND ${RUNCMD} $<TARGET_FILE:solver_driver> ${test_solver2_args})
+
+add_executable(solver_driver_fileio cuSolver_driver_solver_fileio.cpp)
+target_link_libraries(solver_driver_fileio PUBLIC cuda_libs $<TARGET_OBJECTS:hybrid>)
+add_test(NAME solver_fileio1
+  COMMAND ${RUNCMD} $<TARGET_FILE:solver_driver_fileio> ${test_solver1_args})
+add_test(NAME solver_fileio2
+  COMMAND ${RUNCMD} $<TARGET_FILE:solver_driver_fileio> ${test_solver2_args})
+  

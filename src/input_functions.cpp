@@ -128,6 +128,9 @@ void coo_to_csr(MMatrix& mat_a)
   }
   // allocate full CSR structure
   mat_a.csr_rows     = new int[(mat_a.n_) + 1];
+  //KS: can get away without it ! But! this will change the rest of the code and hard to free correctly
+  mat_a.csr_vals         = new double[mat_a.nnz_];
+  mat_a.csr_cols         = new int[mat_a.nnz_];
   indexPlusValue* tmp = new indexPlusValue [mat_a.nnz_];
   // create IA (row starts)
   mat_a.csr_rows[0] = 0;
@@ -162,6 +165,9 @@ void coo_to_csr(MMatrix& mat_a)
 
   // and copy
   for(int i = 0; i < mat_a.nnz_; ++i) {
+    //KS: very ugly. I know. But it works.
+    mat_a.csr_cols[i] = tmp[i].idx;
+    mat_a.csr_vals[i] = tmp[i].value;
     mat_a.coo_cols[i] = tmp[i].idx;
     mat_a.coo_vals[i] = tmp[i].value;
   }
