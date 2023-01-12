@@ -92,46 +92,45 @@ else()
 endif()
 
 add_executable(perm_driver perm_driver.cpp)
-target_link_libraries(perm_driver PUBLIC cuda_libs $<TARGET_OBJECTS:hybrid>)
+target_link_libraries(perm_driver PUBLIC HyKKT::HyKKT)
 add_test(NAME permutation
   COMMAND ${RUNCMD} $<TARGET_FILE:perm_driver>)
 
 add_executable(ruiz_driver Ruiz_driver.cpp)
-target_link_libraries(ruiz_driver PUBLIC cuda_libs $<TARGET_OBJECTS:hybrid>)
+
+target_link_libraries(ruiz_driver PUBLIC HyKKT::HyKKT)
 add_test(NAME ruiz_scaling_test
   COMMAND ${RUNCMD} $<TARGET_FILE:ruiz_driver>)
-#
+
 add_executable(chol_driver cuSolver_driver_cholesky.cpp)
-target_link_libraries(chol_driver PUBLIC $<TARGET_OBJECTS:hybrid>
-  cuda_libs)
+target_link_libraries(chol_driver PUBLIC HyKKT::HyKKT)
 add_test(NAME cholesky 
  COMMAND ${RUNCMD} $<TARGET_FILE:chol_driver> ${testchol_args})
 
 add_executable(schur_cg_driver cuSolver_driver_schur_cg.cpp)
-target_link_libraries(schur_cg_driver PUBLIC $<TARGET_OBJECTS:hybrid>
-  cuda_libs)
+target_link_libraries(schur_cg_driver PUBLIC HyKKT::HyKKT)
 add_test(NAME schur_cg 
   COMMAND ${RUNCMD} $<TARGET_FILE:schur_cg_driver> ${testcg_args})
 
 add_executable(hybrid_driver cuSolver_driver_hybrid.cpp)
-target_link_libraries(hybrid_driver PUBLIC
-  cuda_libs $<TARGET_OBJECTS:hybrid>)
+target_link_libraries(hybrid_driver PUBLIC HyKKT::HyKKT)
 add_test(NAME hybrid1 
   COMMAND ${RUNCMD} $<TARGET_FILE:hybrid_driver> ${test1_args})
 add_test(NAME hybrid2
   COMMAND ${RUNCMD} $<TARGET_FILE:hybrid_driver> ${test2_args})
-#
+
 add_executable(solver_driver cuSolver_driver_solver.cpp)
-target_link_libraries(solver_driver PUBLIC cuda_libs $<TARGET_OBJECTS:hybrid>)
+target_link_libraries(solver_driver PUBLIC HyKKT::HyKKT)
 add_test(NAME solver1
   COMMAND ${RUNCMD} $<TARGET_FILE:solver_driver> ${test_solver1_args})
 add_test(NAME solver2
   COMMAND ${RUNCMD} $<TARGET_FILE:solver_driver> ${test_solver2_args})
 
-add_executable(solver_driver_fileio cuSolver_driver_solver_fileio.cpp)
-target_link_libraries(solver_driver_fileio PUBLIC cuda_libs $<TARGET_OBJECTS:hybrid>)
-add_test(NAME solver_fileio1
-  COMMAND ${RUNCMD} $<TARGET_FILE:solver_driver_fileio> ${test_solver1_args})
-add_test(NAME solver_fileio2
-  COMMAND ${RUNCMD} $<TARGET_FILE:solver_driver_fileio> ${test_solver2_args})
-  
+# install examples into user specified dir; default is /usr/local
+install(TARGETS perm_driver DESTINATION "${CMAKE_INSTALL_PREFIX}")
+install(TARGETS ruiz_driver DESTINATION "${CMAKE_INSTALL_PREFIX}")
+install(TARGETS chol_driver DESTINATION "${CMAKE_INSTALL_PREFIX}")
+install(TARGETS schur_cg_driver DESTINATION "${CMAKE_INSTALL_PREFIX}")
+install(TARGETS hybrid_driver DESTINATION "${CMAKE_INSTALL_PREFIX}")
+install(TARGETS solver_driver DESTINATION "${CMAKE_INSTALL_PREFIX}")
+

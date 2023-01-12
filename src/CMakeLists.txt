@@ -18,6 +18,24 @@ set(HYBRID_SRC_CUDA
   permcheck.cu
 )
 
+# define list of headers and source files
+set(header MMatrix.hpp
+    PermClass.hpp
+    RuizClass.hpp
+    SchurComplementConjugateGradient.hpp
+    CholeskyClass.hpp
+    SpgemmClass.hpp
+    HykktSolver.hpp)
+
+install(FILES ${header} DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+
 set_source_files_properties(${HYBRID_SRC_CUDA} PROPERTIES LANGUAGE CUDA)
-add_library(hybrid SHARED ${HYBRID_SRC} ${HYBRID_SRC_CUDA})
-target_link_libraries(hybrid PRIVATE cuda_libs)
+add_library(hykkt_libs SHARED ${HYBRID_SRC} ${HYBRID_SRC_CUDA})
+target_link_libraries(hykkt_libs PUBLIC hykkt_cuda)
+
+# install rules
+install(TARGETS hykkt_libs EXPORT HyKKT-targets)
+
+add_library(HyKKT::HyKKT ALIAS hykkt_libs)
+
+
