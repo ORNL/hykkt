@@ -1,4 +1,5 @@
 set(HYBRID_SRC
+  Timer.cpp
   MMatrix.cpp
   input_functions.cpp
   vector_vector_ops.cpp
