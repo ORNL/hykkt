@@ -9,8 +9,8 @@ for kk=start:fin  %first to last matrix in the sequence
     else
         buf=[];
     end
-    matname = strcat(matpref , buf, num2str(kk), ".mtx");
-    vecname = strcat(vecpref    , buf, num2str(kk), ".mtx");
+    matname = strcat(matpref, buf, num2str(kk), ".mm");
+    vecname = strcat(vecpref, buf, num2str(kk), ".mm");
     [A, rows , cols , entries ] = mmread (matname);
     [b, rows2, cols2, entries2] = mmread (vecname);
     if kk==start  % for first matrix only, find structure and reuse it
@@ -25,16 +25,16 @@ for kk=start:fin  %first to last matrix in the sequence
     rs  = b(top+1:mid);
     ry  = b(mid+1:end-dsize);
     ryd = b(end-dsize+1:end);
-    matname = strcat("block_H_" , matpref, buf, num2str(kk), ".mtx");
-    vecname = strcat("block_rx_", vecpref    , buf, num2str(kk), ".mtx");
+    matname = strcat("block_H_", matpref, buf, num2str(kk), ".mtx");
+    vecname = strcat("block_rx_", vecpref, buf, num2str(kk), ".mtx");
     mmwrite(matname,H);
     mmwrite(vecname,rx);
-    matname = strcat("block_Ds_" , matpref, buf, num2str(kk), ".mtx");
-    vecname = strcat("block_rs_", vecpref    , buf, num2str(kk), ".mtx");
+    matname = strcat("block_Dd_", matpref, buf, num2str(kk), ".mtx");
+    vecname = strcat("block_rs_", vecpref, buf, num2str(kk), ".mtx");
     mmwrite(matname,Dd);
     mmwrite(vecname,rs);
-    matname = strcat("block_Jc_" , matpref, buf, num2str(kk), ".mtx");
-    vecname = strcat("block_ryc_", vecpref    , buf, num2str(kk), ".mtx");
+    matname = strcat("block_J_" , matpref, buf, num2str(kk), ".mtx");
+    vecname = strcat("block_ry_", vecpref    , buf, num2str(kk), ".mtx");
     mmwrite(matname,Jc1);
     mmwrite(vecname,ry);
     matname = strcat("block_Jd_" , matpref, buf, num2str(kk), ".mtx");

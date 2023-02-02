@@ -136,7 +136,7 @@ if ( issparse(A) )
   rep = 'coordinate';
 
 
-  %fprintf(mmfile,'%%%%MatrixMarket matrix %s %s %s\n',rep,mattype,symm);
+  fprintf(mmfile,'%%%%MatrixMarket matrix %s %s %s\n',rep,mattype,symm);
   [MC,NC] = size(comment);
   if ( MC == 0 )
     fprintf(mmfile,'%% Generated %s\n',[date]);
