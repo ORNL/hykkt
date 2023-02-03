@@ -126,6 +126,9 @@ add_test(NAME solver1
 add_test(NAME solver2
   COMMAND ${RUNCMD} $<TARGET_FILE:solver_driver> ${test_solver2_args})
 
+add_executable(solver_driver_emulator cuSolver_driver_solver_emulator.cpp)
+  target_link_libraries(solver_driver_emulator PUBLIC HyKKT::HyKKT)
+
 # install examples into user specified dir; default is /usr/local
 install(TARGETS perm_driver DESTINATION "${CMAKE_INSTALL_PREFIX}")
 install(TARGETS ruiz_driver DESTINATION "${CMAKE_INSTALL_PREFIX}")
