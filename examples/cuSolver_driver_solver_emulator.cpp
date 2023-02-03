@@ -23,7 +23,7 @@ inline bool file_exists(const std::string &name)
 
 int main(int argc, char *argv[])
 {
-    if (argc != 19)
+    if (argc != 7)
     {
         std::cout << "Incorrect number of inputs. Exiting ...\n";
         return -1;
