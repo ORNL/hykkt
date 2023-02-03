@@ -30,12 +30,6 @@ int main(int argc, char *argv[])
     }
     std::cout << "Starting ...\n";
 
-    const char *base_name = argv[2];
-    int starting_sequence = atoi(argv[3]);
-    int starting_sequence = atof(argv[4]);
-    int skip_lines = atoi(argv[5]);
-    double gamma = atof(argv[6]);
-
     string base_dir = string(argv[1]);
     string base_name = string(argv[2]);
     int starting_sequence = atoi(argv[3]);
@@ -69,14 +63,14 @@ int main(int argc, char *argv[])
         cout << file_exists(ry_file_name1) << endl;
         cout << file_exists(ryd_file_name1) << endl;
 
-        hs->read_matrix_files(h_file_name1,
-                              ds_file_name1,
-                              jc_file_name1,
-                              jd_file_name1,
-                              rx_file_name1,
-                              rs_file_name1,
-                              ry_file_name1,
-                              ryd_file_name1,
+        hs->read_matrix_files(h_file_name1.c_str(),
+                              ds_file_name1.c_str(),
+                              jc_file_name1.c_str(),
+                              jd_file_name1.c_str(),
+                              rx_file_name1.c_str(),
+                              rs_file_name1.c_str(),
+                              ry_file_name1.c_str(),
+                              ryd_file_name1.c_str(),
                               skip_lines);
         status = hs->execute();
         if (status == 1)
