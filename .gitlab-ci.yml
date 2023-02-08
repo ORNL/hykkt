@@ -60,6 +60,7 @@ variables:
 
 stages:
   - .pre
+  - build
   - test
 
 # Include PNNL GitLab stdlib
@@ -87,6 +88,24 @@ SVC Account Cleanup:
     # clears directory of files more than 1 day/1440 minutes old
     - find $WORKDIR -D -type d -mindepth 1 -mmin +1440 -prune -print -exec rm -rf {} \; || true
     - ls -hal $WORKDIR             
+
+C++ Lint:
+  image: ubuntu:20.04
+  stage: build
+  allow_failure: true
+  variables:
+  # Don't clone submodules for jobs that don't need submodules
+    GIT_SUBMODULE_STRATEGY: none
+  extends:
+    - .pnnl-nonhpc-tags
+    - .pnnl-rules
+  script:
+    |
+    set -x
+    apt update && apt install -y clang-format-11 
+    find ./src -name "*.[hc]pp" -exec clang-format-11 --style=file -n -Werror -ferror-limit=1 {} \+; 
+    exit $?
+                                       
 
 hykkt-test-deception:
   stage: test

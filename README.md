@@ -67,6 +67,16 @@ This executable can be run with an appropriate batch script with 10 arguments
 In the case of solution of multiple systems, the first 8 arguments are repated for the next matrix in the series. Both matrices must have the same sparsity structure.
 
 Examples of this script can be found in [`src/old_scripts`](./src/old_scripts)
+
+# Clang-format
+Clang-format version 13 should be used, and format is loosely based off [llvm code style](https://llvm.org/docs/CodingStandards.html) with custom alterations made as discussed in [CONTRIBUTING.md](https://gitlab.pnnl.gov/exasgd/solvers/hykkt/-/blob/develop/CONTRIBUTING.md). 
+
+To test clang formatting of code base use:  
+`make clangformat`
+
+To autofix the formatting of the code base use:
+`make clangformat-fix`
+
 ## Support
 To receive support or ask a question, submit an issue on [Gitlab](https://gitlab.pnnl.gov/exasgd/solvers/hykkt/-/issues).
 

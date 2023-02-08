@@ -19,6 +19,9 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 message(STATUS "Installation Destination is ${CMAKE_INSTALL_PREFIX}")
 
+# Including clang-format cmake files to do automatic checking of formating
+include(./cmake/clang-format)
+
 # Configure CUDA
 include(CheckLanguage)
 enable_language(CUDA)
@@ -41,7 +44,7 @@ set(CMAKE_CUDA_SEPARABLE_COMPILATION OFF)
 # Link in required cuda dependencies
 find_package(CUDAToolkit REQUIRED)
 
-include(FindHykktCudaLibraries)
+include(./cmake/FindHykktCudaLibraries)
 
 # Enable testing
 enable_testing()
@@ -54,7 +57,7 @@ add_subdirectory(src)
 
 # create package version file
 include(CMakePackageConfigHelpers)
-write_basic_package_version_file(HyKKTConfigVersion.cmake
+write_basic_package_version_file(./cmake/HyKKTConfigVersion.cmake
                                  VERSION ${CMAKE_PROJECT_VERSION}
                                  COMPATIBILITY AnyNewerVersion)
 
@@ -64,11 +67,11 @@ install(EXPORT HyKKT-targets
         DESTINATION 
         share/hykkt/cmake)
 
-configure_package_config_file(HyKKTConfig.cmake.in
+configure_package_config_file(./cmake/HyKKTConfig.cmake.in
                               ${CMAKE_CURRENT_BINARY_DIR}/HyKKTConfig.cmake
                               INSTALL_DESTINATION share/hykkt/cmake)
 
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/HyKKTConfig.cmake"
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/cmake/HyKKTConfig.cmake"
         "${PROJECT_SOURCE_DIR}/build/HyKKTConfigVersion.cmake"
         DESTINATION share/hykkt/cmake)
 
