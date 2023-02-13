@@ -95,6 +95,6 @@ Please see [the developer guidelines](https://gitlab.pnnl.gov/exasgd/solvers/hyk
 This package is developed as a part of [ExaSGD](https://www.exascaleproject.org/research-project/exasgd/) project under the [Exascale computing project](https://www.exascaleproject.org/).
 
 ## License
-Copyright &copy; 2022, Battelle Memorial Institute.
+Copyright &copy; 2023, UT-Battelle, LLC, and Battelle Memorial Institute.
 
-HyKKT is a free software distributed under a BSD 2-clause license. You may reuse, modify, and redistribute the software. See the [license](https://gitlab.pnnl.gov/exasgd/solvers/hykkt/-/blob/README/LICENSE) file for details.
+HyKKT is a free software distributed under a BSD-style license. See the [LICENSE](LICENSE) and [NOTICE](NOTICE) files for details. All new contributions to HyKKT must be made under the smae licensing terms.

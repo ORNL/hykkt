@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(HyKKT VERSION "0.0.1")
+# Adds version settings and set variable CMAKE_PROJECT_VERSION
+project(HyKKT VERSION "0.1.0")
 
 set(CMAKE_CXX_STANDARD 11)
 
@@ -15,7 +16,7 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # For Unix CMAKE_INSTALL_PREFIX defaults to /usr/local
 # If user doesn't have permission to write to /usr/local than the below line is recommended
-#set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/install" CACHE PATH "${CMAKE_SOURCE_DIR}/install"FORCE)
+# set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/install" CACHE PATH "${CMAKE_SOURCE_DIR}/install"FORCE)
 
 message(STATUS "Installation Destination is ${CMAKE_INSTALL_PREFIX}")
 
@@ -57,21 +58,25 @@ add_subdirectory(src)
 
 # create package version file
 include(CMakePackageConfigHelpers)
-write_basic_package_version_file(./cmake/HyKKTConfigVersion.cmake
+
+# Creates a version file for the package
+write_basic_package_version_file(HyKKTConfigVersion.cmake
                                  VERSION ${CMAKE_PROJECT_VERSION}
                                  COMPATIBILITY AnyNewerVersion)
-
+# Generate install rules for targets
 install(EXPORT HyKKT-targets
         FILE HyKKTTargets.cmake
         NAMESPACE HyKKT::
         DESTINATION 
         share/hykkt/cmake)
 
+# Creates a config file
 configure_package_config_file(./cmake/HyKKTConfig.cmake.in
                               ${CMAKE_CURRENT_BINARY_DIR}/HyKKTConfig.cmake
                               INSTALL_DESTINATION share/hykkt/cmake)
 
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/cmake/HyKKTConfig.cmake"
+# Generates install rules for cmake config files
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/HyKKTConfig.cmake"
         "${PROJECT_SOURCE_DIR}/build/HyKKTConfigVersion.cmake"
         DESTINATION share/hykkt/cmake)
 
