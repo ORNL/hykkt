@@ -1,5 +1,4 @@
-
-.hykkt_script_template: &test_script_definition
+.hykkt_script_template:
  script:
     - |
       set -xv
@@ -15,7 +14,7 @@
       tailpid=$!
       sinfo -l | grep $SLURM_Q
 
-      #test build script 
+      #test build script
       jobid=$(sbatch --export=ALL -A EXASGD --gres=gpu:1 --ntasks=1 -p $SLURM_Q -o output -e output -t 60:00 $WORKDIR/buildsystem/build.sh $SCRIPT_ARGS)
       export jobid=$(echo $jobid | cut -f4 -d' ')
       echo $jobid > "$WORKDIR/jobid"
@@ -36,97 +35,69 @@
       exit $res
 
 
-.pnnl_tags_template: &pnnl_tags_definition
+.pnnl_tags_template:
   tags:
     - k8s
     - ikp
     - exasgd
     - marianas
 
-.pnnl-rules: &pnnl-rules
+.pnnl-rules:
   rules:
-    - &pnnl-rule
-      if: '$CI_PROJECT_ROOT_NAMESPACE == "exasgd"' # Will only apply to PNNL
+   - if: '$CI_PROJECT_ROOT_NAMESPACE == "exasgd"' # Will only apply to PNNL
 
-.pnnl-nonhpc-tags: &pnnl-nonhpc-definition
+.pnnl-nonhpc-tags:
   tags:
     - k8s
-    - ikp
-    - exasgd
-    - basic
+".gitlab-ci.yml" 148L, 3510C
 
-variables:
-  GIT_SUBMODULE_STRATEGY: recursive
-
-stages:
-  - .pre
-  - build
-  - test
-
-# Include PNNL GitLab stdlib
-include:
-  - remote: 'https://raw.githubusercontent.com/pnnl-miscscripts/gitlab-lib/v1/gitlab-lib.yaml'
-
-.pnnl_tags_template: &pnnl_tags_definition
-  tags:
-    - k8s
-    - ikp 
-    - exasgd
-    - marianas
-
-.pnnl-rules: &pnnl-rules
-  rules:
-    - &pnnl-rule
-      if: '$CI_PROJECT_ROOT_NAMESPACE == "exasgd"' # Will only apply to PNNL
-      
-SVC Account Cleanup:
-  stage: .pre
-  <<: *pnnl-rules
-  <<: *pnnl_tags_definition
-  script:
-    - export WORKDIR="$HOME/gitlab/"
-    # clears directory of files more than 1 day/1440 minutes old
-    - find $WORKDIR -D -type d -mindepth 1 -mmin +1440 -prune -print -exec rm -rf {} \; || true
-    - ls -hal $WORKDIR             
-
-C++ Lint:
-  image: ubuntu:20.04
-  stage: build
-  allow_failure: true
-  variables:
-  # Don't clone submodules for jobs that don't need submodules
-    GIT_SUBMODULE_STRATEGY: none
-  extends:
-    - .pnnl-nonhpc-tags
-    - .pnnl-rules
-  script:
-    |
-    set -x
-    apt update && apt install -y clang-format-11 
-    find ./src -name "*.[hc]pp" -exec clang-format-11 --style=file -n -Werror -ferror-limit=1 {} \+; 
-    exit $?
-                                       
 
 hykkt-test-deception:
   stage: test
+  needs: []
   variables:
     SLURM_Q: "a100_shared"
     MY_CLUSTER: "deception"
     OUTPUT_SUFFIX: "_build"
     SCRIPT_ARGS: " --build-only --job=gcc-cuda "
     WORKDIR_SUFFIX: "x86_64-gcc-cuda-build"
-  <<: *pnnl-rules
-  <<: *pnnl_tags_definition
-  <<: *test_script_definition
+  extends:
+    - .pnnl-rules
+    - .pnnl_tags_template
+    - .hykkt_script_template
 
 hykkt-test-newell:
   stage: test
+  needs: []
   variables:
     SLURM_Q: "newell_shared"
     MY_CLUSTER: "newell"
     OUTPUT_SUFFIX: "_test"
     SCRIPT_ARGS: " --test-only --job=gcc-cuda "
     WORKDIR_SUFFIX: "ppc64le-gcc-cuda-build"
-  <<: *pnnl-rules
-  <<: *pnnl_tags_definition
-  <<: *test_script_definition
+  extends:
+  - .pnnl-rules
+  - .pnnl_tags_template
+  - .hykkt_script_template
+
+.report-status:
+  variables:
+  GIT_STRATEGY: none
+  tags:
+    - basic
+  extends:
+    - .pnnl_rules
+    - pnnl_environment_template
+  script:
+    - curl -X POST -H @${GITHUB_CURL_HEADERS} https://api.github.com/repos/${STATUS_PROJECT}/statuses/${CI_COMMIT_SHA}?state=${CI_JOB_NAME}\&context=${STATUS_NAME}\&target_url=${CI_PIPELINE_URL}
+  environment:
+      name: reporting-gitlab
+pending:
+  extends:
+    - .report-status
+  stage: .pre
+
+success:
+  extends:
+    - .report-status
+  stage: .post

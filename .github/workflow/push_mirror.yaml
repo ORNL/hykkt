@@ -1,0 +1,21 @@
+name: Mirroring
+
+# triggers github actions everytime there is a push or mr
+on: [push]
+
+jobs:
+  # To test on HPC resources must mirror the repo and trigger a pipeline
+  to_pnnl_gitlab:
+     # Latest Ubuntu as of Feb 2023 is 20.04
+     runs-on: ubuntu-latest
+     steps:
+       # Action checks-out your repository under $GITHUB_WORKSPACE, so your workflow can access it.
+       - uses: actions/checkout@v1
+       #  Action for mirroring your commits to a different remote repository
+       - uses: yesolutions/mirror-action@master
+       # Give actions access to some secrets
+       with:
+         REMOTE: ${{ secrets.GIT_REPO_URL}}
+         GIT-USERNAME:  ${{ secrets.GIT_USER}}
+         GIT-PASSWORD:  ${{ secrets.GIT_PASSWORD}}
+         GIT_PUSH_ARGS: --push-option=ci.skip --tags --force --prune
