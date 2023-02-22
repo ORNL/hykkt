@@ -1,7 +1,7 @@
 name: Mirroring
 
 # triggers github actions everytime there is a push or mr
-on: [push]
+on: [push, delete]
 
 jobs:
   # To test on HPC resources must mirror the repo and trigger a pipeline
@@ -18,4 +18,14 @@ jobs:
          REMOTE: ${{ secrets.GIT_REPO_URL}}
          GIT-USERNAME:  ${{ secrets.GIT_USER}}
          GIT-PASSWORD:  ${{ secrets.GIT_PASSWORD}}
-         GIT_PUSH_ARGS: --push-option=ci.skip --tags --force --prune
+
+       - name: Trigger Pipeline
+         run: |
+          # TODO define PNNL_PIPELINE_TRIGGER_TOKEN
+          # Create a trigger token and replace the url
+          response=$(curl -X POST -F token=${{ secrets.PNNL_PIPELINE_TRIGGER_TOKEN }} -F ref=${BRANCH_NAME} https://gitlab.pnnl.gov/api/v4/projects/769/trigger/pipeline)
+          exit_code=$?
+          sudo apt install jq
+          pipeline_id=$(echo $response | jq '.id' | sed 's/"//g')
+          echo "PIPELINE_ID=${pipeline_id}" >> $GITHUB_ENV
+          exit $exit_code
