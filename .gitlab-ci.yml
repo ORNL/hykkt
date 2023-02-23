@@ -78,7 +78,7 @@ hykkt-test-newell:
 .report-status:
   variables:
     GIT_STRATEGY: none
-    STATUS_PROJECT: HyKKT
+    STATUS_PROJECT: ORNL/hykkt
     STATUS_NAME: PNNL CI
   tags:
     - basic

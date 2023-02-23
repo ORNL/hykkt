@@ -24,8 +24,3 @@ jobs:
           # TODO define PNNL_PIPELINE_TRIGGER_TOKEN
           # Create a trigger token and replace the url
           response=$(curl -X POST -F token=${{ secrets.PNNL_PIPELINE_TRIGGER_TOKEN }} -F ref=${BRANCH_NAME} https://gitlab.pnnl.gov/api/v4/projects/769/trigger/pipeline)
-          exit_code=$?
-          sudo apt install jq
-          pipeline_id=$(echo $response | jq '.id' | sed 's/"//g')
-          echo "PIPELINE_ID=${pipeline_id}" >> $GITHUB_ENV
-          exit $exit_code
