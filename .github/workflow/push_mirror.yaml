@@ -1,0 +1,24 @@
+name: Mirroring
+
+# triggers github actions everytime there is a push or mr
+on: [push, delete]
+
+jobs:
+  # To test on HPC resources must mirror the repo and trigger a pipeline
+  to_pnnl_gitlab:
+     # Latest Ubuntu as of Feb 2023 is 20.04
+     runs-on: ubuntu-latest
+     steps:
+       # Action checks-out your repository under $GITHUB_WORKSPACE, so your workflow can access it.
+       - uses: actions/checkout@v1
+       #  Action for mirroring your commits to a different remote repository
+       - uses: yesolutions/mirror-action@master
+       # Give actions access to some secrets
+       with:
+         REMOTE: 'https://gitlab.pnnl.gov/exasgd/solvers/hykkt'
+         GIT-USERNAME:  ${{ secrets.GIT_USER}}
+         GIT-PASSWORD:  ${{ secrets.GIT_PASSWORD}}
+
+       - name: Trigger Pipeline
+         run: |
+          response=$(curl -X POST -F token=${{ secrets.PNNL_PIPELINE_TRIGGER }} -F ref=${BRANCH_NAME} https://gitlab.pnnl.gov/api/v4/projects/1166/trigger/pipeline)
