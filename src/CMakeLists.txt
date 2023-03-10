@@ -1,4 +1,5 @@
 set(HYBRID_SRC
+  Timer.cpp
   MMatrix.cpp
   input_functions.cpp
   vector_vector_ops.cpp
@@ -9,7 +10,7 @@ set(HYBRID_SRC
   SchurComplementConjugateGradient.cpp
   CholeskyClass.cpp
   SpgemmClass.cpp
-  HykktSolver.cpp
+  HykktSolver-Timing.cpp
 )
 
 set(HYBRID_SRC_CUDA

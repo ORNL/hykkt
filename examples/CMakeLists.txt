@@ -127,3 +127,6 @@ add_test(NAME solver1
   COMMAND ${RUNCMD} $<TARGET_FILE:solver_driver> ${test_solver1_args})
 add_test(NAME solver2
   COMMAND ${RUNCMD} $<TARGET_FILE:solver_driver> ${test_solver2_args})
+
+add_executable(solver_driver_emulator cuSolver_driver_solver_emulator.cpp)
+target_link_libraries(solver_driver_emulator PUBLIC cuda_libs $<TARGET_OBJECTS:hybrid>)

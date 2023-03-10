@@ -5,8 +5,15 @@
 #include "MMatrix.hpp"
 #include "cuda_check_errors.hpp"
 
+#define MEM_DEBUG_ALLOC 0
+#define MEM_DEBUG_FREE 0
+#define MEM_DEBUG_MEMCPY 0
+
 void deleteOnDevice(void* v)
 {
+#if MEM_DEBUG_FREE
+  std::cout << __func__ << ":" << "Freeing " << v << std::endl;
+#endif
   checkCudaErrors(cudaFree(v));
 }
 
@@ -14,6 +21,9 @@ template <typename T1, typename T2>
 void allocateVectorOnDevice(T1 n, T2** v)
 {
   checkCudaErrors(cudaMalloc((void**)v, sizeof(T2) * n));
+#if MEM_DEBUG_ALLOC
+  std::cout << __func__ << ":" << *v << " Allocated " << n << " bytes" << std::endl;
+#endif
 }
 template void allocateVectorOnDevice<int, double>(int, double**);
 template void allocateVectorOnDevice<int64_t, double>(int64_t, double**);
@@ -21,6 +31,10 @@ template void allocateVectorOnDevice<int64_t, double>(int64_t, double**);
 template <typename T>
 void copyVectorToHost(int n, const T* src, T* dst)
 {
+#if MEM_DEBUG_MEMCPY
+  std::cout << __func__ << ":" << "Copy " << n << " bytes" << std::endl;
+  std::cout << "src: " << src << " dst: " << dst << std::endl;
+#endif
   checkCudaErrors(cudaMemcpy(dst, src, sizeof(T) * n, cudaMemcpyDeviceToHost));
 }
 template void copyVectorToHost<double>(int, const double*, double*);
@@ -28,6 +42,10 @@ template void copyVectorToHost<double>(int, const double*, double*);
 template <typename T>
 void copyDeviceVector(int n, const T* src, T* dst)
 {
+#if MEM_DEBUG_MEMCPY
+  std::cout << __func__ << ":" << "Copy " << n << " bytes" << std::endl;
+  std::cout << "src: " << src << " dst: " << dst << std::endl;
+#endif
   checkCudaErrors(cudaMemcpy(dst, src, sizeof(T) * n, cudaMemcpyDeviceToDevice));
 }
 template void copyDeviceVector<double>(int, const double*, double*);
@@ -36,6 +54,10 @@ template void copyDeviceVector<int>(int, const int*, int*);
 template <typename T>
 void copyVectorToDevice(int n, const T* src, T* dst)
 {
+#if MEM_DEBUG_MEMCPY
+  std::cout << __func__ << ":" << "Copy " << n << " bytes" << std::endl;
+  std::cout << "src: " << src << " dst: " << dst << std::endl;
+#endif
   checkCudaErrors(cudaMemcpy(dst, src, sizeof(T) * n, cudaMemcpyHostToDevice));
 }
 template void copyVectorToDevice<double>(int, const double*, double*);
@@ -44,6 +66,9 @@ template void copyVectorToDevice<double>(int, const double*, double*);
 void allocateBufferOnDevice(void** b, size_t b_size)
 {
   checkCudaErrors(cudaMalloc((void**)b, sizeof(char) * b_size));
+#if MEM_DEBUG_ALLOC
+  std::cout << __func__ << ":" << *b << " Allocated " << b_size << " bytes" << std::endl;
+#endif
 }
 
 void allocateMatrixOnDevice(int n, int nnz, int** a_i, int** a_j, double** a_v)

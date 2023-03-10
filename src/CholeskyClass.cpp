@@ -54,6 +54,7 @@ CholeskyClass::CholeskyClass(int n,
           info_, 
           &internal_data_in_bytes, 
           &worksepace_in_bytes));
+    printf("worksepace_in_bytes: %ld\n", worksepace_in_bytes);
     allocateBufferOnDevice(&buffer_gpu_, worksepace_in_bytes);
   }
 

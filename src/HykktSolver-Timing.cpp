@@ -1,7 +1,16 @@
 #include <cusparse.h>
 #include <cublas.h>
 
+#define DEBUG_TIMER 1
+#define DEBUG_TIMER_1 1
+#define DEBUG_TIMER_0 1
+
+#if DEBUG_TIMER_0
+#include "Timer.hpp"
+#endif
+
 #include "HykktSolver.hpp"
+
 
 #include "input_functions.hpp"
 #include "SchurComplementConjugateGradient.hpp"
@@ -153,39 +162,176 @@
       return 1;
     }
 
+#if DEBUG_TIMER_0
+    Timer t2;
+    t2.start();
+#endif
+
+#if DEBUG_TIMER
+    Timer t;
+    t.start();
+#endif
     setup_parameters();
+#if DEBUG_TIMER
+    t.stop();
+    printf("setup_parameters took: %f ms\n", t.getElapsedTimeInMilliSec());
+    t.reset();
+#endif
     
+#if DEBUG_TIMER
+    t.start();
+#endif
     if(!allocated_){
       setup_spgemm_htil();
     }
-    compute_spgemm_htil();
-    
-    setup_solution_check();
+#if DEBUG_TIMER
+    t.stop();
+    printf("setup_spgemm_htil took: %f ms\n", t.getElapsedTimeInMilliSec());
+    t.reset();
+#endif
 
+#if DEBUG_TIMER
+    t.start();
+#endif
+    compute_spgemm_htil();
+#if DEBUG_TIMER
+    t.stop();
+    printf("compute_spgemm_htil took: %f ms\n", t.getElapsedTimeInMilliSec());
+    t.reset();
+#endif
+    
+#if DEBUG_TIMER
+    t.start();
+#endif
+    setup_solution_check();
+#if DEBUG_TIMER
+    t.stop();
+    printf("setup_solution_check took: %f ms\n", t.getElapsedTimeInMilliSec());
+    t.reset();
+#endif
+
+#if DEBUG_TIMER
+    t.start();
+#endif
     if(!allocated_){
       setup_ruiz_scaling();
     }
-    compute_ruiz_scaling();
+#if DEBUG_TIMER
+    t.stop();
+    printf("setup_ruiz_scaling took: %f ms\n", t.getElapsedTimeInMilliSec());
+    t.reset();
+#endif
 
+#if DEBUG_TIMER
+    t.start();
+#endif
+    compute_ruiz_scaling();
+#if DEBUG_TIMER
+    t.stop();
+    printf("compute_ruiz_scaling took: %f ms\n", t.getElapsedTimeInMilliSec());
+    t.reset();
+#endif
+
+#if DEBUG_TIMER
+    t.start();
+#endif
     if(!allocated_){
       setup_spgemm_hgamma();
     }
-    compute_spgemm_hgamma();
+#if DEBUG_TIMER
+    t.stop();
+    printf("setup_spgemm_hgamma took: %f ms\n", t.getElapsedTimeInMilliSec());
+    t.reset();
+#endif
 
+#if DEBUG_TIMER
+    t.start();
+#endif
+    compute_spgemm_hgamma();
+#if DEBUG_TIMER
+    t.stop();
+    printf("compute_spgemm_hgamma took: %f ms\n", t.getElapsedTimeInMilliSec());
+    t.reset();
+#endif
+
+#if DEBUG_TIMER
+    t.start();
+#endif
     if(!allocated_){
       setup_permutation();
     }
-    apply_permutation();
+#if DEBUG_TIMER
+    t.stop();
+    printf("setup_permutation took: %f ms\n", t.getElapsedTimeInMilliSec());
+    t.reset();
+#endif
 
+#if DEBUG_TIMER
+    t.start();
+#endif
+    apply_permutation();
+#if DEBUG_TIMER
+    t.stop();
+    printf("apply_permutation took: %f ms\n", t.getElapsedTimeInMilliSec());
+    t.reset();
+#endif
+
+#if DEBUG_TIMER
+    t.start();
+#endif
     if(!allocated_){
       setup_hgamma_factorization();
     }
-    compute_hgamma_factorization();
-  
-    setup_conjugate_gradient();
-    compute_conjugate_gradient();
+#if DEBUG_TIMER
+    t.stop();
+    printf("setup_hgamma_factorization took: %f ms\n", t.getElapsedTimeInMilliSec());
+    t.reset();
+#endif
 
+#if DEBUG_TIMER
+    t.start();
+#endif
+    compute_hgamma_factorization();
+#if DEBUG_TIMER
+    t.stop();
+    printf("compute_hgamma_factorization took: %f ms\n", t.getElapsedTimeInMilliSec());
+    t.reset();
+#endif
+  
+#if DEBUG_TIMER
+    t.start();
+#endif
+    setup_conjugate_gradient();
+#if DEBUG_TIMER
+    t.stop();
+    printf("setup_conjugate_gradient took: %f ms\n", t.getElapsedTimeInMilliSec());
+    t.reset();
+#endif
+
+#if DEBUG_TIMER
+    t.start();
+#endif
+    compute_conjugate_gradient();
+#if DEBUG_TIMER
+    t.stop();
+    printf("compute_conjugate_gradient took: %f ms\n", t.getElapsedTimeInMilliSec());
+    t.reset();
+#endif
+
+#if DEBUG_TIMER
+    t.start();
+#endif
     recover_solution();
+#if DEBUG_TIMER
+    t.stop();
+    printf("recover_solution took: %f ms\n", t.getElapsedTimeInMilliSec());
+    t.reset();
+#endif
+
+#if DEBUG_TIMER_0
+    t2.stop();
+    printf("\n\n*** total time took: %f ms\n\n", t2.getElapsedTimeInMilliSec());
+#endif
     return check_error();
   }
 
@@ -352,6 +498,7 @@
 
   void HykktSolver::setup_parameters()
   {
+    std::cout << "Matrix nnz = " << mat_ds_.nnz_ << "\n";
     if(!allocated_){
       h_x_ = new double[mat_h_.m_]{0.0};
       h_s_ = new double[mat_ds_.m_]{0.0};
@@ -646,18 +793,42 @@
 // Sets up permutation of $H_\gamma$ of eq (6)
   void HykktSolver::setup_permutation()
   {
+#if DEBUG_TIMER_2
+    Timer t;
+#endif
+	 
     hgam_h_j_ = new int[nnz_hgam_];
     hgam_p_j_ = new int[nnz_hgam_];
     
+#if DEBUG_TIMER_2
+    t.start();
+#endif
     allocateVectorOnDevice(nnz_hgam_, &hgam_v_p_);
     allocateMatrixOnDevice(mat_h_.n_,
         nnz_hgam_,
         &hgam_i_p_,
         &hgam_j_p_,
         &hgam_v_p_);
-
+#if DEBUG_TIMER_2
+    t.stop();
+    printf("setup_permutation 1: %f ms\n", t.getElapsedTimeInMilliSec());
+    t.reset();
+#endif	
+	
+#if DEBUG_TIMER_2
+    t.start();
+#endif
     copyVectorToHost(mat_h_.n_ + 1, hgam_i_, hgam_h_i_);
     copyVectorToHost(nnz_hgam_, hgam_j_, hgam_h_j_);
+#if DEBUG_TIMER_2
+    t.stop();
+    printf("setup_permutation 2: %f ms\n", t.getElapsedTimeInMilliSec());
+    t.reset();
+#endif
+
+#if DEBUG_TIMER_2
+    t.start();
+#endif
     pc_ = new PermClass(mat_h_.n_, nnz_hgam_, mat_jc_.nnz_);
     pc_->add_h_info(hgam_h_i_, hgam_h_j_);
     pc_->add_j_info(mat_jc_.csr_rows, 
@@ -666,15 +837,76 @@
         mat_jc_.m_); 
       
     pc_->add_jt_info(jct_i_, jct_j_);  
+#if DEBUG_TIMER_2
+    t.stop();
+    printf("setup_permutation 2.1: %f ms\n", t.getElapsedTimeInMilliSec());
+    t.reset();
+#endif
+
+#if DEBUG_TIMER_2
+    t.start();
+#endif
     pc_->symamd(); 
+#if DEBUG_TIMER_2
+    t.stop();
+    printf("setup_permutation 3: %f ms\n", t.getElapsedTimeInMilliSec());
+    t.reset();
+#endif
+
+#if DEBUG_TIMER_2
+    t.start();
+#endif
     pc_->invert_perm();
+#if DEBUG_TIMER_2
+    t.stop();
+    printf("setup_permutation 4: %f ms\n", t.getElapsedTimeInMilliSec());
+    t.reset();
+#endif
+
+#if DEBUG_TIMER_2
+    t.start();
+#endif
     pc_->vec_map_rc(hgam_p_i_, hgam_p_j_);
+#if DEBUG_TIMER_2
+    t.stop();
+    printf("setup_permutation 5: %f ms\n", t.getElapsedTimeInMilliSec());
+    t.reset();
+#endif
+	
+#if DEBUG_TIMER_2
+    t.start();
+#endif
     pc_->vec_map_c(jc_p_j_);
-   
+#if DEBUG_TIMER_2
+    t.stop();
+    printf("setup_permutation 6: %f ms\n", t.getElapsedTimeInMilliSec());
+    t.reset();
+#endif
+
+#if DEBUG_TIMER_2
+    t.start();
+#endif
     copyVectorToHost(mat_jc_.m_ + 1, jc_t_i_, jct_i_);
     copyVectorToHost(mat_jc_.nnz_, jc_t_j_, jct_j_);
-    pc_->vec_map_r(jct_p_i_, jct_p_j_);
+#if DEBUG_TIMER_2
+    t.stop();
+    printf("setup_permutation 7: %f ms\n", t.getElapsedTimeInMilliSec());
+    t.reset();
+#endif
 
+#if DEBUG_TIMER_2
+    t.start();
+#endif
+    pc_->vec_map_r(jct_p_i_, jct_p_j_);
+#if DEBUG_TIMER_2
+    t.stop();
+    printf("setup_permutation 8: %f ms\n", t.getElapsedTimeInMilliSec());
+    t.reset();
+#endif
+
+#if DEBUG_TIMER_2
+    t.start();
+#endif
     copyVectorToDevice(mat_h_.n_ + 1, hgam_p_i_, hgam_i_p_);
     copyVectorToDevice(nnz_hgam_, hgam_p_j_, hgam_j_p_);
     
@@ -682,6 +914,11 @@
     copyVectorToDevice(mat_jc_.m_ + 1, jct_p_i_, jct_i_p_);
     copyVectorToDevice(mat_jc_.nnz_, jc_p_j_, jc_j_p_);
     copyDeviceVector(mat_jc_.n_ + 1, jc_i_, jc_i_p_);
+#if DEBUG_TIMER_2
+    t.stop();
+    printf("setup_permutation 9: %f ms\n", t.getElapsedTimeInMilliSec());
+    t.reset();
+#endif
   }
 
 // Sets up factorization of $H_\gamma$ of eq (6)
@@ -812,6 +1049,6 @@
       return 0;
     }else{
       printf("Residual test failed\n\n");
-      return 2;//Temporarily ignore residual test failures
+      return 2;
     }
   }
