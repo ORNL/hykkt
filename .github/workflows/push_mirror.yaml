@@ -16,8 +16,8 @@ jobs:
        # Give actions access to some secrets
          with:
             REMOTE: 'https://gitlab.pnnl.gov/exasgd/solvers/hykkt'
-            GIT-USERNAME:  ${{ secrets.GIT_USER}}
-            GIT-PASSWORD:  ${{ secrets.GIT_PASSWORD}}
+            GIT_USERNAME:  ${{ secrets.GIT_USER}}
+            GIT_PASSWORD:  ${{ secrets.GIT_PASSWORD}}
 
        - name: Trigger Pipeline
          run: |
