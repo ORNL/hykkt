@@ -1,6 +1,6 @@
 name: Mirroring
 
-# triggers github actions everytime there is a push or mr
+# triggers a github action everytime there is a push or mr
 on: [push, delete]
 
 jobs:
