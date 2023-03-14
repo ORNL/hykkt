@@ -4,7 +4,7 @@ name: Mirroring
 on: [push, delete]
 
 jobs:
-  # To test on HPC resources must mirror the repo and trigger a pipeline
+  # To test on HPC resources we must first mirror the repo and then trigger a pipeline
   to_pnnl_gitlab:
      # Latest Ubuntu as of Feb 2023 is 20.04
      runs-on: ubuntu-latest
@@ -13,7 +13,7 @@ jobs:
        - uses: actions/checkout@v1
        #  Action for mirroring your commits to a different remote repository
        - uses: yesolutions/mirror-action@master
-            # Give actions access to some secrets
+       # Give actions access to some secrets
          with:
             REMOTE: 'https://gitlab.pnnl.gov/exasgd/solvers/hykkt'
             GIT-USERNAME:  ${{ secrets.GIT_USER}}
