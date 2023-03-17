@@ -10,6 +10,7 @@
 #include <fstream>
 
 #include "amd.h"
+#include "hykkt_defs.hpp"
 
 
 // Creates a class for the permutation of $H_\gamma$ in (6)
@@ -68,41 +69,20 @@ PermClass::PermClass(int n_h, int nnz_h, int nnz_j)
 // Symamd permutation of $H_\gamma$ in (6)
   void PermClass::symamd()
   {
-  
-#if 0
-    std::cout << "Testing SYMAMD" << std::endl;
-    std::cout << n_h_ << "\t" << nnz_h_ << std::endl;
-    
-    std::ofstream zOut1("h_i.txt", std::ios::out | std::ios::binary);
-    zOut1.write(reinterpret_cast<char*>(h_i_), sizeof(int)*(n_h_+1));
-    zOut1.close();
-
-    std::ofstream zOut2("h_j.txt", std::ios::out | std::ios::binary);
-    zOut2.write(reinterpret_cast<char*>(h_j_), sizeof(int)*(nnz_h_));
-    zOut2.close();
-
-    for (int i = 0; i < 10; i++)
-    {
-        std::cout << h_i_[i] << "\t" << h_j_[i] << std::endl;
-    }
-#endif
-
-#if 1
-
+#ifdef HYKKT_USE_AMD
     std::cout << "Using - AMD" << std::endl;
     double Control[AMD_CONTROL], Info[AMD_INFO];
 	
-	amd_defaults(Control);
-	amd_control(Control);
+    amd_defaults(Control);
+    amd_control(Control);
 	
-	int result = amd_order(n_h_, h_i_, h_j_, perm_, Control, Info);
+    int result = amd_order(n_h_, h_i_, h_j_, perm_, Control, Info);
 	
-	if (result != AMD_OK)
-	{
-		printf("AMD failed\n");
-		exit(1);
-	}
-
+    if (result != AMD_OK)
+    {
+       printf("AMD failed\n");
+       exit(1);
+    }
 #else
     cusolverSpHandle_t handle_cusolver = NULL;
     cusparseMatDescr_t descr_a = NULL;
@@ -112,11 +92,6 @@ PermClass::PermClass(int n_h, int nnz_h, int nnz_j)
            descr_a, h_i_, h_j_, perm_));
     checkCudaErrors(cusolverSpDestroy(handle_cusolver));
     deleteDescriptor(descr_a);
-	
-    for (int i = 0; i < 10; i++)
-    {
-        std::cout << perm_[i] << std::endl;
-    }
 #endif
     
     cloneVectorToDevice(n_h_, &perm_, &d_perm_); 

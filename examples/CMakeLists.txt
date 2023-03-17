@@ -131,10 +131,9 @@ add_test(NAME solver2
 add_executable(solver_driver_emulator cuSolver_driver_solver_emulator.cpp)
 target_link_libraries(solver_driver_emulator PUBLIC cuda_libs $<TARGET_OBJECTS:hybrid>)
 
-
 if(NOT AMD_LIBRARY)
-	message(STATUS "Cannot find KLU, disabling cuSOLVER LU module ...")
-	set(HIOP_USE_CUSOLVER_LU OFF CACHE BOOL "Build without cuSOLVER LU module." FORCE)
+  message(STATUS "Cannot find AMD, disabling SuiteSparse AMD module ...")
+  set(HYKKT_USE_AMD OFF CACHE BOOL "Build without cuSOLVER LU module." FORCE)
 else()  
 	message(STATUS "Found AMD")
 	target_link_libraries(perm_driver PUBLIC AMD)
