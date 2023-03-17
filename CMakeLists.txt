@@ -13,7 +13,10 @@ include(CheckLanguage)
 enable_language(CUDA)
 check_language(CUDA)
 
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+
 #find_package(CUDA REQUIRED)
+include(FindAMD)
 
 if(NOT DEFINED CMAKE_CUDA_STANDARD)
   set(CMAKE_CUDA_STANDARD 11)

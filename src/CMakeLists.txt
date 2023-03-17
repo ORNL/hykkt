@@ -22,3 +22,12 @@ set(HYBRID_SRC_CUDA
 set_source_files_properties(${HYBRID_SRC_CUDA} PROPERTIES LANGUAGE CUDA)
 add_library(hybrid SHARED ${HYBRID_SRC} ${HYBRID_SRC_CUDA})
 target_link_libraries(hybrid PRIVATE cuda_libs)
+
+
+if(NOT AMD_LIBRARY)
+	message(STATUS "Cannot find KLU, disabling cuSOLVER LU module ...")
+	set(HIOP_USE_CUSOLVER_LU OFF CACHE BOOL "Build without cuSOLVER LU module." FORCE)
+else()  
+	message(STATUS "Found AMD")
+	target_link_libraries(hybrid PUBLIC AMD)
+endif()
