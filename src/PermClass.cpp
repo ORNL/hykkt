@@ -68,6 +68,8 @@ PermClass::PermClass(int n_h, int nnz_h, int nnz_j)
 // Symamd permutation of $H_\gamma$ in (6)
   void PermClass::symamd()
   {
+  
+#if 0
     std::cout << "Testing SYMAMD" << std::endl;
     std::cout << n_h_ << "\t" << nnz_h_ << std::endl;
     
@@ -83,7 +85,7 @@ PermClass::PermClass(int n_h, int nnz_h, int nnz_j)
     {
         std::cout << h_i_[i] << "\t" << h_j_[i] << std::endl;
     }
-
+#endif
 
 #if 1
 
