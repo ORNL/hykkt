@@ -7,7 +7,7 @@ jobs:
   # To test on HPC resources we must first mirror the repo and then trigger a pipeline
   to_pnnl_gitlab:
      # Latest Ubuntu as of Feb 2023 is 20.04
-     runs-on: ubuntu-latest
+     runs-on: ubuntu-22.04
      steps:
        # Action checks-out your repository under $GITHUB_WORKSPACE, so your workflow can access it.
        - uses: actions/checkout@v1
