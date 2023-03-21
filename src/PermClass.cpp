@@ -9,8 +9,11 @@
 #include <iostream>
 #include <fstream>
 
-#include "amd.h"
 #include "hykkt_defs.hpp"
+#ifdef HYKKT_USE_AMD
+#include "amd.h"
+#endif
+
 
 
 // Creates a class for the permutation of $H_\gamma$ in (6)
