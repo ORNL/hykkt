@@ -1,5 +1,4 @@
-
-.hykkt_script_template: &test_script_definition
+.hykkt_script_template:
  script:
     - |
       set -xv
@@ -14,9 +13,9 @@
       tail -f output &
       tailpid=$!
       sinfo -l | grep $SLURM_Q
-
-      #test build script 
+      #test build script
       jobid=$(sbatch --export=ALL -A EXASGD --gres=gpu:1 --ntasks=1 -p $SLURM_Q -o output -e output -t 60:00 $WORKDIR/buildsystem/build.sh $SCRIPT_ARGS)
+      
       export jobid=$(echo $jobid | cut -f4 -d' ')
       echo $jobid > "$WORKDIR/jobid"
       res=1
@@ -36,97 +35,83 @@
       exit $res
 
 
-.pnnl_tags_template: &pnnl_tags_definition
+.pnnl_tags_template:
   tags:
     - k8s
     - ikp
     - exasgd
     - marianas
+    - deception
 
-.pnnl-rules: &pnnl-rules
-  rules:
-    - &pnnl-rule
-      if: '$CI_PROJECT_ROOT_NAMESPACE == "exasgd"' # Will only apply to PNNL
-
-.pnnl-nonhpc-tags: &pnnl-nonhpc-definition
+.pnnl_nonhpc_tags:
   tags:
     - k8s
     - ikp
     - exasgd
     - basic
 
-variables:
-  GIT_SUBMODULE_STRATEGY: recursive
+hykkt-test-deception:
+  stage: test
+  needs: []
+  variables:
+    SLURM_Q: "a100_shared"
+    MY_CLUSTER: "deception"
+  extends:
+    - .pnnl_tags_template
+    - .hykkt_script_template
 
-stages:
-  - .pre
-  - build
-  - test
+hykkt-test-newell:
+  stage: test
+  needs: []
+  variables:
+    SLURM_Q: "newell_shared"
+    MY_CLUSTER: "newell"
+  extends:
+  - .pnnl_tags_template
+  - .hykkt_script_template
 
-# Include PNNL GitLab stdlib
-include:
-  - remote: 'https://raw.githubusercontent.com/pnnl-miscscripts/gitlab-lib/v1/gitlab-lib.yaml'
 
-.pnnl_tags_template: &pnnl_tags_definition
-  tags:
-    - k8s
-    - ikp 
-    - exasgd
-    - marianas
-
-.pnnl-rules: &pnnl-rules
-  rules:
-    - &pnnl-rule
-      if: '$CI_PROJECT_ROOT_NAMESPACE == "exasgd"' # Will only apply to PNNL
-      
 SVC Account Cleanup:
   stage: .pre
-  <<: *pnnl-rules
-  <<: *pnnl_tags_definition
+  extends:
+   - .pnnl_nonhpc_tags
   script:
     - export WORKDIR="$HOME/gitlab/"
     # clears directory of files more than 1 day/1440 minutes old
     - find $WORKDIR -D -type d -mindepth 1 -mmin +1440 -prune -print -exec rm -rf {} \; || true
-    - ls -hal $WORKDIR             
+    - ls -hal $WORKDIR    
 
-C++ Lint:
-  image: ubuntu:20.04
-  stage: build
-  allow_failure: true
+.report-status:
+  image: mrnonz/alpine-git-curl:alpine3.16
   variables:
-  # Don't clone submodules for jobs that don't need submodules
-    GIT_SUBMODULE_STRATEGY: none
+    GIT_STRATEGY: none
+    STATUS_PROJECT: ORNL/hykkt
+    STATUS_NAME: PNNL_CI
   extends:
-    - .pnnl-nonhpc-tags
-    - .pnnl-rules
+  - .pnnl_nonhpc_tags
   script:
-    |
-    set -x
-    apt update && apt install -y clang-format-11 
-    find ./src -name "*.[hc]pp" -exec clang-format-11 --style=file -n -Werror -ferror-limit=1 {} \+; 
-    exit $?
-                                       
+    - |
+      set -x
+      curl -L \
+      -X POST \
+      -H @${GITHUB_CURL_HEADER}\
+       https://api.github.com/repos/${STATUS_PROJECT}/statuses/${CI_COMMIT_SHA} \
+       -d "{\"state\":\"${CI_JOB_NAME}\",\"target_url\":\"${CI_PIPELINE_URL}\",\"context\":\"${STATUS_NAME}\"}"
+  environment:
+      name: reporting-gitlab
+pending:
+  extends:
+    - .report-status
+  stage: .pre
 
-hykkt-test-deception:
-  stage: test
-  variables:
-    SLURM_Q: "a100_shared"
-    MY_CLUSTER: "deception"
-    OUTPUT_SUFFIX: "_build"
-    SCRIPT_ARGS: " --build-only --job=gcc-cuda "
-    WORKDIR_SUFFIX: "x86_64-gcc-cuda-build"
-  <<: *pnnl-rules
-  <<: *pnnl_tags_definition
-  <<: *test_script_definition
+success:
+  extends:
+    - .report-status
+  stage: .post
 
-hykkt-test-newell:
-  stage: test
-  variables:
-    SLURM_Q: "newell_shared"
-    MY_CLUSTER: "newell"
-    OUTPUT_SUFFIX: "_test"
-    SCRIPT_ARGS: " --test-only --job=gcc-cuda "
-    WORKDIR_SUFFIX: "ppc64le-gcc-cuda-build"
-  <<: *pnnl-rules
-  <<: *pnnl_tags_definition
-  <<: *test_script_definition
+failure:
+  stage: .post
+  extends:
+    - .report-status
+  rules:
+    - when: on_failure
