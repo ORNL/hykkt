@@ -8,7 +8,7 @@ problem, for example optimal power flow, which uses hardware accelerators (GPUs)
 
 The HyKKT package contains a linear solver tailored for Karush Kuhn Tucker (KKT) linear systems and
 deployment on hardware accelerator hardware such as GPUs. The solver requires
-all blocks of the $`4\times 4`$ block system: 
+all blocks of the $4\times 4$ block system: 
 
 ```math
 \begin{bmatrix}
@@ -53,16 +53,16 @@ make test
 The executable `hybrid_solver` provides an example driver for HyKKT solver
 This executable can be run with an appropriate batch script with 10 arguments
 
-1. `h_file_name` - contains the sparse symmetric $`H+D_x`$ matrix block in matrix market format
-2. `ds_file_name` - contains the diagonal $`D_s`$ matrix block in matrix market format
-3. `jc_file_name` - contains the sparse $`J_c`$ matrix block in matrix market format
-4. `jd_file_name` - contains the sparse $`J_d`$ matrix block in matrix market format
-5. `rx_file_name` - contains the $`r_{x}`$ vector block in matrix market format
-6. `rs_file_name` - contains the $`r_{s}`$ vector block in matrix market format
-7. `ryc_file_name` - contains the $`r_{yc}`$ vector block in matrix market format
-8. `ryd_file_name` - contains the $`r_{yd}`$ vector block in matrix market format
+1. `h_file_name` - contains the sparse symmetric $H+D_x$ matrix block in matrix market format
+2. `ds_file_name` - contains the diagonal $D_s$ matrix block in matrix market format
+3. `jc_file_name` - contains the sparse $J_c$ matrix block in matrix market format
+4. `jd_file_name` - contains the sparse $J_d$ matrix block in matrix market format
+5. `rx_file_name` - contains the $r_{x}$ vector block in matrix market format
+6. `rs_file_name` - contains the $r_{s}$ vector block in matrix market format
+7. `ryc_file_name` - contains the $r_{yc}$ vector block in matrix market format
+8. `ryd_file_name` - contains the $r_{yd}$ vector block in matrix market format
 9. `skip` - number of header lines to ignore in the .mtx matrix files
-10. `gamma` - constant to make $`H_\gamma= H + D_x + J_d^T D_s J_d + \gamma J_c^T J_c`$ more positive definite (typically $`10^4-10^6`$)
+10. `gamma` - constant to make $H_\gamma= H + D_x + J_d^T D_s J_d + \gamma J_c^T J_c$ more positive definite (typically $10^4-10^6$)
 
 In the case of solution of multiple systems, the first 8 arguments are repated for the next matrix in the series. Both matrices must have the same sparsity structure.
 
