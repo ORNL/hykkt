@@ -15,7 +15,7 @@ jobs:
        - uses: yesolutions/mirror-action@master
        # Give actions access to some secrets
          with:
-            GIT_PUSH_ARGS: '--push-option=ci.skip --tags --force'
+            GIT_PUSH_ARGS: '--tags --force'
             REMOTE: 'https://gitlab.pnnl.gov/exasgd/solvers/hykkt'
             GIT_USERNAME:  ${{ secrets.GIT_USER}}
             GIT_PASSWORD:  ${{ secrets.GIT_PASSWORD}}
@@ -23,6 +23,9 @@ jobs:
        - name: Trigger Pipeline
          run: |
           response=$(curl -X POST -F token=${{ secrets.PNNL_PIPELINE_TRIGGER }} -F ref=${BRANCH_NAME} https://gitlab.pnnl.gov/api/v4/projects/1166/trigger/pipeline)
+          sudo apt install jq
+          pipeline_id=$(echo $response | jq '.id' | sed 's/"//g')
+          echo "PIPELINE_ID=${pipeline_id}" >> $GITHUB_ENV
           exit_code=$?
           exit $exit_code
 
