@@ -78,10 +78,10 @@ To autofix the formatting of the code base use:
 `make clangformat-fix`
 
 ## Support
-To receive support or ask a question, submit an issue on [Gitlab](https://gitlab.pnnl.gov/exasgd/solvers/hykkt/-/issues).
+To receive support or ask a question, submit an [issue](https://github.com/ORNL/hykkt/issues).
 
 ## Contributing
-Please see [the developer guidelines](https://gitlab.pnnl.gov/exasgd/solvers/hykkt/-/blob/README/README_hiop_developers.md) before attempting to contribute.
+Please see [the developer guidelines](CONTRIBUTE.md) before attempting to contribute.
 
 ## Authors
 * Shaked Regev
@@ -92,7 +92,7 @@ Please see [the developer guidelines](https://gitlab.pnnl.gov/exasgd/solvers/hyk
 * Slaven Peles 
 
 ## Acknowledgement
-This package is developed as a part of [ExaSGD](https://www.exascaleproject.org/research-project/exasgd/) project under the [Exascale computing project](https://www.exascaleproject.org/).
+This package is developed as a part of [ExaSGD](https://www.exascaleproject.org/research-project/exasgd/) subproject of the [Exascale Computing Project](https://www.exascaleproject.org/).
 
 ## License
 Copyright &copy; 2023, UT-Battelle, LLC, and Battelle Memorial Institute.
