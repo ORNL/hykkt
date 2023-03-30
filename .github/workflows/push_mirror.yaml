@@ -15,7 +15,6 @@ jobs:
        - uses: yesolutions/mirror-action@master
        # Give actions access to some secrets
          with:
-            PUSH_ALL_REFS: "false"
             GIT_PUSH_ARGS: '--push-option=ci.skip --tags --force'
             REMOTE: 'https://gitlab.pnnl.gov/exasgd/solvers/hykkt'
             GIT_USERNAME:  ${{ secrets.GIT_USER}}
