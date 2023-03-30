@@ -6,10 +6,10 @@ by the HyKKT solver
 
 ## CholeskyClass
 This class computes and stores the symbolic and numeric factorization of 
-$`H_\gamma`$ (or $`H_\delta = H_\gamma + \delta_1 I`$ when regularized). The 
-factorization is then used to solve systems of the form $`H_\gamma x = b`$ such
+$H_\gamma$ (or $H_\delta = H_\gamma + \delta_1 I$ when regularized). The 
+factorization is then used to solve systems of the form $H_\gamma x = b$ such
 as the inner solve of the Schur Complement conjugate gradient solve or the 
-system $`H_\gamma \Delta x = \hat{r_x} - J_c^T \Delta y_c`$. The numeric 
+system $H_\gamma \Delta x = \hat{r_x} - J_c^T \Delta y_c$. The numeric 
 factorization is reused for all these systems, such that only a triangular 
 solve is performed each time a system is solved. The symbolic factorization is
 reused between iterations of the optimization solver, since the sparsity 
@@ -59,7 +59,7 @@ This class computes and stores the permutation for the system
 \end{bmatrix}
 ```
 The permutation is calculated based on minimizing the fill-in of the Cholesky
-factorization of $`H_\gamma`$ with symmetric approximate minimum degree. The 
+factorization of $H_\gamma$ with symmetric approximate minimum degree. The 
 equivalent permutations to the row and column arrays of the sparse blocks are
 calculated and the column permutation is stored to use on the value array. 
 These actions are performed on the host and only during the first iteration of 
@@ -83,7 +83,7 @@ This class performs Ruiz scaling of the system
   \hat{r}_x \\ r_c 
 \end{bmatrix}
 ```
-on the device. This is done to ensure all entries in the matrix are $`O(1)`$ to
+on the device. This is done to ensure all entries in the matrix are $O(1)$ to
 aid in parameter selection portability between different problems.
 
 ## SchurComplementConjugateGradient
@@ -91,9 +91,9 @@ This class calculates the solution to the system
 ```math
 S\Delta y_c = J_c H_\gamma^{-1} \hat{r}_x-r_{c},
 ```
-where $`S = J_c H_\gamma^{-1} J_c^T`$, via conjugate gradient. $`S`$ is applied
-by multiplying by $`J_c^T`$, solving a system with $`H_\gamma`$ (using its
-precomputed Cholesky factorization), and finally multiplying by $`J_c`$. 
+where $S = J_c H_\gamma^{-1} J_c^T$, via conjugate gradient. $S$ is applied
+by multiplying by $J_c^T$, solving a system with $H_\gamma$ (using its
+precomputed Cholesky factorization), and finally multiplying by $J_c$. 
 Operations are performed on the device.
 
 ## SpgemmClass
