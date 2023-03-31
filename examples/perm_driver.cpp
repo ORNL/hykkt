@@ -7,7 +7,7 @@
   *@brief Driver demonstrates use of Permutation class functions
 */
 
-int main(int argc, char* argv[])
+int main(int /* argc */, char** /* argv */)
 {
   int n = 4;
   int m = 4;
@@ -23,8 +23,6 @@ int main(int argc, char* argv[])
   int b_i[5];
   int b_j[9];
   int perm[4] = {2, 0, 3, 1};
-  int rev_perm[4];
-  int perm_map[9];
   int flagrc = 0;
   int flagr = 0;
   int flagc = 0;
@@ -108,5 +106,7 @@ int main(int argc, char* argv[])
   else{
     printf("C permute passed\n");
   }
+  printf("Infinte loop start for testing CI");
+
   return flagrc + flagr + flagc;
 }

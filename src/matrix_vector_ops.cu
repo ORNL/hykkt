@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include "cusparse_params.hpp"
 
+#include "cuda_check_errors.hpp"
+
+
 void SpMV_product_reuse(cusparseHandle_t handle,
     double alpha,
     cusparseSpMatDescr_t a_desc_sp,

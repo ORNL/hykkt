@@ -1,30 +1,32 @@
 #include <stdio.h>
 #include "SchurComplementConjugateGradient.hpp"
-#include "matrix_vector_ops_cuda.hpp"
+#include "matrix_vector_ops.hpp"
 #include "vector_vector_ops.hpp"
 #include "cuda_memory_utils.hpp"
 #include "constants.hpp"
+#include "cusparse_utils.hpp"
+#include "CholeskyClass.hpp"
 
   // parametrized constructor
-  SchurComplementConjugateGradient::SchurComplementConjugateGradient(
-      cusparseSpMatDescr_t jc_desc, 
-      cusparseSpMatDescr_t jct_desc,
-      double* x0, 
-      double* b, 
-      int n, 
-      int m, 
-      CholeskyClass* cc, 
-      cusparseHandle_t handle, 
-      cublasHandle_t handle_cublas) 
-    :jc_desc_(jc_desc), 
-     jct_desc_(jct_desc), 
-     x0_(x0), 
-     b_(b), 
-     n_(n), 
-     m_(m),
-     cc_(cc), 
-     handle_(handle), 
-     handle_cublas_(handle_cublas)
+  // Conjugate Gradient for solving eq (7)
+  SchurComplementConjugateGradient::SchurComplementConjugateGradient(cusparseSpMatDescr_t jc_desc, 
+                                                                     cusparseSpMatDescr_t jct_desc,
+                                                                     double* x0, 
+                                                                     double* b, 
+                                                                     int n, 
+                                                                     int m, 
+                                                                     CholeskyClass* cc, 
+                                                                     cusparseHandle_t handle, 
+                                                                     cublasHandle_t handle_cublas)
+    : jc_desc_(jc_desc), 
+      jct_desc_(jct_desc), 
+      x0_(x0), 
+      b_(b),
+      n_(n), 
+      m_(m),
+      cc_(cc),
+      handle_(handle), 
+      handle_cublas_(handle_cublas)
   {
     allocate_workspace();
   }
@@ -46,7 +48,21 @@
     
     delete [] ycp_;
   };
-  
+
+
+  void SchurComplementConjugateGradient::update(double* x0, 
+      double* b, 
+      CholeskyClass* cc, 
+      cusparseSpMatDescr_t jc_desc, 
+      cusparseSpMatDescr_t jct_desc)
+  {
+    x0_ = x0;
+    b_ = b;
+    cc_ = cc;
+    jc_desc_ = jc_desc;
+    jct_desc_ = jct_desc;
+  }
+
   // solver API
   void SchurComplementConjugateGradient::allocate_workspace()
   {

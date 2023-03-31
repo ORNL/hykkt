@@ -5,6 +5,7 @@
 #include <RuizClass.hpp>
 #include <MMatrix.hpp>
 #include <cuda_memory_utils.hpp>
+#include <cusparse_utils.hpp>
 
 /*
  * @brief Initializes matrices with testing values to demonstrate Ruiz scaling 
@@ -28,18 +29,18 @@ void initializeTestMatrices(MMatrix& mat_a, MMatrix& mat_h, double* h_rhs)
   mat_a.csr_rows[0] = 0;
   for(i = 0; i < (mat_a.n_); i++){
     if(i){
-      mat_a.coo_vals[i * 2 - 1] = i + 1;
-      mat_a.coo_cols[i * 2 - 1] = i - 1;
+      mat_a.csr_vals[i * 2 - 1] = i + 1;
+      mat_a.csr_cols[i * 2 - 1] = i - 1;
       mat_a.csr_rows[i] = i * 2 - 1;
     }
-    mat_a.coo_vals[i * 2] = 0;
-    mat_a.coo_cols[i * 2] = i;
+    mat_a.csr_vals[i * 2] = 0;
+    mat_a.csr_cols[i * 2] = i;
   }
   mat_a.csr_rows[i] = mat_a.nnz_;
   for(i = 0; i < (mat_h.n_); i++){
-    mat_h.coo_vals[i] = sqrt(n);
     mat_h.csr_rows[i] = i;
-    mat_h.coo_cols[i] = i;
+    mat_h.csr_cols[i] = i;
+    mat_h.csr_vals[i] = sqrt(n);
   }
   mat_h.csr_rows[i] = mat_h.nnz_;
   for(i = 0; i < totn; i++){
@@ -47,11 +48,10 @@ void initializeTestMatrices(MMatrix& mat_a, MMatrix& mat_h, double* h_rhs)
   }
 }
 
-/*
-  * @brief Driver demonstrates the use of RuizClass for Ruiz scaling
-*/
-
-int main(int argc, char *argv[])
+/** 
+ * @brief Driver demonstrates the use of RuizClass for Ruiz scaling
+ */
+int main(int /* argc */, char** /* argv */)
 {
   const double tol = 1e-8;
   // Size of matrix block  
@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
   rz->ruiz_scale();
   max_d = rz->get_max_d();
 
-// Copy data back to the host
+  // Copy data back to the host
   copyMatrixToHost(a_i, a_j, a_v, mat_a);
   copyMatrixToHost(h_i, h_j, h_v, mat_h);
   copyMatrixToHost(at_i, at_j, at_v, mat_at);
@@ -144,40 +144,49 @@ int main(int argc, char *argv[])
 
   // Test to compare with MATLAB
   int fails = 0;
-  if (fabs(mat_h.coo_vals[n / 2 - 1] - 0.062378167641326) > tol){
+  if(fabs(mat_h.csr_vals[n / 2 - 1] - 0.062378167641326) > tol)
+  {
     fails++;
     printf("H not scaled correctly H[n/2-1][n/2-1] = %32.32g\n",
-           mat_h.coo_vals[(mat_h.n_) / 2 - 1]);
+           mat_h.csr_vals[(mat_h.n_) / 2 - 1]);
   }
-  if (fabs(mat_a.coo_vals[(mat_a.nnz_) - 1] - 0.005524271728020) > tol){
+  if(fabs(mat_a.csr_vals[(mat_a.nnz_) - 1] - 0.005524271728020) > tol)
+  {
     fails++;
     printf("A not scaled correctly A[n-1][n-1] = %32.32g\n",
-           mat_a.coo_vals[(mat_a.nnz_) - 1]);
+           mat_a.csr_vals[(mat_a.nnz_) - 1]);
   }
-  if (fabs(mat_at.coo_vals[1] - 0.5) > tol){
+  if(fabs(mat_at.csr_vals[1] - 0.5) > tol)
+  {
     fails++;
     printf("mat_at not scaled correctly mat_at[0][1] = %32.32g \n",
-           mat_at.coo_vals[1]);
+           mat_at.csr_vals[1]);
   }
-  if (fabs(h_rhs[n / 2 - 1] - 0.044151078568835) > tol){
+  if(fabs(h_rhs[n / 2 - 1] - 0.044151078568835) > tol)
+  {
     fails++;
     printf("rhs not scaled correctly h_rhs[n/2-1]= %32.32g\n", 
            h_rhs[n / 2 - 1]);
   }
-  if (fabs(h_rhs[3 * n / 2 - 1] - 0.044194173824159) > tol){
+  if(fabs(h_rhs[3 * n / 2 - 1] - 0.044194173824159) > tol)
+  {
     fails++;
     printf("rhs not scaled correctly h_rhs[3*n/2-1]= %32.32g\n", 
            h_rhs[3 * n / 2 - 1]);
   }
-  if (fabs(max_h[32] - 0.171498585142) > tol){
+  if(fabs(max_h[32] - 0.171498585142) > tol)
+  {
     fails++;
     printf("max_d not scaled correctly max_d[32]= %32.32g\n", 
            max_h[32]);
   }
 
-  if (fails==0){
+  if(fails==0)
+  {
     printf("All tests passed\n");
-  } else{
+  } 
+  else
+  {
     printf("%d tests failed\n",fails);
   }
   

@@ -1,9 +1,9 @@
 #include "RuizClass.hpp"
-#include <algorithm>
 #include "matrix_vector_ops.hpp"
 #include "cuda_memory_utils.hpp"
 #include "constants.hpp"
 
+// Ruiz class for scaling (4)
   RuizClass::RuizClass(int ruiz_its, int n, int totn) 
 : ruiz_its_(ruiz_its),
   n_(n),

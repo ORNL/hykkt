@@ -13,9 +13,9 @@ public:
 /*
  * @brief loads CSR format of matrix H
  *
- * @param h_v - nonzero values for CSR format of matrix H
- * h_i - row offsets for CSR format of H
- * h_j - column pointers for CSR format of H
+ * @param[in] h_v - nonzero values for CSR format of matrix H
+ * @param[in] h_i - row offsets for CSR format of H
+ * @param[in] h_j - column pointers for CSR format of H
  *
  * @post h_v_ set to h_v, h_i_ set to h_i, h_j_ set to h_j
 */
@@ -24,9 +24,9 @@ public:
 /*
  * @brief loads CSR format of matrix J tranpose
  *
- * @param jt_v - nonzero values for CSR format of matrix J tranpose 
- * jt_i - row offsets for CSR format of J tranpose 
- * jt_j - column pointers for CSR format of J tranpose
+ * @param[in] jt_v - nonzero values for CSR format of matrix J tranpose 
+ * @param[in] jt_i - row offsets for CSR format of J tranpose 
+ * @param[in] jt_j - column pointers for CSR format of J tranpose
  *
  * @post jt_v_ set to jt_v, jt_i_ set to jt_i, jt_j_ set to jt_j
 */
@@ -35,9 +35,9 @@ public:
 /*
  * @brief loads CSR format of matrix J
  *
- * @param j_v - nonzero values for CSR format of matrix J
- * j_i - row offsets for CSR format of J
- * j_j - column pointers for CSR format of J
+ * @param[in] j_v - nonzero values for CSR format of matrix J
+ * @param[in] j_i - row offsets for CSR format of J
+ * @param[in] j_j - column pointers for CSR format of J
  *
  * @post j_v_ set to j_v, j_i_ set to j_i, j_j_ set to j_j
 */
@@ -46,8 +46,8 @@ public:
 /*
  * @brief Set values of right hand side of 2x2 system
  *
- * @param rhs1 - first vector of rhs
- * rhs2 - second vector of rhs
+ * @param[in] rhs1 - first vector of rhs
+ * @param[in] rhs2 - second vector of rhs
  *
  * @post rhs1_ set to rhs1, rhs2_ set to rhs2
 */
@@ -65,12 +65,14 @@ public:
  *      format of Jt, the right hand side of the 2x2 system, a scaling vector 
  *      of size totn_, and a scaling vector of size totn containing all 1s
  *
- * @post max_d is now the aggregated ruiz scaling of the 2x2 system
+ * @post max_d_ is now the aggregated ruiz scaling of the 2x2 system
 */
   void ruiz_scale();
 
 /*
  * @brief returns scaling pointer
+ * 
+ * @param[out] - max_d_ the aggregated scaling vector
  *
  * @return max_d_ - the aggregated scaling vector after iterations of scaling
 */

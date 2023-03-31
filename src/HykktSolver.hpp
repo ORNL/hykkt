@@ -1,27 +1,18 @@
 #pragma once
 
-#include <algorithm>
-#include <unistd.h>
-#include <cstdlib>
-#include <assert.h>
-#include <ctype.h>
-#include <string.h>
-#include <iostream>
-#include <memory>
-#include <string>
-#include "permcheck.hpp"
-#include "input_functions.hpp"
-#include "SchurComplementConjugateGradient.hpp"
-#include "RuizClass.hpp"
-#include "matrix_vector_ops_cuda.hpp"
-#include "vector_vector_ops.hpp"
-#include "SpgemmClass.hpp"
+#include <cusparse.h>
+#include <cublas.h>
+
+#include <cuda_memory_utils.hpp>
 #include "MMatrix.hpp"
-#include "CholeskyClass.hpp"
-#include "PermClass.hpp"
-#include "SpgemmClass.hpp"
-#include "constants.hpp"
-#include "cuda_memory_utils.hpp"
+
+// Forward declarations 
+class RuizClass;
+class SpgemmClass;
+class PermClass;
+class CholeskyClass;
+class SchurComplementConjugateGradient;
+
 
 class HykktSolver
 {
@@ -56,10 +47,79 @@ public:
       char const* const ryd_file,
       int skip_lines);
 
+  /**
+   * @brief Sets Hessian matrix block in to user provided values.
+   * It will only set pointers to user provided data; it is user's
+   * responsibility to supply and later delete that data.
+   * 
+   * @param[in] rowptrs pointer to row starts
+   * @param[in] colidx  pointer to column indices
+   * @param[in] vals    pointer to matrix values
+   * @param[in] n   number of matrix rows
+   * @param[in] m   number of matrix columns
+   * @param[in] nnz number of nonzeros
+   */
+  void set_H(int* rowptrs, int* colidx, double* vals, int n, int m, int nnz);
+
+  /**
+   * @brief Sets slack variables derivatives matrix block in to user
+   * provided values. It will only set pointers to user provided data;
+   * it is user's responsibility to supply and later delete that data.
+   * 
+   * @param[in] rowptrs pointer to row starts
+   * @param[in] colidx  pointer to column indices
+   * @param[in] vals    pointer to matrix values
+   * @param[in] n   number of matrix rows
+   * @param[in] m   number of matrix columns
+   * @param[in] nnz number of nonzeros
+   */
+  void set_Ds(int* rowptrs, int* colidx, double* vals, int n, int m, int nnz);
+
+  /**
+   * @brief Sets equality constraints Jacobian block in to user provided
+   * values. It will only set pointers to user provided data; it is user's
+   * responsibility to supply and later delete that data.
+   * 
+   * @param[in] rowptrs pointer to row starts
+   * @param[in] colidx  pointer to column indices
+   * @param[in] vals    pointer to matrix values
+   * @param[in] n   number of matrix rows
+   * @param[in] m   number of matrix columns
+   * @param[in] nnz number of nonzeros
+   */
+  void set_Jc(int* rowptrs, int* colidx, double* vals, int n, int m, int nnz);
+
+  /**
+   * @brief Sets inequality constraints Jacobian block in to user provided
+   * values. It will only set pointers to user provided data; it is user's
+   * responsibility to supply and later delete that data.
+   * 
+   * @param[in] rowptrs pointer to row starts
+   * @param[in] colidx  pointer to column indices
+   * @param[in] vals    pointer to matrix values
+   * @param[in] n   number of matrix rows
+   * @param[in] m   number of matrix columns
+   * @param[in] nnz number of nonzeros
+   */
+  void set_Jd(int* rowptrs, int* colidx, double* vals, int n, int m, int nnz);
+
+  void set_rx(double*  vals, int n);
+
+  void set_rs(double*  vals, int n);
+
+  void set_ry(double*  vals, int n);
+
+  void set_ryd(double*  vals, int n);
+
+  void set_x_host(double* vals, int n);
+  void set_s_host(double* vals, int n);
+  void set_y_host(double* vals, int n);
+  void set_yd_host(double* vals, int n);
+
   /*
    * @brief sets gamma value for hykkt solver
    * 
-   * @param gamma - new value for gamma_
+   * @param[in] gamma - new value for gamma_
    *
    * @post gamma_ is now equal to gamma
   */
@@ -69,6 +129,8 @@ public:
    * @brief uses Hykkt algorithm to solve KKT system
    *
    * @pre matrix files have been loaded into the solver
+   *
+   * @param[out] - Boolean that indicates whether the solve was successful
    *
    * @post solution to given KKT system is computed using Hykkt
   */
@@ -100,7 +162,7 @@ private:
    * @brief computes ruiz scaling so we can judge the size of
    *        gamma and delta min relative to H gammma system
    *
-   * @pre matrices and rz_ properly allocated using setup method
+   * @pre matrices and ri_sssssssss allocated using setup method
    *      for ruiz_scaling 
    *
    * @post max_d_ now contains the aggregated Ruiz scaling
@@ -117,76 +179,189 @@ private:
   */
   void compute_spgemm_hgamma();
   
-  /*
-   * @brief computes permutations for H, J, J transpose matrices
+  /* 
+   * @brief Applies permutations to values of Hgam, Jc, Jc^T matrices 
+            and d_rx_hat vector
    *
-   * @pre permutation matrix computed using setup method for
-   *      permutation
+   * @pre Permutation maps for the matrices and vector
+   *      computed using setup_permutation()
+   *      
    *
    * @post hgam_v_p_, jc_v_p_, jct_v_p_, d_rxp_ are now permuted
-   *       values of hgam_v_, jc-v_, jc_t_v_, d_rx_hat_
+   *       values of hgam_v_, jc_v_, jc_t_v_, d_rx_hat_
   */
   void apply_permutation();
   
-  /*
-   * @brief sparse Cholesky factorization on permuted (1,1) block   *        so that LDLt does not have to be used
+  /**
+   * @brief sparse Cholesky factorization on permuted (1,1) block
+   *        so that LDLt does not have to be used
    *
    * @pre symbolic analysis already computed using setup method
    *      for hgamma_factorization
    *
-   * @post hgamma inner factorization is computed, thus updating
+   * @post hgamma numerical factorization is computed, thus updating
    *       hgam_v_p_
-  */
+   */
   void compute_hgamma_factorization();
   
-  /*
+  /**
    * @brief iterative solver on the Schur complement
    *
    * @pre matrices and sccg_ properly allocated using setup
    *      method for conjugate_gradient
    *
    * @post converged to approximate solution of block system
-  */
+   */
   void compute_conjugate_gradient();
   
-  /*
+  /**
    * @brief recovers solution from hykkt solver
    *
    * @pre execute functions setup and computed correctly
    *
    * @post d_rx_, d_rs_, d_ryc_, and d_ryd_ contain the solution
-           on the device
-  */
+   *       on the device
+   */
   void recover_solution();
   
-  /*
+  /**
    * @brief calculates the error of Ax - b
    *
    * @pre solution properly recovered using recover_solution()
-   * @return int - 0 if error small enough, 1 if hykkt failed
+   * 
+   * @param[out] Boolean - 0 if error small enough, 1 if hykkt failed
    *
    * @post solver status = success if error is smaller than
-           optimization solver error
-  */
+   *       optimization solver error
+   */
   int check_error();
   
-  /*
+  /**
    * @brief allocates and initiates variables for KKT system
    *
    * @pre jd_flag_ determines if variables used for Spgemm Htil
-          should be initiated
+   *      should be initiated
    *
    * @post all variables used for hykkt are allocated for; jd
-           related variables are not initiated if JD nnz == 0
-  */
+   *       related variables are not initiated if JD nnz == 0
+   */
   void setup_parameters();
+  
+   /*
+   * @brief Allocates memory for product and sum required to form Htilde matrix
+   *        
+   * 
+   * @pre H, Jd^T, Jd-scaled matrices are properly allocated 
+   *      
+   *
+   * @post sc_til_ - the structure for the spgemm is properly allocated
+   *       and compute_spgemm_htil() can now be called.
+   *
+  */
   void setup_spgemm_htil();
+  
+  /*
+   * @brief Copies the matrices Jc and Jc^T which are later overwritten so
+   *        the solution can be checked
+   *
+   * @pre Matrices Jc and Jc^T are properly allocated and initialized.
+   *
+   * @post Jc and Jc^T are copied
+   *
+  */
+
   void setup_solution_check();
+ 
+   /*
+   * @brief Sets up the Ruiz scaling class rz_
+   *        
+   *
+   * @pre matrices H and Jc are properly allocated
+   *      
+   *
+   * @post max_d_ and rz_ are now allocated and 
+           compute_ruiz_scaling() can be called
+   *
+  */
+ 
   void setup_ruiz_scaling();
+  
+   /*
+   * @brief Allocates memory for product and sum required to form Hgamma matrix
+   *        
+   * 
+   * @pre Htilde, Jc^T, Jc matrices are properly allocated 
+   *      
+   *
+   * @post sc_gamma_ - the structure for the spgemm is properly allocated
+   *       and compute_spgemm_hgamma() can now be called.
+   *
+  */
   void setup_spgemm_hgamma();
+
+   /*
+   * @brief Calculates permutation maps for Hgam, Jc, Jc^T matrices 
+   *        and d_rx_hat vector and applies them to the rows and columns
+   *
+   * @pre Matrices Hgam, Jc, and Jc^T are allocated and initialized
+   *      
+   *
+   * @post hgam_i_p_, hgam_j_p_, jc_i_p_, jc_j_p_, jct_i_p_, jct_j_p_ are now 
+   *       permuted hgam_i_, hgam_j_, jc_i_, jc_j_, jct_i_, jct_j_
+   *       perm_h_v, perm_j_v, perm_jt_v, perm_v hold permutations for
+   *       h, j, jt, d_rx_hat respectively.
+   *
+  */
+ 
   void setup_permutation();
+  
+  /*
+   * @brief Computes the symbolic factorization of the permuted Hgamma
+   *
+   * @pre Hgamma is calculated and permuted correctly
+   *
+   * @post Hgamma symbolic factorization is computed
+   *       
+  */
   void setup_hgamma_factorization();
+  
+  /*
+   * @brief Sets up the right hand side and allocates memory necessary for
+   *        conjugate gradient on the Schur complement
+   *
+   * @pre Cholesky factorization on Hgamma succeeded
+   *
+   * @post Class sccg is set up and compute_conjugate_gradient() can be called.
+  */
   void setup_conjugate_gradient();
+
+  /**
+   * @brief Set pointers in `mat` to the input data arrays.
+   * 
+   * @param[out] mat - matrix container 
+   * @param[in]  rowptrs - integer array with row starts
+   * @param[in]  colidx  - integer array with column indices
+   * @param[in]  vals    - double array with matrix values
+   * @param[in]  n   - number of rows in the input matrix
+   * @param[in]  m   - number of columns in the input matrix
+   * @param[in]  nnz - number of nonzeros in the input matrix
+   */
+  void set_matrix_block(MMatrix& mat,
+                        int* rowptrs,
+                        int* colidx,
+                        double* vals,
+                        int n,
+                        int m,
+                        int nnz);
+
+  /**
+   * @brief Set pointer `*vec` to `vals`
+   * 
+   * @param[out] vec  - pointer to pointer to an array of doubles
+   * @param[in]  vals - pointer to an array of doubles
+   * @param[in]  n    - number of input vector elements
+   */
+  void set_vector_block(double** vec, double* vals, int n);
 
   //constants
   const int ruiz_its_ = 2;
@@ -203,7 +378,7 @@ private:
   
   //status of if solver is correctly used with matrices of same
   //nonzero structure
-  bool status = true;
+  bool status_ = true;
 
   cusparseHandle_t handle_cusparse_; //handle to cuSPARSE library
   cublasHandle_t handle_cublas_; //handle to cuBLAS library
@@ -236,7 +411,7 @@ private:
   cusparseDnVecDescr_t vec_d_yd_;
   cusparseDnVecDescr_t vec_d_ryc_;
   
-  //2x2 system of matrices
+  //4x4 system of matrices
   MMatrix mat_h_;
   MMatrix mat_ds_;
   MMatrix mat_jc_;
@@ -269,7 +444,7 @@ private:
   
   double* max_d_; // ruiz scaling
  
-  //host vectors 
+  // host residual vector blocks 
   double* rx_;
   double* rs_;
   double* ry_;
@@ -288,11 +463,13 @@ private:
   double* jd_v_;
   double* jd_vs_;
 
-  //device vectors
+  // Device solution vector blocks
   double* d_x_;
   double* d_s_;
   double* d_y_;
   double* d_yd_;
+
+  // Device vectors
   double* d_rx_til_;
   double* d_rs_til_;
   double* d_rxp_;
@@ -304,6 +481,8 @@ private:
   //CSR FORMAT POINTERS
   int* h_j_;
   int* h_i_;
+
+  // Host solution vector blocks
   double* h_x_;
   double* h_s_;
   double* h_y_;

@@ -1,25 +1,24 @@
-#include <unistd.h>
-#include <cstdlib>
-#include <assert.h>
-#include <ctype.h>
-#include <string.h>
 #include <iostream>
-#include <memory>
-#include <string>
 #include "input_functions.hpp"
-#include "matrix_vector_ops_cuda.hpp"
 #include "CholeskyClass.hpp"
 #include "cuda_memory_utils.hpp"
 #include "MMatrix.hpp"
 
 /**
-  *@brief Driver file demonstrates use of Cholesky class Analysis,
-          Factorization, and Solve
+  * @brief Driver file demonstrates use of Cholesky class Analysis,
+  * Factorization, and Solve
   *
-  *@pre Only NORMAL mtx matrices are read; don't have to be sorted
-**/
+  * @pre Only NORMAL mtx matrices are read; don't have to be sorted
+  * 
+  */
 
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[])
+{
+  if(argc != 3)
+  {
+    std::cout << "Incorrect number of inputs. Exiting ...\n";
+    return -1;
+  }
 
   const double tol = 1e-12;
   const double abs_tol = 3e-2;

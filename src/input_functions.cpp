@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <assert.h>
+#include <cstdlib>
 
 #include "input_functions.hpp"
 #include "MMatrix.hpp"
 
-static int indexPlusValue_comp(const void* a, const void* b)
+int indexPlusValue_comp(const void* a, const void* b)
 {
   const struct indexPlusValue* da = (indexPlusValue*) a;
   const struct indexPlusValue* db = (indexPlusValue*) b;
@@ -27,7 +28,7 @@ void read_mm_file_into_coo(const char* matrix_file_name,
   }
   
   // first line is size and nnz, need this info to allocate memory
-  sscanf(line_buffer, "%ld %ld %ld", &(mat_a.n_), &(mat_a.m_), &(mat_a.nnz_));
+  sscanf(line_buffer, "%d %d %d", &(mat_a.n_), &(mat_a.m_), &(mat_a.nnz_));
   // allocate
   printf("allocating COO structures %d %d %d\n", mat_a.n_, mat_a.m_, mat_a.nnz_);
 
@@ -106,7 +107,7 @@ void sym_coo_to_csr(MMatrix& mat_a)
     int col_start = mat_a.csr_rows[i];
     int col_end   = mat_a.csr_rows[i + 1];
     int length   = col_end - col_start;
-    qsort(&tmp[col_start], length, sizeof(indexPlusValue), indexPlusValue_comp);
+    std::qsort(&tmp[col_start], length, sizeof(indexPlusValue), indexPlusValue_comp);
   }
 
   for(int i = 0; i < mat_a.nnz_unpacked_; ++i) {
@@ -127,6 +128,9 @@ void coo_to_csr(MMatrix& mat_a)
   }
   // allocate full CSR structure
   mat_a.csr_rows     = new int[(mat_a.n_) + 1];
+  //KS: can get away without it ! But! this will change the rest of the code and hard to free correctly
+  mat_a.csr_vals         = new double[mat_a.nnz_];
+  mat_a.csr_cols         = new int[mat_a.nnz_];
   indexPlusValue* tmp = new indexPlusValue [mat_a.nnz_];
   // create IA (row starts)
   mat_a.csr_rows[0] = 0;
@@ -156,11 +160,14 @@ void coo_to_csr(MMatrix& mat_a)
     int col_start = mat_a.csr_rows[i];
     int col_end   = mat_a.csr_rows[i + 1];
     int length    = col_end - col_start;
-    qsort(&tmp[col_start], length, sizeof(indexPlusValue), indexPlusValue_comp);
+    std::qsort(&tmp[col_start], length, sizeof(indexPlusValue), indexPlusValue_comp);
   }
 
   // and copy
   for(int i = 0; i < mat_a.nnz_; ++i) {
+    //KS: very ugly. I know. But it works.
+    mat_a.csr_cols[i] = tmp[i].idx;
+    mat_a.csr_vals[i] = tmp[i].value;
     mat_a.coo_cols[i] = tmp[i].idx;
     mat_a.coo_vals[i] = tmp[i].value;
   }
@@ -175,13 +182,13 @@ void read_1idx_perm(const char* rhs_file_name, int* rhs)
   fgets(line_buffer, sizeof(line_buffer), fpr);
   int n;
   int m;
-  sscanf(line_buffer, "%ld %ld", &n, &m);
+  sscanf(line_buffer, "%d %d", &n, &m);
   printf("N = %d, m=%d\n", n, m);
   int i = 0;
   int val;
 
   while(fgets(line_buffer, sizeof(line_buffer), fpr) != NULL) {
-    sscanf(line_buffer, "%ld", &val);
+    sscanf(line_buffer, "%d", &val);
     rhs[i] = val - 1;
     i++;
   }
@@ -196,7 +203,7 @@ void read_rhs(const char* rhs_file_name, double* rhs)
   fgets(line_buffer, sizeof(line_buffer), fpr);
   fgets(line_buffer, sizeof(line_buffer), fpr);
   int n, m;
-  sscanf(line_buffer, "%ld %ld", &n, &m);
+  sscanf(line_buffer, "%d %d", &n, &m);
   int    i = 0;
   double val;
   // allocate

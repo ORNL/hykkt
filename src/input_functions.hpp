@@ -16,23 +16,7 @@ struct indexPlusValue
  *         1 if a->idx > b->idx,
  *         0 if a->idx == b->idx
 */
-static int indexPlusValue_comp(const void* a, const void* b);
-
-typedef struct
-{
-  int*    coo_rows;
-  int*    coo_cols;
-  double* coo_vals;
-
-  int*    csr_rows;
-  int*    csr_cols;
-  double* csr_vals;
-
-  int n;
-  int m;
-  int nnz;
-  int nnz_unpacked;
-} mmatrix;
+int indexPlusValue_comp(const void* a, const void* b);
 
 /*
  * @brief reads a matrix stored in matrix_file_name into a

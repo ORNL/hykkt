@@ -1,5 +1,4 @@
 #include "matrix_matrix_ops.hpp"
-#include "matrix_vector_ops_cuda.hpp"
 #include "matrix_vector_ops.hpp"
 #include "cuda_memory_utils.hpp"
 #include <assert.h>
@@ -7,7 +6,9 @@
 #include "cuda_memory_utils.hpp"
 #include "cusparse_params.hpp"
 #include "constants.hpp"
-#include "cusparse_params.hpp"
+
+#include "cuda_check_errors.hpp"
+
 
 void SpGEMM_workEstimation(cusparseHandle_t& handle,
     const cusparseSpMatDescr_t& a_desc,
@@ -92,21 +93,21 @@ void SpGEMM_calculate_nnz_reuse(cusparseHandle_t& handle,
 }
 
 void SpGEMM_setup_product_descr(int n,
-    int64_t& c_nnz,
-    int** c_i,
-    int** c_j,
-    double** c_v,
-    cusparseSpMatDescr_t& c_desc)
+                                int64_t& c_nnz,
+                                int** c_i,
+                                int** c_j,
+                                double** c_v,
+                                cusparseSpMatDescr_t& c_desc)
 {
     int64_t c_num_rows;
     int64_t c_num_cols;
     checkCudaErrors(cusparseSpMatGetSize(c_desc, 
-          &c_num_rows,
-          &c_num_cols,
-          &c_nnz));
+                                         &c_num_rows,
+                                         &c_num_cols,
+                                         &c_nnz));
 
-    allocateMatrixOnDevice(n, c_nnz, c_i, c_j, c_v);
-   
+    allocateMatrixOnDevice(n, static_cast<int>(c_nnz), c_i, c_j, c_v);
+
     checkCudaErrors(cusparseCsrSetPointers(c_desc, *c_i, *c_j, *c_v));
 }
 

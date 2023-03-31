@@ -4,6 +4,8 @@
 - Submit issue for discussion before submitting a pull request
 - Always branch from `develop` branch
 - Name your branch `<feature name>-dev` for a feature and `<fix name>-fix` for fixing an issue
+- If possible, place new features in their own files (.cu, .cpp, .hpp)
+-
 - Separate with the dash (`-`) character For example:
 ```console
 $ # For a feature
@@ -18,52 +20,36 @@ $ git checkout -b my-bug-fix
 - Keep pull requests focused on single issue
 - Whenever possible squash all commits on merge
 
-# Quickstart on CI Platforms
+# Quickstart on summit or deception super computers
 
-If you are developing HiOp on one of our supported platforms, you may want to
+If you are developing HyKKT on one of our supported platforms, you may want to
 use the dependencies we have already installed there. In that case, you may
 source the respective variables script we have configured for that platform:
 
 ```console
-$ cd /path/to/hiop
-$ export MY_CLUSTER=newell # or marianas or ascent
-$ source ./scripts/${MY_CLUSTER}Variables.sh
-$ mkdir build && cd build
-$ cmake ..
-$ make -j 16
-$ make test
-```
-Optionally, you may want to modify default CMake configuration with
-`ccmake` or `cmake-gui` tools before executing `make` command.
-
-# Reproducing CI Builds
-
-To reproduce the exact build configuration used in our continuous integration
-configuration, you may use the following workflow on a supported CI cluster (one
-of Ascent, Newell, or Marianas):
-
-```console
-$ cd /path/to/hiop
-$ export MY_CLUSTER=newell # or marianas or ascent
-$ ./BUILD.sh
+$ cd /path/to/hykkt
+$ source ./buildsystem/deception-env.sh #or summit-env.sh
+$ ./buildsystem/build.sh
+$ sbatch deception_test.sbatch # or bsub summit_test.bsub
 ```
 
-Or if you would like to have all the modules loaded in your interactive session:
-```console
-$ cd /path/to/hiop
-$ export MY_CLUSTER=newell # or marianas or ascent
-$ source ./scripts/${MY_CLUSTER}Variables.sh
-$ mkdir build && cd build
-$ cmake -C ../scripts/defaultCIBuild.cmake ..
-$ make -j 16
-$ make test
-```
+This runs tests with the following inputs for the hykkt solver:
 
-Note that this workflow is not encouraged for development, but just reproducing
-the build we use for continuous integration.
+1. h_file_name - contains the sparse symmetric $H+D_x$ matrix block in matrix market format
+2. ds_file_name - contains the diagonal $D_s$ matrix block in matrix market format
+3. jc_file_name - contains the sparse $J_c$ matrix block in matrix market format
+4. jd_file_name - contains the sparse $J_d$ matrix block in matrix market format
+5. rx_file_name - contains the $r_{x}$ vector block in matrix market format
+6. rs_file_name - contains the $r_{s}$ vector block in matrix market format
+7. ryc_file_name - contains the $r_{yc}$ vector block in matrix market format
+8. ryd_file_name - contains the $r_{yd}$ vector block in matrix market format
+9. skip - number of header lines to ignore in the .mtx matrix files
+10. gamma - constant to make $H_\gamma= H + D_x + J_d^T D_s J_d + \gamma J_c^T J_c$ more positive definite (typically $10^4-10^6$)
 
+In the case of solution of multiple systems, the first 8 arguments are repated for the next matrix in the series. Both matrices must have the same sparsity structure.
 
 # Style Guidelines
+
 ## Indentation
 
 ### Indent with spaces
@@ -263,11 +249,11 @@ bool MyClass::my_method(int a) {
 - No spaces around template parameter
 - Line break before range segment
 - Use `RAJA_LAMBDA` define instead of specifying lambda function directly (e.g. `[=] __device__` )
-- Use `hiop_*` aliases over specific RAJA policies
+- Use `hykkt_*` aliases over specific RAJA policies
 - Prefer `RAJA::Index_type` over `int` or anything else
 ```c++
 // RAJA Lambdas
-RAJA::forall<hiop_raja_exec>(
+RAJA::forall<hykkt_raja_exec>(
   RAJA::RangeSegment(0, 10),
   RAJA_LAMBDA(RAJA::Index_type i)
   {
@@ -284,20 +270,19 @@ RAJA::forall<hiop_raja_exec>(
 
 ### Classes
 
-For now prepend `hiop` to the class name. The remaining name should use only upper and lower cases, 
-no underscore, i.e., Pascal convention.  Nested classses (class inside a class) should be 
-named using  Pascal convention. When the name is composed of multiple words, each word 
+Classes should be named using  Pascal convention. When the name is composed of multiple words, each word 
 starts with a capital letter. If one of the "words" is an acronym use same capitalization 
-(first capital and other letters lowercase).
+(first capital and other letters lowercase). For example:
 ```c++
-class hiopMyHiopClass;
+class MyHykktClass;
 
-class hiopAbc
+class Abc
 {
   class Xyz
   {
   };
 }
+Use the namespace `hykkt`.
 ```
 
 ### Variables
@@ -323,7 +308,7 @@ int _yet_another_member_var; // No!
 Use the snake case for function names, as well.
 separate words with underscores.
 ```c++
-void my_hiop_function(int i);
+void my_hykkt_function(int i);
 ```
 
 Avoid encoding type information in names and use function
@@ -372,18 +357,18 @@ void ClassName::some_method(double beta, double alpha) const
 
 // Yes: each argument on a separate line
 void ClassName::some_method(double beta,
-                            hiopMatrix& W,
+                            hykktMatrix& W,
                             double alpha,
-                            const hiopMatrix& X) const
+                            const hykktMatrix& X) const
 {
 }
 
 // Yes: when return type + class name + method name + first argument would overrun the 125 characters line limit, have method name on the next line
 long_return_type SomeVeryLongClassNameIMeanLong::
 some_method(double beta,
-            hiopMatrix& W,
+            hykktMatrix& W,
             double alpha,
-            const hiopMatrix& X) const
+            const hykktMatrix& X) const
 {
 }
 
@@ -401,8 +386,8 @@ object1.method1(param1, param2).method2(param).
                                                            
 
 // No: multiple arguments per line when using more than one line for the declaration 
-void ClassName::some_method(double beta, hiopMatrix& W,
-                            double alpha, const hiopMatrix& X) const
+void ClassName::some_method(double beta, hykktMatrix& W,
+                            double alpha, const hykktMatrix& X) const
 {
 }
 
@@ -413,18 +398,18 @@ object1.method1(param1).method2(param).some_method(beta, someobject.get_W(),
 // No: arguments not aligned behind the opening parenthesis
 void ClassName::some_method(
   double beta,
-  hiopMatrix& W,
+  hykktMatrix& W,
   double alpha,
-  const hiopMatrix& X) 
+  const hykktMatrix& X) 
 {
 }
 
 // everything above applies to constructors as well, for example,
 SomeVeryLongClassNameIMeanLong::
 SomeVeryLongClassNameIMeanLong(double beta,
-                               hiopMatrix& W,
+                               hykktMatrix& W,
                                double alpha,
-                               const hiopMatrix& X)
+                               const hykktMatrix& X)
   : member1_(0),
     member2_(nullptr)
 {
@@ -467,23 +452,14 @@ Documentation of pre and post conditions should appear in the interface or heade
 # Minimal testing procedure 
 Any PR or push to the `master` or `develop` branches should go through and pass the procedures below. The shell commands need to be ran in the 'build' directory and assume bash shell. 
 
-## 1. All "build matrix" tests must pass
+## 1. All driver tests must pass
 
-To run tests for every possible cmake configuration, the build script has an
-option for that:
-
+To run all tests simply type
 ```shell
-$> ./BUILD.sh --full-build-matrix
+$> ctest -VV
 ```
 
-If you're going to use this, you'll likely want to create a file in `scripts`
-directory with name `./scripts/<cluster>Variables.sh` which sets relevant environment variables, or do this yourself. For example, see `./scripts/ascentVariables.sh` which you would call with:
-
-```shell
-$> MY_CLUSTER=ascent ./BUILD.sh --full-build-matrix
-```
-
-### Manual testing
+### Manual testing 
 To investigate a failure of a test from the build matrix, one can build and run individiual tests from the  build matrix manually, as shown in the examples below.
 
 1. a. MPI=ON, DEEPCHECKS=OFF, RELEASE=ON (this is the high-performance version of HiOp)

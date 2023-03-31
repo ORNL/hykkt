@@ -1,22 +1,23 @@
 #include "CholeskyClass.hpp"
-#include <algorithm>
 #include "matrix_vector_ops.hpp"
-#include "matrix_vector_ops_cuda.hpp"
 #include "cuda_memory_utils.hpp"
-#include "cusparse_params.hpp"
+#include "cusparse_utils.hpp"
 
-  CholeskyClass::CholeskyClass(int n, 
-      int nnz, 
-      double* a_v, 
-      int* a_i, 
-      int* a_j)
-: n_(n),
-  nnz_(nnz),
-  a_v_(a_v),
-  a_i_(a_i),
-  a_j_(a_j)
-  {
-  }
+#include "cuda_check_errors.hpp"
+
+
+CholeskyClass::CholeskyClass(int n, 
+                             int nnz, 
+                             double* a_v, 
+                             int* a_i, 
+                             int* a_j)
+  : n_(n),
+    nnz_(nnz),
+    a_i_(a_i),
+    a_j_(a_j),
+    a_v_(a_v)
+{
+}
 
   CholeskyClass::~CholeskyClass()
   {
@@ -26,6 +27,7 @@
     checkCudaErrors(cusolverSpDestroyCsrcholInfo(info_));
   }
 
+// Symbolic factorization of $H_\gamma$ in (6)
   void CholeskyClass::symbolic_analysis()
   {
     createSparseMatDescr(descr_a_);
@@ -65,11 +67,7 @@
     a_v_ = a_v;
   }
 
-  void CholeskyClass::set_nnz(int nnz)
-  {
-    nnz_ = nnz;
-  }
-
+// Numerical factorization of $H_\gamma$ in (6)
   void CholeskyClass::numerical_factorization()
   {
     int singularity = 0;
@@ -90,7 +88,8 @@
       fprintf(stderr, "Error: H not invertible, singularity=%d\n", singularity);
     }
   }
-  
+ 
+//Used for application of $S$ in solving (7) with CG and solving (8)
   void CholeskyClass::solve(double* x, double* b)
   {
     checkCudaErrors(cusolverSpDcsrcholSolve(handle_cusolver_, 

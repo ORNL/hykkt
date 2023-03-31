@@ -1,21 +1,41 @@
 set(HYBRID_SRC
-  cuda_memory_utils.cu
   MMatrix.cpp
+  input_functions.cpp
+  vector_vector_ops.cpp
+  cusparse_utils.cpp
+  matrix_matrix_ops.cpp
   PermClass.cpp
   RuizClass.cpp
-  matrix_matrix_ops.cu
-  matrix_vector_ops.cu
-  vector_vector_ops.cu
-  input_functions.cpp
-  permcheck.cu
-  SchurComplementConjugateGradient.cu
-  CholeskyClass.cu
-  SpgemmClass.cu
-  HykktSolver.cu
+  SchurComplementConjugateGradient.cpp
+  CholeskyClass.cpp
+  SpgemmClass.cpp
+  HykktSolver.cpp
 )
 
+set(HYBRID_SRC_CUDA
+  cuda_memory_utils.cu
+  matrix_vector_ops.cu
+  permcheck.cu
+)
 
-set_source_files_properties(${HYBRID_SRC} PROPERTIES LANGUAGE CUDA)
-add_library(hybrid OBJECT ${HYBRID_SRC} )
-set_target_properties(hybrid PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+# define list of headers and source files
+set(header MMatrix.hpp
+    PermClass.hpp
+    RuizClass.hpp
+    SchurComplementConjugateGradient.hpp
+    CholeskyClass.hpp
+    SpgemmClass.hpp
+    HykktSolver.hpp)
+
+install(FILES ${header} DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+
+set_source_files_properties(${HYBRID_SRC_CUDA} PROPERTIES LANGUAGE CUDA)
+add_library(hykkt_libs SHARED ${HYBRID_SRC} ${HYBRID_SRC_CUDA})
+target_link_libraries(hykkt_libs PUBLIC hykkt_cuda)
+
+# install rules
+install(TARGETS hykkt_libs EXPORT HyKKT-targets)
+
+add_library(HyKKT::HyKKT ALIAS hykkt_libs)
+
 

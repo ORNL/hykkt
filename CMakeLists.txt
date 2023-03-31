@@ -1,19 +1,32 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(HyKKT VERSION "0.0.1")
+# Adds version settings and set variable CMAKE_PROJECT_VERSION
+project(HyKKT VERSION "0.1.0")
 
 set(CMAKE_CXX_STANDARD 11)
+
+set(PACKAGE_NAME  "HyKKT")
+set(PACKAGE_TARNAME "hykkt")
 
 option(HYKKT_TEST_WITH_BSUB "Use `jsrun` instead of `mpirun` commands when running tests" OFF)
 set(HYKKT_CTEST_OUTPUT_DIR ${PROJECT_BINARY_DIR} CACHE PATH "Directory where CTest outputs are saved")
 
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}")
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+# For Unix CMAKE_INSTALL_PREFIX defaults to /usr/local
+# If user doesn't have permission to write to /usr/local than the below line is recommended
+# set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/install" CACHE PATH "${CMAKE_SOURCE_DIR}/install"FORCE)
+
+message(STATUS "Installation Destination is ${CMAKE_INSTALL_PREFIX}")
+
+# Including clang-format cmake files to do automatic checking of formating
+include(./cmake/clang-format)
 
 # Configure CUDA
 include(CheckLanguage)
 enable_language(CUDA)
 check_language(CUDA)
-
-#find_package(CUDA REQUIRED)
 
 if(NOT DEFINED CMAKE_CUDA_STANDARD)
   set(CMAKE_CUDA_STANDARD 11)
@@ -21,9 +34,7 @@ if(NOT DEFINED CMAKE_CUDA_STANDARD)
 endif()
 
 if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-  #set(CMAKE_CUDA_ARCHITECTURES 70) #for summit, ascent
-  #set(CMAKE_CUDA_ARCHITECTURES 80) #for deception
-  set(CMAKE_CUDA_ARCHITECTURES 60 CACHE STRING "Selects CUDA architectures") #this doesn't work
+  set(CMAKE_CUDA_ARCHITECTURES 60 CACHE STRING "Selects CUDA architectures")
 endif()
 
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-extended-lambda")
@@ -34,22 +45,41 @@ set(CMAKE_CUDA_SEPARABLE_COMPILATION OFF)
 # Link in required cuda dependencies
 find_package(CUDAToolkit REQUIRED)
 
-add_library(cuda_libs INTERFACE)
-target_link_libraries(cuda_libs INTERFACE
-                      CUDA::cusolver
-                      CUDA::cublas
-                      CUDA::cusparse
-                      CUDA::cudart)
+include(./cmake/FindHykktCudaLibraries)
 
 # Enable testing
 enable_testing()
 
-# TODO - use target based includes
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/include
-                    ${CMAKE_CURRENT_SOURCE_DIR}/src
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src
                     ${CMAKE_CURRENT_SOURCE_DIR}/examples)
 
 # Add code directory
 add_subdirectory(src)
+
+# create package version file
+include(CMakePackageConfigHelpers)
+
+# Creates a version file for the package
+write_basic_package_version_file(HyKKTConfigVersion.cmake
+                                 VERSION ${CMAKE_PROJECT_VERSION}
+                                 COMPATIBILITY AnyNewerVersion)
+# Generate install rules for targets
+install(EXPORT HyKKT-targets
+        FILE HyKKTTargets.cmake
+        NAMESPACE HyKKT::
+        DESTINATION 
+        share/hykkt/cmake)
+
+# Creates a config file
+configure_package_config_file(./cmake/HyKKTConfig.cmake.in
+                              ${CMAKE_CURRENT_BINARY_DIR}/HyKKTConfig.cmake
+                              INSTALL_DESTINATION share/hykkt/cmake)
+
+# Generates install rules for cmake config files
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/HyKKTConfig.cmake"
+        "${PROJECT_SOURCE_DIR}/build/HyKKTConfigVersion.cmake"
+        DESTINATION share/hykkt/cmake)
+
 add_subdirectory(examples)
+
 
