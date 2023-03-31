@@ -1,7 +1,6 @@
 .hykkt_script_template:
  script:
     - |
-      exit 1
       set -xv
       export WORKDIR="$HOME/gitlab/$CI_JOB_ID"
       if [[ ! -d "$WORKDIR" ]]; then
