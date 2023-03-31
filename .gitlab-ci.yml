@@ -74,7 +74,7 @@ hykkt-test-newell:
 SVC Account Cleanup:
   stage: .pre
   extends:
-   - .pnnl_nonhpc_tags
+   - .pnnl_tags_template
   script:
     - export WORKDIR="$HOME/gitlab/"
     # clears directory of files more than 1 day/1440 minutes old
