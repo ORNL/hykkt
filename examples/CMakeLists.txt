@@ -97,7 +97,6 @@ add_test(NAME permutation
   COMMAND ${RUNCMD} $<TARGET_FILE:perm_driver>)
 
 add_executable(ruiz_driver Ruiz_driver.cpp)
-
 target_link_libraries(ruiz_driver PUBLIC HyKKT::HyKKT)
 add_test(NAME ruiz_scaling_test
   COMMAND ${RUNCMD} $<TARGET_FILE:ruiz_driver>)
@@ -125,6 +124,9 @@ add_test(NAME solver1
   COMMAND ${RUNCMD} $<TARGET_FILE:solver_driver> ${test_solver1_args})
 add_test(NAME solver2
   COMMAND ${RUNCMD} $<TARGET_FILE:solver_driver> ${test_solver2_args})
+  
+add_executable(solver_driver_emulator cuSolver_driver_solver_emulator.cpp)
+target_link_libraries(solver_driver_emulator PUBLIC HyKKT::HyKKT)
 
 # install examples into user specified dir; default is /usr/local
 install(TARGETS perm_driver DESTINATION "${CMAKE_INSTALL_PREFIX}")
@@ -133,6 +135,7 @@ install(TARGETS chol_driver DESTINATION "${CMAKE_INSTALL_PREFIX}")
 install(TARGETS schur_cg_driver DESTINATION "${CMAKE_INSTALL_PREFIX}")
 install(TARGETS hybrid_driver DESTINATION "${CMAKE_INSTALL_PREFIX}")
 install(TARGETS solver_driver DESTINATION "${CMAKE_INSTALL_PREFIX}")
+install(TARGETS solver_driver_emulator DESTINATION "${CMAKE_INSTALL_PREFIX}")
 
 
 if (HYKKT_USE_AMD)
@@ -146,6 +149,7 @@ if (HYKKT_USE_AMD)
     target_link_libraries(schur_cg_driver PUBLIC AMD)
     target_link_libraries(hybrid_driver PUBLIC AMD)
     target_link_libraries(solver_driver PUBLIC AMD)
+    target_link_libraries(solver_driver_emulator PUBLIC AMD)
   endif()
 else()
   message(STATUS "Not using SuiteSparse AMD")
