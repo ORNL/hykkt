@@ -25,6 +25,25 @@ void fun_map_idx(int n, int* perm, double* old_val, double* new_val);
  * @post: arr1 and arr2 are sorted based on increasing values in arr1
 */
 void selection_sort2(int len, int* arr1, int* arr2);
+
+inline void swap(int* arr1, int* arr2, int i, int j);
+inline int partition(int* arr1, int* arr2, int low, int high);
+void quickSort(int* arr1, int* arr2, int low, int high);
+
+/*
+ * @brief: Insertion sorts arr1 and arr2 w/indices
+ * based on increasing value in arr1
+ *
+ * @params: Size n of the matrix,
+ * arr1 - the array that determines the sorting order,
+ * arr2- sorted based on arr1
+ *
+ * @pre: arr1 and arr2 are arrays of length n
+ *
+ * @post: arr1 and arr2 are sorted based on increasing values in arr1
+*/
+void insertion_sort(int len, int* arr1, int* arr2);
+
 /*
  * @brief: Permutes the columns in a matrix represented by rows and cols
  *
