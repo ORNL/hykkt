@@ -31,10 +31,6 @@
       h_yd_(nullptr)
   {
     allocate_workspace();
-    mat_h_.owns_csr_data(false);
-    mat_ds_.owns_csr_data(false);
-    mat_jc_.owns_csr_data(false);
-    mat_jd_.owns_csr_data(false);
   }
   
   HykktSolver::~HykktSolver()
@@ -127,15 +123,19 @@
     // read matrices
     read_mm_file_into_coo(h_file, mat_h_, skip_lines);
     sym_coo_to_csr(mat_h_);
+	mat_h_.owns_csr_data(true);
 
     read_mm_file_into_coo(ds_file, mat_ds_, skip_lines);
     coo_to_csr(mat_ds_);
+    mat_ds_.owns_csr_data(true);
 
     read_mm_file_into_coo(jc_file, mat_jc_, skip_lines);
     coo_to_csr(mat_jc_);
+    mat_jc_.owns_csr_data(true);
 
     read_mm_file_into_coo(jd_file, mat_jd_, skip_lines);
     coo_to_csr(mat_jd_);
+    mat_jd_.owns_csr_data(true);
     
     bool jd_flag = mat_jd_.nnz_ > 0;
     
@@ -163,22 +163,26 @@
   void HykktSolver::set_H(int* rowptrs, int* colidx, double* vals, int n, int m, int nnz)
   {
     assert(m == n);
+	mat_h_.owns_csr_data(false);
     set_matrix_block(mat_h_, rowptrs, colidx, vals, n, m, nnz);
   }
 
   void HykktSolver::set_Ds(int* rowptrs, int* colidx, double* vals, int n, int m, int nnz)
   {
     assert(n == m);
+	mat_ds_.owns_csr_data(false);
     set_matrix_block(mat_ds_, rowptrs, colidx, vals, n, m, nnz);
   }
 
   void HykktSolver::set_Jc(int* rowptrs, int* colidx, double* vals, int n, int m, int nnz)
   {
+    mat_jc_.owns_csr_data(false);
     set_matrix_block(mat_jc_, rowptrs, colidx, vals, n, m, nnz);
   }
 
   void HykktSolver::set_Jd(int* rowptrs, int* colidx, double* vals, int n, int m, int nnz)
   {
+    mat_jd_.owns_csr_data(false);
     set_matrix_block(mat_jd_, rowptrs, colidx, vals, n, m, nnz);
 
     bool jd_flag = mat_jd_.nnz_ > 0;
@@ -444,10 +448,12 @@
     fun_add_vecs(mat_ds_.n_, d_yd_, MINUS_ONE, d_rs_);
 
     // Copy solution back to host
+#if 0
     copyVectorToHost(mat_h_.n_,  d_x_,  h_x_);
     copyVectorToHost(mat_ds_.n_, d_s_,  h_s_);
     copyVectorToHost(mat_jc_.n_, d_y_,  h_y_);
     copyVectorToHost(mat_jd_.n_, d_yd_, h_yd_);
+#endif
   }
 
   void HykktSolver::setup_parameters()

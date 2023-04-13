@@ -6,6 +6,14 @@
 
 #include "cuda_check_errors.hpp"
 
+#include <iostream>
+#include <fstream>
+
+#include "hykkt_defs.hpp"
+#ifdef HYKKT_USE_AMD
+#include "amd.h"
+#endif
+
 // Creates a class for the permutation of $H_\gamma$ in (6)
 PermClass::PermClass(int n_h, int nnz_h, int nnz_j) 
   : n_h_(n_h),
@@ -62,6 +70,21 @@ PermClass::PermClass(int n_h, int nnz_h, int nnz_j)
 // Symamd permutation of $H_\gamma$ in (6)
   void PermClass::symamd()
   {
+#ifdef HYKKT_USE_AMD
+    std::cout << "Using - AMD" << std::endl;
+    double Control[AMD_CONTROL], Info[AMD_INFO];
+	
+    amd_defaults(Control);
+    amd_control(Control);
+	
+    int result = amd_order(n_h_, h_i_, h_j_, perm_, Control, Info);
+	
+    if (result != AMD_OK)
+    {
+       printf("AMD failed\n");
+       exit(1);
+    }
+#else
     cusolverSpHandle_t handle_cusolver = NULL;
     cusparseMatDescr_t descr_a = NULL;
     createSparseMatDescr(descr_a);
@@ -70,6 +93,7 @@ PermClass::PermClass(int n_h, int nnz_h, int nnz_j)
            descr_a, h_i_, h_j_, perm_));
     checkCudaErrors(cusolverSpDestroy(handle_cusolver));
     deleteDescriptor(descr_a);
+#endif
     
     cloneVectorToDevice(n_h_, &perm_, &d_perm_); 
   }

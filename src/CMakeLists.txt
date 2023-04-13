@@ -39,3 +39,13 @@ install(TARGETS hykkt_libs EXPORT HyKKT-targets)
 add_library(HyKKT::HyKKT ALIAS hykkt_libs)
 
 
+if (HYKKT_USE_AMD)
+  if(NOT AMD_LIBRARY)
+    message(STATUS "Cannot find AMD, disabling SuiteSparse AMD module ...")
+    set(HYKKT_USE_AMD OFF CACHE BOOL "Build without SuiteSparse AMD module." FORCE)
+  else()
+    target_link_libraries(hykkt_libs PUBLIC AMD)
+  endif()
+else()
+  message(STATUS "Not using SuiteSparse AMD")
+endif()
