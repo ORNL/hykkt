@@ -1,0 +1,39 @@
+
+cleanup:
+ stage: .pre
+ extends:
+  - .SVC-Account-Cleanup
+
+.newell:
+  variables:
+    MY_CLUSTER: "Newell"
+    SLURM_Q: "newell_shared"
+    
+hykkt-test-newell:
+  extends:
+    - .newell
+    - .cluster_test 
+
+
+pending:
+  variables:
+    MY_CLUSTER: "Newell"
+  extends:
+    - .report-pending
+  stage: .pre
+
+success:
+  variables:
+    MY_CLUSTER: "Newell"
+  extends:
+    - .report-status
+  stage: .post
+
+failure:
+  stage: .post
+  variables:
+    MY_CLUSTER: "Newell"
+  extends:
+    - .report-status
+  rules:
+    - when: on_failure

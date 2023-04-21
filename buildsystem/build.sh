@@ -69,8 +69,10 @@ then
   export MY_CLUSTER=`uname -n | sed -e 's/[0-9]//g' -e 's/\..*//'`
 fi
 
+export MY_CLUSTER_LOWER=$(echo ${MY_CLUSTER} | tr '[:upper:]' '[:lower:]')
+
 # Correctly identify clusters based on hostname
-case $MY_CLUSTER in
+case $MY_CLUSTER_LOWER in
   newell*)
     export MY_CLUSTER=newell
     ;;
