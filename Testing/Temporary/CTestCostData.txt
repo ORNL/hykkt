@@ -1,0 +1,9 @@
+permutation 1 3.74834
+ruiz_scaling_test 1 5.19362
+cholesky 1 11.2046
+schur_cg 1 13.9045
+hybrid1 1 13.3516
+hybrid2 1 29.0438
+solver1 1 16.5548
+solver2 1 45.8308
+---

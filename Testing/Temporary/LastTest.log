@@ -1,0 +1,240 @@
+Start testing: Apr 27 00:29 UTC
+----------------------------------------------------------
+1/8 Testing: permutation
+1/8 Test: permutation
+Command: "/usr/local/cuda-11.6/bin/cuda-memcheck" "/home/shakedregev/hykkt/examples/perm_driver"
+Directory: /home/shakedregev/hykkt/examples
+"permutation" start time: Apr 27 00:29 UTC
+Output:
+----------------------------------------------------------
+Comparing RC permutation
+RC permute passed
+Comparing R permutation
+R permute passed
+Comparing C permutation
+C permute passed
+Infinte loop start for testing CI========= CUDA-MEMCHECK
+========= This tool is deprecated and will be removed in a future release of the CUDA toolkit
+========= Please use the compute-sanitizer tool as a drop-in replacement
+========= ERROR SUMMARY: 0 errors
+<end of output>
+Test time =   3.75 sec
+----------------------------------------------------------
+Test Passed.
+"permutation" end time: Apr 27 00:29 UTC
+"permutation" time elapsed: 00:00:03
+----------------------------------------------------------
+
+2/8 Testing: ruiz_scaling_test
+2/8 Test: ruiz_scaling_test
+Command: "/usr/local/cuda-11.6/bin/cuda-memcheck" "/home/shakedregev/hykkt/examples/ruiz_driver"
+Directory: /home/shakedregev/hykkt/examples
+"ruiz_scaling_test" start time: Apr 27 00:29 UTC
+Output:
+----------------------------------------------------------
+All tests passed
+========= CUDA-MEMCHECK
+========= This tool is deprecated and will be removed in a future release of the CUDA toolkit
+========= Please use the compute-sanitizer tool as a drop-in replacement
+========= ERROR SUMMARY: 0 errors
+<end of output>
+Test time =   5.19 sec
+----------------------------------------------------------
+Test Passed.
+"ruiz_scaling_test" end time: Apr 27 00:29 UTC
+"ruiz_scaling_test" time elapsed: 00:00:05
+----------------------------------------------------------
+
+3/8 Testing: cholesky
+3/8 Test: cholesky
+Command: "/usr/local/cuda-11.6/bin/cuda-memcheck" "/home/shakedregev/hykkt/examples/chol_driver" "/home/shakedregev/hykkt/src/mats/a200_chol//H_matrix_ACTIVSg200_AC_00.mtx" "/home/shakedregev/hykkt/src/mats/a200_chol//rhs_chol_ACTIVSg200_AC_00.mtx"
+Directory: /home/shakedregev/hykkt/examples
+"cholesky" start time: Apr 27 00:29 UTC
+Output:
+----------------------------------------------------------
+allocating COO structures 2278 2278 11304
+
+/******* Matrix size: 2278 x 2278 nnz: 11304 *******/
+
+RHS reading completed ..............................
+========= CUDA-MEMCHECK
+========= This tool is deprecated and will be removed in a future release of the CUDA toolkit
+========= Please use the compute-sanitizer tool as a drop-in replacement
+========= ERROR SUMMARY: 0 errors
+<end of output>
+Test time =  11.20 sec
+----------------------------------------------------------
+Test Passed.
+"cholesky" end time: Apr 27 00:29 UTC
+"cholesky" time elapsed: 00:00:11
+----------------------------------------------------------
+
+4/8 Testing: schur_cg
+4/8 Test: schur_cg
+Command: "/usr/local/cuda-11.6/bin/cuda-memcheck" "/home/shakedregev/hykkt/examples/schur_cg_driver" "/home/shakedregev/hykkt/src/mats/a200_schur//JC_matrix_ACTIVSg200_AC_00.mtx" "/home/shakedregev/hykkt/src/mats/a200_schur//H_matrix_ACTIVSg200_AC_00.mtx" "/home/shakedregev/hykkt/src/mats/a200_schur//CG_rhs_ACTIVSg200_AC_00.mtx"
+Directory: /home/shakedregev/hykkt/examples
+"schur_cg" start time: Apr 27 00:29 UTC
+Output:
+----------------------------------------------------------
+allocating COO structures 1386 2278 6784
+
+/******* Matrix size: 1386 x 2278 nnz: 6784 *******/
+
+allocating COO structures 2278 2278 11304
+
+/******* Matrix size: 2278 x 2278 nnz: 11304 *******/
+
+RHS reading completed ..............................
+Convergence occured at iteration 20
+Error is 2.3699205473962404876178158172929e-13 
+========= CUDA-MEMCHECK
+========= This tool is deprecated and will be removed in a future release of the CUDA toolkit
+========= Please use the compute-sanitizer tool as a drop-in replacement
+========= ERROR SUMMARY: 0 errors
+<end of output>
+Test time =  13.90 sec
+----------------------------------------------------------
+Test Passed.
+"schur_cg" end time: Apr 27 00:30 UTC
+"schur_cg" time elapsed: 00:00:13
+----------------------------------------------------------
+
+5/8 Testing: hybrid1
+5/8 Test: hybrid1
+Command: "/usr/local/cuda-11.6/bin/cuda-memcheck" "/home/shakedregev/hykkt/examples/hybrid_driver" "/home/shakedregev/hykkt/src/mats/a200//block_H_matrix_ACTIVSg200_AC_10.mtx" "/home/shakedregev/hykkt/src/mats/a200//block_Dd_matrix_ACTIVSg200_AC_10.mtx" "/home/shakedregev/hykkt/src/mats/a200//block_J_matrix_ACTIVSg200_AC_10.mtx" "/home/shakedregev/hykkt/src/mats/a200//block_Jd_matrix_ACTIVSg200_AC_10.mtx" "/home/shakedregev/hykkt/src/mats/a200//block_rx_ACTIVSg200_AC_10.mtx" "/home/shakedregev/hykkt/src/mats/a200//block_rs_ACTIVSg200_AC_10.mtx" "/home/shakedregev/hykkt/src/mats/a200//block_ry_ACTIVSg200_AC_10.mtx" "/home/shakedregev/hykkt/src/mats/a200//block_ryd_ACTIVSg200_AC_10.mtx" "2" "10000.0"
+Directory: /home/shakedregev/hykkt/examples
+"hybrid1" start time: Apr 27 00:30 UTC
+Output:
+----------------------------------------------------------
+allocating COO structures 2278 2278 3452
+allocating COO structures 490 490 490
+allocating COO structures 1386 2278 6784
+allocating COO structures 490 2278 980
+Convergence occured at iteration 8
+Error is 6.3843285080683877131799659709499e-14 
+||Ax-b||/||b|| = 6.417070725518349756118075455621e-11
+Residual test passed ========= CUDA-MEMCHECK
+========= This tool is deprecated and will be removed in a future release of the CUDA toolkit
+========= Please use the compute-sanitizer tool as a drop-in replacement
+========= ERROR SUMMARY: 0 errors
+<end of output>
+Test time =  13.35 sec
+----------------------------------------------------------
+Test Passed.
+"hybrid1" end time: Apr 27 00:30 UTC
+"hybrid1" time elapsed: 00:00:13
+----------------------------------------------------------
+
+6/8 Testing: hybrid2
+6/8 Test: hybrid2
+Command: "/usr/local/cuda-11.6/bin/cuda-memcheck" "/home/shakedregev/hykkt/examples/hybrid_driver" "/home/shakedregev/hykkt/src/mats/a2000//block_H_matrix_ACTIVSg2000_AC_09.mtx" "/home/shakedregev/hykkt/src/mats/a2000//block_Dd_matrix_ACTIVSg2000_AC_09.mtx" "/home/shakedregev/hykkt/src/mats/a2000//block_J_matrix_ACTIVSg2000_AC_09.mtx" "/home/shakedregev/hykkt/src/mats/a2000//block_Jd_matrix_ACTIVSg2000_AC_09.mtx" "/home/shakedregev/hykkt/src/mats/a2000//block_rx_ACTIVSg2000_AC_09.mtx" "/home/shakedregev/hykkt/src/mats/a2000//block_rs_ACTIVSg2000_AC_09.mtx" "/home/shakedregev/hykkt/src/mats/a2000//block_ry_ACTIVSg2000_AC_09.mtx" "/home/shakedregev/hykkt/src/mats/a2000//block_ryd_ACTIVSg2000_AC_09.mtx" "3" "10000.0"
+Directory: /home/shakedregev/hykkt/examples
+"hybrid2" start time: Apr 27 00:30 UTC
+Output:
+----------------------------------------------------------
+allocating COO structures 25910 25910 38469
+allocating COO structures 6412 6412 6412
+allocating COO structures 16933 25910 86139
+allocating COO structures 6412 25910 12824
+Convergence occured at iteration 21
+Error is 3.7730808651973240042148456647508e-13 
+||Ax-b||/||b|| = 7.4874784317861047443151791328225e-11
+Residual test passed ========= CUDA-MEMCHECK
+========= This tool is deprecated and will be removed in a future release of the CUDA toolkit
+========= Please use the compute-sanitizer tool as a drop-in replacement
+========= ERROR SUMMARY: 0 errors
+<end of output>
+Test time =  29.04 sec
+----------------------------------------------------------
+Test Passed.
+"hybrid2" end time: Apr 27 00:30 UTC
+"hybrid2" time elapsed: 00:00:29
+----------------------------------------------------------
+
+7/8 Testing: solver1
+7/8 Test: solver1
+Command: "/usr/local/cuda-11.6/bin/cuda-memcheck" "/home/shakedregev/hykkt/examples/solver_driver" "/home/shakedregev/hykkt/src/mats/a200//block_H_matrix_ACTIVSg200_AC_09.mtx" "/home/shakedregev/hykkt/src/mats/a200//block_Dd_matrix_ACTIVSg200_AC_09.mtx" "/home/shakedregev/hykkt/src/mats/a200//block_J_matrix_ACTIVSg200_AC_09.mtx" "/home/shakedregev/hykkt/src/mats/a200//block_Jd_matrix_ACTIVSg200_AC_09.mtx" "/home/shakedregev/hykkt/src/mats/a200//block_rx_ACTIVSg200_AC_09.mtx" "/home/shakedregev/hykkt/src/mats/a200//block_rs_ACTIVSg200_AC_09.mtx" "/home/shakedregev/hykkt/src/mats/a200//block_ry_ACTIVSg200_AC_09.mtx" "/home/shakedregev/hykkt/src/mats/a200//block_ryd_ACTIVSg200_AC_09.mtx" "/home/shakedregev/hykkt/src/mats/a200//block_H_matrix_ACTIVSg200_AC_10.mtx" "/home/shakedregev/hykkt/src/mats/a200//block_Dd_matrix_ACTIVSg200_AC_10.mtx" "/home/shakedregev/hykkt/src/mats/a200//block_J_matrix_ACTIVSg200_AC_10.mtx" "/home/shakedregev/hykkt/src/mats/a200//block_Jd_matrix_ACTIVSg200_AC_10.mtx" "/home/shakedregev/hykkt/src/mats/a200//block_rx_ACTIVSg200_AC_10.mtx" "/home/shakedregev/hykkt/src/mats/a200//block_rs_ACTIVSg200_AC_10.mtx" "/home/shakedregev/hykkt/src/mats/a200//block_ry_ACTIVSg200_AC_10.mtx" "/home/shakedregev/hykkt/src/mats/a200//block_ryd_ACTIVSg200_AC_10.mtx" "2" "10000.0"
+Directory: /home/shakedregev/hykkt/examples
+"solver1" start time: Apr 27 00:30 UTC
+Output:
+----------------------------------------------------------
+Starting ...
+allocating COO structures 2278 2278 3452
+allocating COO structures 490 490 490
+allocating COO structures 1386 2278 6784
+allocating COO structures 490 2278 980
+allocating COO structures 2278 2278 3452
+allocating COO structures 490 490 490
+allocating COO structures 1386 2278 6784
+allocating COO structures 490 2278 980
+Matrix nnz = 490
+H size: 2278 2278 4632 
+Jc size: 1386  2278  6784 
+Jd size: 490  2278  980 
+Convergence occured at iteration 9
+Error is 2.8483306432219610056846359471358e-14 
+||Ax-b||/||b|| = 1.5405653883638264211346468493328e-11
+
+Residual test passed
+Matrix nnz = 490
+Convergence occured at iteration 9
+Error is 5.3937173990083127844391649072758e-14 
+||Ax-b||/||b|| = 1.2010705318787871933748758618366e-11
+
+Residual test passed
+========= CUDA-MEMCHECK
+========= This tool is deprecated and will be removed in a future release of the CUDA toolkit
+========= Please use the compute-sanitizer tool as a drop-in replacement
+========= ERROR SUMMARY: 0 errors
+<end of output>
+Test time =  16.55 sec
+----------------------------------------------------------
+Test Passed.
+"solver1" end time: Apr 27 00:31 UTC
+"solver1" time elapsed: 00:00:16
+----------------------------------------------------------
+
+8/8 Testing: solver2
+8/8 Test: solver2
+Command: "/usr/local/cuda-11.6/bin/cuda-memcheck" "/home/shakedregev/hykkt/examples/solver_driver" "/home/shakedregev/hykkt/src/mats/a2000//block_H_matrix_ACTIVSg2000_AC_09.mtx" "/home/shakedregev/hykkt/src/mats/a2000//block_Dd_matrix_ACTIVSg2000_AC_09.mtx" "/home/shakedregev/hykkt/src/mats/a2000//block_J_matrix_ACTIVSg2000_AC_09.mtx" "/home/shakedregev/hykkt/src/mats/a2000//block_Jd_matrix_ACTIVSg2000_AC_09.mtx" "/home/shakedregev/hykkt/src/mats/a2000//block_rx_ACTIVSg2000_AC_09.mtx" "/home/shakedregev/hykkt/src/mats/a2000//block_rs_ACTIVSg2000_AC_09.mtx" "/home/shakedregev/hykkt/src/mats/a2000//block_ry_ACTIVSg2000_AC_09.mtx" "/home/shakedregev/hykkt/src/mats/a2000//block_ryd_ACTIVSg2000_AC_09.mtx" "/home/shakedregev/hykkt/src/mats/a2000//block_H_matrix_ACTIVSg2000_AC_10.mtx" "/home/shakedregev/hykkt/src/mats/a2000//block_Dd_matrix_ACTIVSg2000_AC_10.mtx" "/home/shakedregev/hykkt/src/mats/a2000//block_J_matrix_ACTIVSg2000_AC_10.mtx" "/home/shakedregev/hykkt/src/mats/a2000//block_Jd_matrix_ACTIVSg2000_AC_10.mtx" "/home/shakedregev/hykkt/src/mats/a2000//block_rx_ACTIVSg2000_AC_10.mtx" "/home/shakedregev/hykkt/src/mats/a2000//block_rs_ACTIVSg2000_AC_10.mtx" "/home/shakedregev/hykkt/src/mats/a2000//block_ry_ACTIVSg2000_AC_10.mtx" "/home/shakedregev/hykkt/src/mats/a2000//block_ryd_ACTIVSg2000_AC_10.mtx" "3" "10000.0"
+Directory: /home/shakedregev/hykkt/examples
+"solver2" start time: Apr 27 00:31 UTC
+Output:
+----------------------------------------------------------
+Starting ...
+allocating COO structures 25910 25910 38469
+allocating COO structures 6412 6412 6412
+allocating COO structures 16933 25910 86139
+allocating COO structures 6412 25910 12824
+allocating COO structures 25910 25910 38469
+allocating COO structures 6412 6412 6412
+allocating COO structures 16933 25910 86139
+allocating COO structures 6412 25910 12824
+Matrix nnz = 6412
+H size: 25910 25910 51137 
+Jc size: 16933  25910  86139 
+Jd size: 6412  25910  12824 
+Convergence occured at iteration 21
+Error is 3.7730808651978066608710960886138e-13 
+||Ax-b||/||b|| = 8.5826600363798768119916858446823e-11
+
+Residual test passed
+Matrix nnz = 6412
+Convergence occured at iteration 21
+Error is 3.1932296968105099445031921879372e-13 
+||Ax-b||/||b|| = 8.4581557997447115229215332986101e-11
+
+Residual test passed
+========= CUDA-MEMCHECK
+========= This tool is deprecated and will be removed in a future release of the CUDA toolkit
+========= Please use the compute-sanitizer tool as a drop-in replacement
+========= ERROR SUMMARY: 0 errors
+<end of output>
+Test time =  45.83 sec
+----------------------------------------------------------
+Test Passed.
+"solver2" end time: Apr 27 00:31 UTC
+"solver2" time elapsed: 00:00:45
+----------------------------------------------------------
+
+End testing: Apr 27 00:31 UTC
