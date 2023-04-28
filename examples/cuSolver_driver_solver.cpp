@@ -123,16 +123,16 @@ int main(int argc, char* argv[])
   }
 
   // Update matrix blocks
-  copy_mmatrix(H1, H2);
-  copy_mmatrix(Ds1, Ds2);
-  copy_mmatrix(Jc1, Jc2);
-  copy_mmatrix(Jd1, Jd2);
+  copy_mmatrix(H2, H1);
+  copy_mmatrix(Ds2, Ds1);
+  copy_mmatrix(Jc2, Jc1);
+  copy_mmatrix(Jd2, Jd1);
 
   // Update rhs vector blocks
-  copy_vector(&rx1[0], &rx2[0],   static_cast<int>(rx1.size()));
-  copy_vector(&rs1[0], &rs2[0],   static_cast<int>(rs1.size()));
-  copy_vector(&ry1[0], &ry2[0],   static_cast<int>(ry1.size()));
-  copy_vector(&ryd1[0], &ryd2[0], static_cast<int>(ryd1.size()));
+  copy_vector(&rx2[0], &rx1[0],   static_cast<int>(rx1.size()));
+  copy_vector(&rs2[0], &rs1[0],   static_cast<int>(rs1.size()));
+  copy_vector(&ry2[0], &ry1[0],   static_cast<int>(ry1.size()));
+  copy_vector(&ryd2[0], &ryd1[0], static_cast<int>(ryd1.size()));
 
   status = hs->execute();
   delete hs;

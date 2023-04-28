@@ -44,6 +44,58 @@ void selection_sort2(int len, int* arr1, int* arr2)
   }
 }
 
+inline void swap(int* arr1, int* arr2, int i, int j) {
+  int temp     = arr1[i];
+  arr1[i]      = arr1[j];
+  arr1[j]      = temp;
+
+  temp          = arr2[i];
+  arr2[i]       = arr2[j];
+  arr2[j] = temp;
+}
+
+inline int partition(int* arr1, int* arr2, int low, int high) {
+  int pivot = arr1[high];
+  int i = (low - 1);
+  for (int j = low; j <= high - 1; j++) {
+    if (arr1[j] < pivot) {
+      i++;
+      swap(arr1, arr2, i, j);
+    }
+  }
+  swap(arr1, arr2, i + 1, high);
+  return (i + 1);
+}
+
+void quickSort(int* arr1, int* arr2, int low, int high) {
+  if (low < high) {
+    int pi = partition(arr1, arr2, low, high);
+    quickSort(arr1, arr2, low, pi - 1);
+    quickSort(arr1, arr2, pi + 1, high);
+  }
+}
+
+void insertion_sort(int n, int* arr1, int* arr2) 
+{
+  int i, key1, key2, j;
+  for (i = 1; i < n; i++)
+  {
+      key1 = arr1[i];
+      key2 = arr2[i];
+
+      j = i - 1;
+
+      while (j >= 0 && arr1[j] > key1)
+      {
+          arr1[j + 1] = arr1[j];
+          arr2[j + 1] = arr2[j];
+          j = j - 1;
+      }
+      arr1[j + 1] = key1;
+      arr2[j + 1] = key2;
+  }
+}
+
 void make_vec_map_c(int n, 
     int* rows, 
     int* cols, 
@@ -62,7 +114,12 @@ void make_vec_map_c(int n,
       perm_map[row_s + j]  = row_s + j;
       perm_cols[row_s + j] = rev_perm[cols[row_s + j]];
     }
+#if 0
     selection_sort2(rowlen, &perm_cols[row_s], &perm_map[row_s]);
+#else
+    //quickSort(&perm_cols[row_s], &perm_map[row_s], 0, rowlen-1);
+    insertion_sort(rowlen, &perm_cols[row_s], &perm_map[row_s]);
+#endif
   }
 }
 
@@ -127,7 +184,12 @@ void make_vec_map_rc(int n,
       perm_map[count + j]  = row_s + j;
       perm_cols[count + j] = rev_perm[cols[row_s + j]];
     }
+#if 0
     selection_sort2(rowlen, &perm_cols[count], &perm_map[count]);
+#else
+    //quickSort(&perm_cols[count], &perm_map[count], 0, rowlen-1);
+    insertion_sort(rowlen, &perm_cols[count], &perm_map[count]);
+#endif
     count += rowlen;
   }
 }

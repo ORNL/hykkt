@@ -9,6 +9,7 @@ set(PACKAGE_NAME  "HyKKT")
 set(PACKAGE_TARNAME "hykkt")
 
 option(HYKKT_TEST_WITH_BSUB "Use `jsrun` instead of `mpirun` commands when running tests" OFF)
+option(HYKKT_USE_AMD "Use AMD from SuiteSparse" OFF)
 set(HYKKT_CTEST_OUTPUT_DIR ${PROJECT_BINARY_DIR} CACHE PATH "Directory where CTest outputs are saved")
 
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}")
@@ -27,6 +28,22 @@ include(./cmake/clang-format)
 include(CheckLanguage)
 enable_language(CUDA)
 check_language(CUDA)
+
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+configure_file(
+  "${CMAKE_SOURCE_DIR}/src/hykkt_defs.hpp.in"
+  "${CMAKE_BINARY_DIR}/hykkt_defs.hpp")
+include_directories(${CMAKE_BINARY_DIR})
+
+if (HYKKT_USE_AMD)
+  include(FindAMD)
+  if(NOT AMD_LIBRARY)
+    message(STATUS "Cannot find AMD, disabling SuiteSparse AMD module ...")
+    set(HYKKT_USE_AMD OFF CACHE BOOL "Build without SuiteSparse AMD module." FORCE)
+  endif()
+else()
+  message(STATUS "Not using SuiteSparse AMD")
+endif()
 
 if(NOT DEFINED CMAKE_CUDA_STANDARD)
   set(CMAKE_CUDA_STANDARD 11)
