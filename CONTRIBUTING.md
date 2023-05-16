@@ -50,6 +50,135 @@ In the case of solution of multiple systems, the first 8 arguments are repated f
 
 # Style Guidelines
 
+Clang-format version >= 11 is required, which can be installed via LLVM major version 11 or your package installer e.g. 'apt-get install clang-format-11.'. Desired format is based off [LLVM code style](https://llvm.org/docs/CodingStandards.html) with some custom alterations made as seen in [.clang-format](https://gitlab.pnnl.gov/exasgd/solvers/hykkt/-/blob/develop/.clang-format). If .clang-format does not define BasedOnStyle than clang-formats default is LLVM based style. All values not set in .clang-format are set to LLVM default style values. 
+
+## Helpful Clangformat Commands
+All commands below assume clang-format is previously installed. 
+
+To test invidual c files for clang-format warnings use the following command (note the -n flag stands for dry run and doesn't make actual formatting changes)
+
+```clang-format --style=file -n filename.cpp```
+
+To auto correct the format of invidual c files use the following command (note the -i flag stands for inplace edits and does make actual formatting changes)
+
+```clang-format --style=file -i filename.cpp```
+
+## Clang-Format Style Choices
+These are the current style choices that are applied if 'make clang-format-fixes' is called
+
+AccessModifierOffset (int): The extra indent or outdent of access modifiers, e.g. public:. Currently set to zero resulting in no extra indent or outdent.
+
+Align macro definitions on consecutive lines. This will result in formattings like:
+```c++
+#define SHORT_NAME       42
+#define LONGER_NAME      0x007f
+#define EVEN_LONGER_NAME (2)
+
+#define foo(x) (x * x)
+/* some comment */
+#define bar(y, z) (y + z)
+```
+
+BreakBeforeBraces = Allman. Results in formatting like:
+```c++
+namespace N
+{
+enum E
+{
+  E1,
+  E2,
+};
+
+class C
+{
+public:
+  C();
+};
+```
+
+ColumnLimit=150. Meaning no line is allowed to be longer than 150 characters.
+
+ConstructorInitializerIndentWidth=2. The number of characters to use for indentation of constructor initializer lists as well as inheritance lists.
+
+To see a full list of all other default formating choices please see .clangformat file. 
+
+To see an in depth explanation of each formatting variable in .clangformat file please visit [LLVM code style](https://llvm.org/docs/CodingStandards.html). 
+
+## Quick Examples
+Below is what a correctly formatted example should work like
+```c++
+void initializeTestMatrices(MMatrix &mat_a, MMatrix &mat_h, double *h_rhs)
+{
+  assert(mat_a.n_ == mat_h.n_);
+  int i;
+  int n = mat_a.n_;
+  int totn = mat_a.n_ + mat_h.n_;
+  // initialize the matrix and the RHS
+  mat_a.csr_rows[0] = 0;
+  for (i = 0; i < (mat_a.n_); i++)
+  {
+    if (i)
+    {
+      mat_a.csr_vals[i * 2 - 1] = i + 1;
+      mat_a.csr_cols[i * 2 - 1] = i - 1;
+      mat_a.csr_rows[i] = i * 2 - 1;
+    }
+    mat_a.csr_vals[i * 2] = 0;
+    mat_a.csr_cols[i * 2] = i;
+  }
+  mat_a.csr_rows[i] = mat_a.nnz_;
+  for (i = 0; i < (mat_h.n_); i++)
+  {
+    mat_h.csr_rows[i] = i;
+    mat_h.csr_cols[i] = i;
+    mat_h.csr_vals[i] = sqrt(n);
+  }
+  mat_h.csr_rows[i] = mat_h.nnz_;
+  for (i = 0; i < totn; i++)
+  {
+    h_rhs[i] = 1;
+  }
+```
+
+Below is another example of the difference between a poorly and prperly formatted piece of code. 
+```diff
+#include <iostream>
+
+-namespace western {
++namespace western
++{
+-enum ShootingHand { SH_Left, SH_Right }; // use upper-case initials as prefix
++enum ShootingHand
+{
+  SH_Left,
+  SH_Right
+}; // use upper-case initials as prefix
+
+-class Cowboy {
++class Cowboy
++{
+public:
+  Cowboy();
+  Cowboy(int GunCount);
+  ~Cowboy();
+
+  void shoot(std::string Who);
+  int getAge() { return Age; }
+
+  protected:
+  void makeBang(const int &HowMany);
+
+  int GunCount;
+  int Age;
+};
+
+-Cowboy::Cowboy()
+-    : Age(45), GunCount(2) {
+-  std::cout << "I am alive!" << std::endl;
+-}
++Cowboy::Cowboy() : Age(45), GunCount(2) { std::cout << "I am alive!" << std::endl; }
+```
+
 ## Indentation
 
 ### Indent with spaces
@@ -126,17 +255,14 @@ No spaces between `if` (and other control/loop statements) and `(`.
 However, do make space before opening brace `{`.
 ```c++
 // Preferred: no space between if and ()
-if(some_condition) {
+if(some_condition) 
+{
   value += 1;
 }
 
 // Discouraged: space in between if and ()
-if (some_condition) {
-  value += 1;
-}
-
-// Discouraged: no space between ) and {.
-for(some_condition){
+if (some_condition) 
+{
   value += 1;
 }
 ```
@@ -155,19 +281,19 @@ MyClass::MyClass()
 Final note on spacing: avoid using trailing spaces, e.g., after member or variable declaration (`int a;//no trailing whitespaces`), after semicolon or braces that end a line in the code, after ifdef/endifs, etc.
 ## Braces
 
-### Use K&R style
+### Use Allman style
 
-Have the opening brace on the same line as the
+Have the opening brace on different line as the
 statement and the closing brace aligned with the statement.
 ```c++
-// Yes: Use K&R braces
-while(a > 0) {
+// Yes: Allman braces
+while(a > 0)
+{
   value += 1;
 }
 
-// No: Allman braces
-while(a > 0)
-{
+// No: Use K&R braces
+while(a > 0) {
   value += 1;
 }
 
@@ -177,29 +303,7 @@ while(a > 0)
     value += 1;
   }
 ```
-
-### Position of `else` keyword
-
-Keyword `else` should follow the if closing brace. 
-
-```c++
-// Yes: else keyword follows `if` closing brace
-if(a > 0) {
-  value += 1;
-  b = a;
-} else {
-  value -= 1;
-}
-
-// No: else on the next line
-if(a > 0) {
-  value += 1;
-  b = a;
-}
-else {
-  value -= 1;
-}
-```
+# TODODODODO
 ### Use braces for every block
 
 For consistency and better code readability use braces
@@ -207,18 +311,23 @@ for every code block in selection statements. Also,
 avoid condition and loop bodies in the same line of code
 ```c++
 // Yes: Use braces for each block
-if(a > 0) {
+if(a > 0) 
+{
   value += 1;
   b = a;
-} else {
+} 
+else 
+{
   value -= 1;
 }
 
 // No: Use braces only for blocks with more than one statement 
-if(a > 0) {
+if(a > 0) 
+{
   value += 1;
   b = a;
-} else
+} 
+else
   value -= 1;
 
 // No: the condition and the body on the same line 

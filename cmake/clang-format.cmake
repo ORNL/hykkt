@@ -26,3 +26,5 @@ if (NOT CLANG_FORMAT STREQUAL "CLANG_FORMAT-NOTFOUND")
       COMMENT "Reformatting Code ....")
   endif()
 endif()
+
+ make 
