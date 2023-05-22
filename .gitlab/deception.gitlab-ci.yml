@@ -1,0 +1,38 @@
+
+cleanup:
+ stage: .pre
+ extends: .SVC-Account-Cleanup
+
+.deception:
+  variables:
+    MY_CLUSTER: "Deception"
+    SLURM_Q: "a100_shared,a100_80_shared,dl_shared,dlv,dlt_shared"
+    
+hykkt-test-deception:
+  extends:
+    - .deception
+    - .cluster_test 
+
+pending:
+  variables:
+    MY_CLUSTER: "Deception"
+  extends:
+    - .report-pending
+  stage: .pre
+
+success:
+  variables:
+    MY_CLUSTER: "Deception"
+  extends:
+    - .report-status
+  stage: .post
+       
+failure:
+  stage: .post
+  variables:
+    MY_CLUSTER: "Deception"
+  extends:
+    - .report-status
+  rules:
+    - when: on_failure
+  
