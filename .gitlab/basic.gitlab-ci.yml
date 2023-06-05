@@ -19,7 +19,8 @@
       export jobid=$(echo $jobid | cut -f4 -d' ')
       echo $jobid > "$WORKDIR/jobid_${jobid}"
 
-      partition=$(squeue -j $jobid -h --format="%P")
+
+      partition=$(scontrol show jobid -dd $jobid | grep Partition)
       export partition=$(echo $partition | cut -f2 -d'=' | cut -f1 -d' ')
       
       echo "Job $jobid submitted to partition $partition"
