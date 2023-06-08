@@ -32,12 +32,12 @@ schur complement. Please see the [HyKKT paper](https://www.tandfonline.com/doi/a
 ## Installation and build instructions
 Clone the repository 
 ``` 
-git clone https://gitlab.pnnl.gov/exasgd/solvers/hykkt.git
+git clone git@gitlab.com:gridmatic/asset-optimization/hykkt.git
 ``` 
 Make sure you have following build dependencies installed:
 * C++ compiler supporting C++11 standard or higher
 * CMake >= 3.19
-* CUDA >= 11.0
+* 12.0 > CUDA >= 11.0
 
 To build HyKKT library and drivers simply
 ```
