@@ -54,10 +54,15 @@ if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
   set(CMAKE_CUDA_ARCHITECTURES 60 CACHE STRING "Selects CUDA architectures")
 endif()
 
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-extended-lambda")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-extended-lambda -use_fast_math")
+
+# Specify architecture-specific optimization flags
+foreach(arch IN LISTS CMAKE_CUDA_ARCHITECTURES)
+    string(APPEND CMAKE_CUDA_FLAGS " --generate-code arch=compute_${arch},code=sm_${arch}")
+endforeach()
 
 # HiOp requires this since we require static
-set(CMAKE_CUDA_SEPARABLE_COMPILATION OFF)
+set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 
 # Link in required cuda dependencies
 find_package(CUDAToolkit REQUIRED)
@@ -98,5 +103,4 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/HyKKTConfig.cmake"
         DESTINATION share/hykkt/cmake)
 
 add_subdirectory(examples)
-
 

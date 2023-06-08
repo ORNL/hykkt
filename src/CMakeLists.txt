@@ -1,7 +1,6 @@
 set(HYBRID_SRC
   MMatrix.cpp
   input_functions.cpp
-  vector_vector_ops.cpp
   cusparse_utils.cpp
   matrix_matrix_ops.cpp
   PermClass.cpp
@@ -10,12 +9,23 @@ set(HYBRID_SRC
   CholeskyClass.cpp
   SpgemmClass.cpp
   HykktSolver.cpp
+  LQOperator.cpp
+  PreconditionedCG.cpp
+  LogBarrierSolver.cpp
+  LogBarrierHelper.cpp
+  LogBarrierInfo.cpp
+  Models/BiELLMat.cpp
 )
 
 set(HYBRID_SRC_CUDA
   cuda_memory_utils.cu
   matrix_vector_ops.cu
+  matrix_matrix_ops.cu
+  vector_vector_ops.cu
   permcheck.cu
+  log_barrier_utils.cu
+  sparse_mat_mul.cu
+  cg_solving_utils.cu
 )
 
 # define list of headers and source files
@@ -25,7 +35,16 @@ set(header MMatrix.hpp
     SchurComplementConjugateGradient.hpp
     CholeskyClass.hpp
     SpgemmClass.hpp
-    HykktSolver.hpp)
+    HykktSolver.hpp
+    LQOperator.hpp
+    PreconditionedCG.hpp
+    PCGOperator.hpp
+    LogBarrierSolver.hpp
+    LogBarrierHelper.hpp
+    LogBarrierInfo.hpp
+    LBObjectiveInfo.hpp
+    BiELLMat.hpp
+)
 
 install(FILES ${header} DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
 
@@ -37,7 +56,6 @@ target_link_libraries(hykkt_libs PUBLIC hykkt_cuda)
 install(TARGETS hykkt_libs EXPORT HyKKT-targets)
 
 add_library(HyKKT::HyKKT ALIAS hykkt_libs)
-
 
 if (HYKKT_USE_AMD)
   if(NOT AMD_LIBRARY)
