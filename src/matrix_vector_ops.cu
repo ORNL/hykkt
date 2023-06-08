@@ -4,16 +4,15 @@
 #include <assert.h>
 #include <stdio.h>
 #include "cusparse_params.hpp"
-
+#include "constants.hpp"
 #include "cuda_check_errors.hpp"
 
-
-void SpMV_product_reuse(cusparseHandle_t handle,
+void SpMV_product_reuse(cusparseHandle_t& handle,
     double alpha,
-    cusparseSpMatDescr_t a_desc_sp,
-    cusparseDnVecDescr_t b_desc_dn,
+    cusparseSpMatDescr_t& a_desc_sp,
+    cusparseDnVecDescr_t& b_desc_dn,
     double beta,
-    cusparseDnVecDescr_t c_desc_dn,
+    cusparseDnVecDescr_t& c_desc_dn,
     void** buffer,
     bool allocated)
 {
@@ -38,12 +37,12 @@ void SpMV_product_reuse(cusparseHandle_t handle,
         *buffer);
 }
 
-void fun_SpMV_full(cusparseHandle_t handle, 
+void fun_SpMV_full(cusparseHandle_t& handle, 
                    double alpha, 
-                   cusparseSpMatDescr_t a_desc_sp, 
-                   cusparseDnVecDescr_t b_desc_dn, 
+                   cusparseSpMatDescr_t& a_desc_sp, 
+                   cusparseDnVecDescr_t& b_desc_dn, 
                    double beta, 
-                   cusparseDnVecDescr_t c_desc_dn)
+                   cusparseDnVecDescr_t& c_desc_dn)
 {
   size_t buffer_size = 0;
   void* buffer = nullptr;
@@ -67,12 +66,12 @@ void fun_SpMV_full(cusparseHandle_t handle,
   deleteOnDevice(buffer);
 }
 
-void fun_SpMV_buffer(cusparseHandle_t handle, 
+void fun_SpMV_buffer(cusparseHandle_t& handle, 
                      double alpha, 
-                     cusparseSpMatDescr_t a_desc_sp, 
-                     cusparseDnVecDescr_t b_desc_dn, 
+                     cusparseSpMatDescr_t& a_desc_sp, 
+                     cusparseDnVecDescr_t& b_desc_dn, 
                      double beta, 
-                     cusparseDnVecDescr_t c_desc_dn, 
+                     cusparseDnVecDescr_t& c_desc_dn, 
                      size_t* buffer_size)
 {
   checkCudaErrors(cusparseSpMV_bufferSize(handle, 
@@ -87,12 +86,12 @@ void fun_SpMV_buffer(cusparseHandle_t handle,
                                           buffer_size));
 }
 
-void fun_SpMV_product(cusparseHandle_t handle, 
+void fun_SpMV_product(cusparseHandle_t& handle, 
                       double alpha, 
-                      cusparseSpMatDescr_t a_desc_sp, 
-                      cusparseDnVecDescr_t b_desc_dn, 
+                      cusparseSpMatDescr_t& a_desc_sp, 
+                      cusparseDnVecDescr_t& b_desc_dn, 
                       double beta, 
-                      cusparseDnVecDescr_t c_desc_dn, 
+                      cusparseDnVecDescr_t& c_desc_dn, 
                       void* buffer)
 {
   checkCudaErrors(cusparseSpMV(handle, 
@@ -124,7 +123,7 @@ void fun_adapt_diag_scale(int n,
                           double* max_d)
 {
   int num_blocks;
-  int block_size = 512;
+  int block_size = BLOCK_SIZE;
   num_blocks = (m + block_size - 1) / block_size;
   adapt_diag_scale<<<num_blocks, block_size>>>(n,
                                                m, 
@@ -199,7 +198,7 @@ void fun_adapt_row_max(int n,
                        double* scale)
 {
   int num_blocks;
-  int block_size = 512;
+  int block_size = BLOCK_SIZE;
   num_blocks = (m + block_size - 1) / block_size;
   adapt_row_max<<<num_blocks, block_size>>>(n,
                                             m, 
@@ -268,7 +267,7 @@ __global__ void adapt_row_max(int n, int m, double* A_v, int* A_i, int* A_j,
 void fun_set_const(int n, double val, double* arr)
 {
   int num_blocks;
-  int block_size = 512;
+  int block_size = BLOCK_SIZE;
   num_blocks = (n + block_size - 1) / block_size;
   set_const<<<num_blocks, block_size>>>(n, val, arr);
 }
@@ -285,7 +284,7 @@ __global__ void set_const(int n, double val, double* arr)
 void fun_add_const(int n, int val, int* arr)
 {
   int num_blocks;
-  int block_size = 512;
+  int block_size = BLOCK_SIZE;
   num_blocks = (n + block_size - 1) / block_size;
   add_const<<<num_blocks, block_size>>>(n, val, arr);
 }
@@ -299,10 +298,42 @@ __global__ void add_const(int n, int val, int* arr)
   }
 }
 
+void fun_add_vecs_scaled(int n, double alpha, double beta, double* arr1, double* arr2)
+{
+  int num_blocks;
+  int block_size = BLOCK_SIZE;
+  num_blocks = (n + block_size - 1) / block_size;
+  add_vecs_scaled<<<num_blocks, block_size>>>(n, alpha, beta, arr1, arr2);
+}
+
+__global__ void add_vecs_scaled(int n, double alpha, double beta, double* arr1, double* arr2)
+{
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if(i < n)
+  {
+    arr1[i] = alpha * arr1[i] + beta * arr2[i];
+  }
+}
+
+void fun_add_vecs_scaled(int n, double* alpha, double* arr1, double* arr2) {
+  int num_blocks;
+  int block_size = BLOCK_SIZE;
+  num_blocks = (n + block_size - 1) / block_size;
+  add_vecs_scaled<<<num_blocks, block_size>>>(n, alpha, arr1, arr2);
+}
+
+__global__ void add_vecs_scaled(int n, double* alpha, double* arr1, double* arr2) {
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if(i < n)
+  {
+    arr1[i] = (*alpha) * arr1[i] + arr2[i];
+  }
+}
+
 void fun_add_vecs(int n, double* arr1, double alp, double* arr2)
 {
   int num_blocks;
-  int block_size = 512;
+  int block_size = BLOCK_SIZE;
   num_blocks = (n + block_size - 1) / block_size;
   add_vecs<<<num_blocks, block_size>>>(n, arr1, alp, arr2);
 }
@@ -316,10 +347,108 @@ __global__ void add_vecs(int n, double* arr1, double alp, double* arr2)
   }
 }
 
+void fun_add_vecs(int n, double* arr1, double* alpha, double* arr2) {
+  int num_blocks;
+  int block_size = BLOCK_SIZE;
+  num_blocks = (n + block_size - 1) / block_size;
+  add_vecs<<<num_blocks, block_size>>>(n, arr1, alpha, arr2);
+}
+
+__global__ void add_vecs(int n, double* arr1, double* alpha, double* arr2) {
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if(i < n)
+  {
+    arr1[i] += (*alpha) * arr2[i];
+  }
+}
+
+void fun_sub_vecs(int n, double* arr1, double* alpha, double* arr2) {
+  int num_blocks;
+  int block_size = BLOCK_SIZE;
+  num_blocks = (n + block_size - 1) / block_size;
+  sub_vecs<<<num_blocks, block_size>>>(n, arr1, alpha, arr2);
+}
+
+__global__ void sub_vecs(int n, double* arr1, double* alpha, double* arr2) {
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if(i < n)
+  {
+    arr1[i] -= (*alpha) * arr2[i];
+  }
+}
+
+void fun_add_vecs2(int n, double alpha, double* a1, double* b1, double beta, double* a2, double* b2) {
+  int num_blocks;
+  int block_size = BLOCK_SIZE;
+  num_blocks = (n + block_size - 1) / block_size;
+  add_vecs2<<<num_blocks, block_size>>>(n, alpha, a1, b1, beta, a2, b2);
+}
+
+__global__ void add_vecs2(int n, double alpha, double* a1, double* b1, double beta, double* a2, double* b2) {
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if(i < n)
+  {
+    a1[i] += alpha * b1[i];
+    a2[i] += beta * b2[i];
+  }
+}
+
+void fun_add_vecs(int n, double alpha, double beta, double* arr1, double* arr2, double* out)
+{
+  int num_blocks;
+  int block_size = BLOCK_SIZE;
+  num_blocks = (n + block_size - 1) / block_size;
+  add_vecs<<<num_blocks, block_size>>>(n, alpha, beta, arr1, arr2, out);
+}
+
+__global__ void add_vecs(int n, double alpha, double beta, double* arr1, double* arr2, double* out)
+{
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if(i < n)
+  {
+    out[i] = alpha * arr1[i] + beta * arr2[i];
+  }
+}
+
+void fun_cg_helper1(int n, double* r_dot_z, double* p_Ap, double* x, double* r, double* p, double* A_p)
+{
+  int num_blocks;
+  int block_size = BLOCK_SIZE;
+  num_blocks = (n + block_size - 1) / block_size;
+  cg_helper1<<<num_blocks, block_size>>>(n, r_dot_z, p_Ap, x, r, p, A_p);
+}
+
+__global__ void cg_helper1(int n, double* r_dot_z, double* p_Ap, double* x, double* r, double* p, double* A_p)
+{
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  double alpha = *r_dot_z / *p_Ap;
+  if(i < n) {
+    x[i] += alpha * p[i];
+    r[i] -= alpha * A_p[i];
+  }
+}
+
+void fun_cg_helper2(int n, double* d_r_dot_z, double* d_r_dot_z_prev, double* p_, double* z_) 
+{
+  int num_blocks;
+  int block_size = BLOCK_SIZE;
+  num_blocks = (n + block_size - 1) / block_size;
+  cg_helper2<<<num_blocks, block_size>>>(n, d_r_dot_z, d_r_dot_z_prev, p_, z_);
+}
+
+__global__ void cg_helper2(int n, double* d_r_dot_z, double* d_r_dot_z_prev, double* p_, double* z_) 
+{
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  double beta = *d_r_dot_z / *d_r_dot_z_prev;
+  if (i < n) {
+    p_[i] = z_[i] + beta * p_[i];
+  }
+}
+
 void fun_mult_const(int n, double val, double* arr)
 {
   int num_blocks;
-  int block_size = 512;
+  int block_size = BLOCK_SIZE;
   num_blocks = (n + block_size - 1) / block_size;
   mult_const<<<num_blocks, block_size>>>(n, val, arr);
 }
@@ -336,7 +465,7 @@ __global__ void mult_const(int n, double val, double* arr)
 void fun_add_diag(int n, double val, int* a_i, int* a_j, double* a_v)
 {
   int num_blocks;
-  int block_size = 512;
+  int block_size = BLOCK_SIZE;
   num_blocks = (n + block_size - 1) / block_size;
   add_diag<<<num_blocks, block_size>>>(n, val, a_i, a_j, a_v);
 }
@@ -360,7 +489,7 @@ __global__ void add_diag(int n, double val, int* a_i, int* a_j, double* a_v)
 void fun_inv_vec_scale(int n, double* d_rhs, double* ds)
 {
   int num_blocks;
-  int block_size = 512;
+  int block_size = BLOCK_SIZE;
   num_blocks = (n + block_size - 1) / block_size;
   inv_vec_scale<<<num_blocks, block_size>>>(n, d_rhs, ds);
 }
@@ -377,9 +506,17 @@ __global__ void inv_vec_scale(int n, double* d_rhs, double* ds)
 void fun_vec_scale(int n, double* d_rhs, double* ds)
 {
   int num_blocks;
-  int block_size = 512;
+  int block_size = BLOCK_SIZE;
   num_blocks = (n + block_size - 1) / block_size;
   vec_scale<<<num_blocks, block_size>>>(n, d_rhs, ds);
+}
+
+void fun_vec_scale(int n, double* d_rhs, double* ds, double* out)
+{
+  int num_blocks;
+  int block_size = BLOCK_SIZE;
+  num_blocks = (n + block_size - 1) / block_size;
+  vec_scale<<<num_blocks, block_size>>>(n, d_rhs, ds, out);
 }
 
 __global__ void vec_scale(int n, double* d_rhs, double* ds)
@@ -388,6 +525,15 @@ __global__ void vec_scale(int n, double* d_rhs, double* ds)
   if(i < n)
   {
     d_rhs[i] *= ds[i];
+  }
+}
+
+__global__ void vec_scale(int n, double* d_rhs, double* ds, double* out)
+{
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if(i < n)
+  {
+    out[i] = d_rhs[i] * ds[i];
   }
 }
 
@@ -406,7 +552,7 @@ void fun_concatenate(int n,
                      int* c_j)
 {
   int num_blocks;
-  int block_size = 512;
+  int block_size = BLOCK_SIZE;
   num_blocks = (n + m + block_size - 1) / block_size;
   concatenate<<<num_blocks, block_size>>>(n, 
                                           m, 
@@ -475,7 +621,7 @@ void fun_row_scale(int n,
                    double* ds)
 {
   int num_blocks;
-  int block_size = 512;
+  int block_size = BLOCK_SIZE;
   num_blocks = (n + 1 + block_size - 1) / block_size;
   row_scale<<<num_blocks, block_size>>>(n, 
                                         a_v, 
@@ -522,7 +668,7 @@ void fun_diag_scale(int n,
                     int flag)
 {
   int num_blocks;
-  int block_size = 512;
+  int block_size = BLOCK_SIZE;
   num_blocks = (n + m + block_size - 1) / block_size;
   diag_scale<<<num_blocks, block_size>>>(n, 
                                          m, 
@@ -582,7 +728,7 @@ void fun_row_max(int n,
                  double* scale)
 {
   int num_blocks;
-  int block_size = 512;
+  int block_size = BLOCK_SIZE;
   num_blocks = (n + m + block_size - 1) / block_size;
   row_max<<<num_blocks, block_size>>>(n, 
                                       m, 

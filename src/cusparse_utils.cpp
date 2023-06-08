@@ -46,6 +46,19 @@ void deleteDescriptor(cusparseMatDescr_t& desc)
   checkCudaErrors(cusparseDestroyMatDescr(desc));
 }
 
+void deleteDescriptor(cusparseDnVecDescr_t& desc)
+{
+  checkCudaErrors(cusparseDestroyDnVec(desc));
+}
+
+void deleteHandle(cusparseHandle_t& handle) {
+  checkCudaErrors(cusparseDestroy(handle));
+}
+
+void deleteHandle(cublasHandle_t& handle) {
+  checkCudaErrors(cublasDestroy(handle));
+}
+
 void transposeMatrixOnDevice(cusparseHandle_t handle,
                              int n,
                              int m,

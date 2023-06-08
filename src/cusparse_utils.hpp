@@ -32,6 +32,19 @@ void deleteDescriptor(cusparseSpMatDescr_t& desc);
 
 void deleteDescriptor(cusparseMatDescr_t& desc);
 
+void deleteDescriptor(cusparseDnVecDescr_t& handle);
+
+/* 
+ * @brief destroys handles
+ *
+ * @param handle - a cusparse or cublas handle
+ *
+ * @post handle is destroyed
+ */
+void deleteHandle(cusparseHandle_t& handle);
+
+void deleteHandle(cublasHandle_t& handle);
+
 /* 
  * @brief creates the transpose of matrix A by converting from
  *        CSR format to CSC format

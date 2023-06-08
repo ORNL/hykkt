@@ -10,6 +10,13 @@ void deleteOnDevice(void* v)
   checkCudaErrors(cudaFree(v));
 }
 
+template <typename T>
+void allocateValueOnDevice(T** v)
+{
+  checkCudaErrors(cudaMalloc((void**)v, sizeof(T)));
+}
+template void allocateValueOnDevice<double>(double**);
+
 template <typename T1, typename T2>
 void allocateVectorOnDevice(T1 n, T2** v)
 {

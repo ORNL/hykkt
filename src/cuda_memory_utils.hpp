@@ -19,6 +19,16 @@ struct MMatrix;
 void deleteOnDevice(void* v);
 
 /* 
+ * @brief allocates variable onto device
+ *
+ * @param v - a variable on the device
+ *
+ * @post v is allocated onto the device
+ */
+template <typename T>
+void allocateValueOnDevice(T** v);
+
+/* 
  * @brief allocates vector v onto device
  *
  * @param n - size of the vector (int, size_t)
@@ -126,6 +136,7 @@ void displayDeviceVector(T* v,
   T* h_v = new T[n];
   copyVectorToHost(n, v, h_v);
   displayHostVector(h_v, start_i, display_n, label);
+  delete[] h_v;
 }
 
 /* 

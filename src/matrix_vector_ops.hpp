@@ -5,12 +5,12 @@
 #include <cublas_v2.h>
 #include <cusolverSp_LOWLEVEL_PREVIEW.h>
 
-void SpMV_product_reuse(cusparseHandle_t handle,
+void SpMV_product_reuse(cusparseHandle_t& handle,
     double alpha,
-    cusparseSpMatDescr_t a_desc_sp,
-    cusparseDnVecDescr_t b_desc_dn,
+    cusparseSpMatDescr_t& a_desc_sp,
+    cusparseDnVecDescr_t& b_desc_dn,
     double beta,
-    cusparseDnVecDescr_t c_desc_dn,
+    cusparseDnVecDescr_t& c_desc_dn,
     void** buffer,
     bool allocated);
 
@@ -27,12 +27,12 @@ void SpMV_product_reuse(cusparseHandle_t handle,
  *
  * @post c = alpha*Ab + beta*c stored in c_desc_dn
 */
-void fun_SpMV_full(cusparseHandle_t handle, 
+void fun_SpMV_full(cusparseHandle_t& handle, 
                    double alpha, 
-                   cusparseSpMatDescr_t a_desc_sp, 
-                   cusparseDnVecDescr_t b_desc_dn, 
+                   cusparseSpMatDescr_t& a_desc_sp, 
+                   cusparseDnVecDescr_t& b_desc_dn, 
                    double beta, 
-                   cusparseDnVecDescr_t c_desc_dn);
+                   cusparseDnVecDescr_t& c_desc_dn);
 
 /* 
  * @brief calculates the size of the workspace needed for fun_SpMV
@@ -42,12 +42,12 @@ void fun_SpMV_full(cusparseHandle_t handle,
  * 
  * @post buffer_size now has the size of the workspace needed
 */
-void fun_SpMV_buffer(cusparseHandle_t handle, 
+void fun_SpMV_buffer(cusparseHandle_t& handle, 
                      double alpha, 
-                     cusparseSpMatDescr_t a_desc_sp, 
-                     cusparseDnVecDescr_t b_desc_dn, 
+                     cusparseSpMatDescr_t& a_desc_sp, 
+                     cusparseDnVecDescr_t& b_desc_dn, 
                      double beta, 
-                     cusparseDnVecDescr_t c_desc_dn, 
+                     cusparseDnVecDescr_t& c_desc_dn, 
                      size_t* buffer_size);
 
 /*
@@ -58,12 +58,12 @@ void fun_SpMV_buffer(cusparseHandle_t handle,
  *
  * @post c = alpha*Ab + beta*c, stored in c_desc_dn
 */
-void fun_SpMV_product(cusparseHandle_t handle, 
+void fun_SpMV_product(cusparseHandle_t& handle, 
                       double alpha, 
-                      cusparseSpMatDescr_t a_desc_sp, 
-                      cusparseDnVecDescr_t b_desc_dn, 
+                      cusparseSpMatDescr_t& a_desc_sp, 
+                      cusparseDnVecDescr_t& b_desc_dn, 
                       double beta, 
-                      cusparseDnVecDescr_t c_desc_dn, 
+                      cusparseDnVecDescr_t& c_desc_dn, 
                       void* buffer);
 
 /*
@@ -153,6 +153,33 @@ void fun_add_const(int n, int val, int* arr);
  * @post:   arr1 += alp*arr2
  */
 void fun_add_vecs(int n, double* arr1, double alp, double* arr2);
+void fun_add_vecs2(int n, double alpha, double* a1, double* b1, double beta, double* a2, double* b2);
+void fun_add_vecs(int n, double* arr1, double* alpha, double* arr2);
+void fun_sub_vecs(int n, double* arr1, double* alpha, double* arr2);
+void fun_add_vecs_scaled(int n, double* alpha, double* arr1, double* arr2);
+void fun_cg_helper1(int n, double* r_dot_z, double* p_Ap, double* x, double* r, double* p, double* A_p);
+void fun_cg_helper2(int n, double* d_r_dot_z, double* d_r_dot_z_prev, double* p_, double* z_);
+
+/*
+ * @brief:  add arrays arr1, arr2 such that out = alpha * arr1 + beta * arr2
+ *
+ * @params: Length of array n, arr1, arr2 - arrays to be added,
+ *          alpha, beta - scaling constant
+ *          out - vector where the sum is stored
+ *
+ * @post:   out = alpha * arr1 + beta * arr2
+ */
+void fun_add_vecs(int n, double alpha, double beta, double* arr1, double* arr2, double* out);
+
+/*
+ * @brief:  add arrays arr1, arr2 such that arr1 = alpha * arr1+ beta * arr2
+ *
+ * @params: Length of array n, arr1, arr2 - arrays to be added,
+ *          alpha, beta - scaling constants
+ *
+ * @post: arr1 = alpha * arr1 + beta * arr2
+ */
+void fun_add_vecs_scaled(int n, double alpha, double beta, double* arr1, double* arr2);
 
 /*
  * @brief multiplies an array by a constant
@@ -195,6 +222,8 @@ void fun_inv_vec_scale(int n, double* d_rhs, double* ds);
  * @post d_rhs=ds.*d_rhs (elementwise)
  */
 void fun_vec_scale(int n, double* d_rhs, double* ds);
+
+void fun_vec_scale(int n, double* d_rhs, double* ds, double* out);
 
 /*
  * @brief concatenates 2 matrices into a third matrix (one under the other)
