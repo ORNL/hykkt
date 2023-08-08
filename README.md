@@ -77,11 +77,15 @@ To test clang formatting of code base use:
 To autofix the formatting of the code base use:
 `make clangformat-fix`
 
+To test individual source code use:
+'clang-format --style=file -n Werror -ferror-limit-1 <file>'
+
 ## Support
 To receive support or ask a question, submit an [issue](https://github.com/ORNL/hykkt/issues).
 
 ## Contributing
 Please see [the developer guidelines](CONTRIBUTE.md) before attempting to contribute.
+Consistent code style is maintained and monitored via Clang-Format version 11.0.0. To see more on code formating see [style guidelines](CONTRIBUTING.md#style-guidelines:~:text=same%20sparsity%20structure.-,Style%20Guidelines,-Indentation). 
 
 ## Authors
 * Shaked Regev
