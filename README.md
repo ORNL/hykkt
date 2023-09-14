@@ -37,13 +37,12 @@ git clone https://gitlab.pnnl.gov/exasgd/solvers/hykkt.git
 Make sure you have following build dependencies installed:
 * C++ compiler supporting C++11 standard or higher
 * CMake >= 3.19
-* CUDA >= 11.0
+* 12.0 > CUDA >= 11.0
 
 To build HyKKT library and drivers simply
 ```
-mkdir build
 cd build
-cmake ../hykkt
+cmake ..
 make
 make test
 ```
