@@ -83,7 +83,7 @@ void fun_SpMV_buffer(cusparseHandle_t handle,
                                           &beta, 
                                           c_desc_dn, 
                                           COMPUTE_TYPE, 
-                                          CUSPARSE_MV_ALG_DEFAULT, 
+                                          CUSPARSE_SPMV_ALG_DEFAULT, 
                                           buffer_size));
 }
 
@@ -103,7 +103,7 @@ void fun_SpMV_product(cusparseHandle_t handle,
                                &beta, 
                                c_desc_dn, 
                                COMPUTE_TYPE, 
-                               CUSPARSE_MV_ALG_DEFAULT, 
+                               CUSPARSE_SPMV_ALG_DEFAULT, 
                                buffer));
 }
 

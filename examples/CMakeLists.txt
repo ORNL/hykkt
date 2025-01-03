@@ -87,8 +87,8 @@ set(test_solver2_args
 
 if(HYKKT_TEST_WITH_BSUB)
   set(RUNCMD "jsrun" "-n" "1" "-g" "1")
-else()
-  set(RUNCMD "cuda-memcheck") # No special command is needed to run this program  
+# else()
+#   set(RUNCMD "cuda-memcheck") # No special command is needed to run this program  
 endif()
 
 add_executable(perm_driver perm_driver.cpp)
