@@ -1,7 +1,7 @@
 #include <cassert>
 
 #include <cusparse.h>
-#include <cublas.h>
+#include <cublas_v2.h>
 
 #include "HykktSolver.hpp"
 

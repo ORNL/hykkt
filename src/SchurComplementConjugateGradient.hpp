@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cusparse.h>
-#include <cublas.h>
+#include <cublas_v2.h>
 #include <cusparse_utils.hpp>
 
 // Froward declaration of CholeskyClass

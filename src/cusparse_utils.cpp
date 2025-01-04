@@ -1,5 +1,5 @@
 #include <cusparse.h>
-#include <cublas.h>
+#include <cublas_v2.h>
 
 #include <cusparse_utils.hpp>
 #include "cuda_memory_utils.hpp"

@@ -85,45 +85,40 @@ set(test_solver2_args
   3
   10000.0)
 
-if(HYKKT_TEST_WITH_BSUB)
-  set(RUNCMD "jsrun" "-n" "1" "-g" "1")
-else()
-  set(RUNCMD "cuda-memcheck") # No special command is needed to run this program  
-endif()
 
 add_executable(perm_driver perm_driver.cpp)
 target_link_libraries(perm_driver PUBLIC HyKKT::HyKKT)
 add_test(NAME permutation
-  COMMAND ${RUNCMD} $<TARGET_FILE:perm_driver>)
+  COMMAND ${HYKKT_RUN_CMD} $<TARGET_FILE:perm_driver>)
 
 add_executable(ruiz_driver Ruiz_driver.cpp)
 target_link_libraries(ruiz_driver PUBLIC HyKKT::HyKKT)
 add_test(NAME ruiz_scaling_test
-  COMMAND ${RUNCMD} $<TARGET_FILE:ruiz_driver>)
+  COMMAND ${HYKKT_RUN_CMD} $<TARGET_FILE:ruiz_driver>)
 
 add_executable(chol_driver cuSolver_driver_cholesky.cpp)
 target_link_libraries(chol_driver PUBLIC HyKKT::HyKKT)
 add_test(NAME cholesky 
- COMMAND ${RUNCMD} $<TARGET_FILE:chol_driver> ${testchol_args})
+ COMMAND ${HYKKT_RUN_CMD} $<TARGET_FILE:chol_driver> ${testchol_args})
 
 add_executable(schur_cg_driver cuSolver_driver_schur_cg.cpp)
 target_link_libraries(schur_cg_driver PUBLIC HyKKT::HyKKT)
 add_test(NAME schur_cg 
-  COMMAND ${RUNCMD} $<TARGET_FILE:schur_cg_driver> ${testcg_args})
+  COMMAND ${HYKKT_RUN_CMD} $<TARGET_FILE:schur_cg_driver> ${testcg_args})
 
 add_executable(hybrid_driver cuSolver_driver_hybrid.cpp)
 target_link_libraries(hybrid_driver PUBLIC HyKKT::HyKKT)
 add_test(NAME hybrid1 
-  COMMAND ${RUNCMD} $<TARGET_FILE:hybrid_driver> ${test1_args})
+  COMMAND ${HYKKT_RUN_CMD} $<TARGET_FILE:hybrid_driver> ${test1_args})
 add_test(NAME hybrid2
-  COMMAND ${RUNCMD} $<TARGET_FILE:hybrid_driver> ${test2_args})
+  COMMAND ${HYKKT_RUN_CMD} $<TARGET_FILE:hybrid_driver> ${test2_args})
 
 add_executable(solver_driver cuSolver_driver_solver.cpp)
 target_link_libraries(solver_driver PUBLIC HyKKT::HyKKT)
 add_test(NAME solver1
-  COMMAND ${RUNCMD} $<TARGET_FILE:solver_driver> ${test_solver1_args})
+  COMMAND ${HYKKT_RUN_CMD} $<TARGET_FILE:solver_driver> ${test_solver1_args})
 add_test(NAME solver2
-  COMMAND ${RUNCMD} $<TARGET_FILE:solver_driver> ${test_solver2_args})
+  COMMAND ${HYKKT_RUN_CMD} $<TARGET_FILE:solver_driver> ${test_solver2_args})
   
 add_executable(solver_driver_emulator cuSolver_driver_solver_emulator.cpp)
 target_link_libraries(solver_driver_emulator PUBLIC HyKKT::HyKKT)

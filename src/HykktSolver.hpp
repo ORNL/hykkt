@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cusparse.h>
-#include <cublas.h>
+#include <cublas_v2.h>
 
 #include <cuda_memory_utils.hpp>
 #include "MMatrix.hpp"
