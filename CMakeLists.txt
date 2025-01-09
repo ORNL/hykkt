@@ -8,9 +8,9 @@ set(CMAKE_CXX_STANDARD 11)
 set(PACKAGE_NAME  "HyKKT")
 set(PACKAGE_TARNAME "hykkt")
 
-option(HYKKT_TEST_WITH_BSUB "Use `jsrun` instead of `mpirun` commands when running tests" OFF)
 option(HYKKT_USE_AMD "Use AMD from SuiteSparse" OFF)
 set(HYKKT_CTEST_OUTPUT_DIR ${PROJECT_BINARY_DIR} CACHE PATH "Directory where CTest outputs are saved")
+set(HYKKT_RUN_CMD "" CACHE STRING "Separate strings by semicolons, e.g. compute-sanitizer;--tool;memcheck")
 
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
